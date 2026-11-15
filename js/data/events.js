@@ -2,7 +2,8 @@
 import { ui } from '../core/bus.js';
 import { G } from '../core/state.js';
 import { ri, pick, chance, clamp, weighted } from '../core/rng.js';
-import { stat, money, fmtMoney, country, addItem } from '../systems/life.js';
+import { stat, money, fmtMoney, country, addItem, discount, priceFor } from '../systems/life.js';
+import { ITEMS } from './items.js';
 import { learnManual } from '../systems/cultivation.js';
 import { has, earnTrait, traitMult } from '../systems/traits.js';
 import { makePerson } from '../systems/people.js';
@@ -41,11 +42,29 @@ const E = [
       const r = await ui.fight({ ...ENEMIES.find(e => e.id === sp) });
       if (r === 'win') { c.wins++; ui.log('I banished the spirit. Its ash smelled of incense.', 'good'); if (chance(0.3)) { addItem(c, 'spirit_stone'); ui.log('It left behind a Spirit Stone.', 'qi'); } }
       else { stat(c, 'health', -8); ui.log('It fed on me. I woke up cold.', 'bad'); } } },
+  { id: 'method_market', cond: c => c.qi.realm >= 1 && c.age >= 14, w: 2, run: async c => {
+      const { METHODS } = await import('./realms.js'); const { learnMethod } = await import('../systems/cultivation.js');
+      const opts = METHODS.filter(m => !(c.qi.methods || ['basic']).includes(m.id)); if (!opts.length) return; const m = pick(opts); const price = Math.round(1500 * country(c).econ);
+      const v = await ui.choice({ title: 'Ghost Market', text: `A blind scribe offers a cultivation method — the ${m.name} — for ${fmtMoney(c, price)}.\n${m.desc}`, icon: 'manual', options: [{ label: 'Buy', value: true, disabled: c.money < price }, { label: 'Pass', value: false }] });
+      if (v && c.money >= price) { money(c, -price); learnMethod(c, m.id); } } },
   { id: 'manual_market', cond: c => c.qi.known && c.age >= 14, w: 2, run: async c => {
       const m = pick(['flame_palm', 'river_step', 'thunder_fist', 'iron_skin']); if (c.qi.manuals.includes(m)) return;
       const price = Math.round(800 * country(c).econ);
       const v = await ui.choice({ title: 'Ghost Market', text: `A masked vendor offers a martial manual for ${fmtMoney(c, price)}. Genuine? Who knows.`, icon: 'manual', options: [{ label: 'Buy', value: true }, { label: 'Pass', value: false }] });
       if (v && c.money >= price) { money(c, -price); if (chance(0.7)) learnManual(c, m); else ui.log('The manual was fake. Blank pages and a smiley face.', 'bad'); } } },
+  // --- merchants: charisma gets you better deals, and you can try to haggle
+  { id: 'merchant', cond: c => c.age >= 12, w: 6, run: async c => {
+      const pool = ['spirit_herb', 'spirit_stone', 'cloth', 'iron_ore', 'heal_pill', 'qi_pill', 'calm_incense', 'jade_charm', 'ginseng', 'mending_salve', 'iron_sword', 'padded_robe'];
+      const id = pick(pool), it = ITEMS[id]; const n = ri(1, 3); const base = Math.round((it.price || 600) * n * country(c).econ * (0.7 + Math.random() * 0.5));
+      let price = priceFor(c, base); const off = Math.round(discount(c) * 100);
+      const v = await ui.choice({ title: pick(['A travelling merchant', 'Night-market peddler', 'A sect trader in disguise']), icon: 'shop',
+        text: `"${n}× ${it.name}, friend. ${fmtMoney(c, base)}… for you, ${fmtMoney(c, price)}."${off ? `\n(Your charisma got you ${off}% off.)` : ''}\n${it.desc}`,
+        options: [{ label: `Buy for ${fmtMoney(c, price)}`, value: 'buy', disabled: c.money < price }, { label: 'Haggle (Charisma)', value: 'haggle' }, { label: 'Walk away', value: 'no', ghost: true }] });
+      if (v === 'haggle') {
+        if (chance(0.25 + c.stats.charisma / 200)) { price = Math.round(price * 0.7); stat(c, 'charisma', 1); const ok = await ui.choice({ title: 'Haggled!', icon: 'shop', text: `"Fine, fine — ${fmtMoney(c, price)}, and you're robbing me."`, options: [{ label: `Buy for ${fmtMoney(c, price)}`, value: true, disabled: c.money < price }, { label: 'No thanks', value: false, ghost: true }] }); if (!ok) return ui.log('I talked a merchant down, then walked away anyway.'); }
+        else return ui.log('I tried to haggle with a merchant. They packed up and left in a huff.', 'bad');
+      } else if (v !== 'buy') return;
+      if (c.money < price) return; money(c, -price); addItem(c, id, n); ui.log(`I bought ${n}× ${it.name} from a merchant for ${fmtMoney(c, price)}.`, 'good'); } },
   // --- adult life
   { id: 'lottery', cond: c => c.age >= 18, w: 1, run: c => { if (chance(0.02 * (1 + c.stats.luck / 50))) { const g = Math.round(ri(10000, 200000) * country(c).econ); money(c, g); ui.log(`I won the lottery: ${fmtMoney(c, g)}!`, 'big'); ui.fx('milestone'); } } },
   { id: 'promotion', cond: c => c.job && c.job.perf > 70, w: 6, run: c => { const g = Math.round(3000 * country(c).econ); money(c, g); c.job.perf = 50; ui.log(`I was promoted! Raise and bonus: ${fmtMoney(c, g)}.`, 'good'); } },

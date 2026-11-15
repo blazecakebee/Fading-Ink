@@ -221,3 +221,29 @@ ul.notes { margin: 0; padding-left: 20px; line-height: 1.55; }
 #sidebar, #right { overflow-x: hidden; overflow-y: auto; scrollbar-gutter: stable; overscroll-behavior: contain; }
 .nav-btn { min-width: 0; } .nav-btn span.lbl { overflow: hidden; text-overflow: ellipsis; }
 .nav-btn:hover { transform: none; box-shadow: inset 3px 0 0 var(--accent); }
+
+/* ---- v0.3.0 */
+.small { font-size: .86rem; } .grid3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.btn.mini { padding: 4px 10px; font-size: .85rem; }
+.qty { margin-left: 8px; color: var(--accent2); font-weight: 800; }
+.ing { display: inline-block; margin: 2px 6px 2px 0; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--border-soft); }
+.ing.have { color: var(--good); border-color: var(--good); } .ing.need { color: var(--bad); opacity: .85; }
+.action-card { display: flex; flex-direction: column; gap: 6px; } .action-card .btn { margin-top: auto; align-self: flex-start; }
+.clan { color: var(--legend); font-weight: 800; font-size: .9rem; }
+label.field { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; font-weight: 700; }
+
+/* ---- combat on phones: everything fits, the page scrolls instead of hiding moves */
+.modal-back { overflow-y: auto; }
+.modal { max-height: none; margin: auto; }
+@media (max-width: 760px), (max-height: 760px) {
+  .modal-back { place-items: start center; padding: 8px; }
+  .fight { width: 100%; }
+  .fight .stage { padding: 8px 14px; }
+  .fighter { margin: 2px 0 8px; gap: 8px; }
+  .fportrait, .fportrait canvas, .fportrait .icon { width: 72px !important; height: 72px !important; }
+  .fighter .fname { font-size: 1.05rem; }
+  .fight .moves { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 6px 14px; }
+  .fight .moves .btn { padding: 10px 6px; font-size: .95rem; }
+  .fight .flog { min-height: 0; padding: 4px 14px; font-size: .92rem; }
+  .fight .ftitle { font-size: 1.2rem; padding: 6px 14px 4px; }
+}

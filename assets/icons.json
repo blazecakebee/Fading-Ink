@@ -417,6 +417,86 @@
    "i": 82,
    "subject": "sailboat",
    "row_id": 300
+  },
+  "cloth": {
+   "i": 83,
+   "subject": "fabric bolt",
+   "row_id": 1343
+  },
+  "herb": {
+   "i": 84,
+   "subject": "herb bundle",
+   "row_id": 13259
+  },
+  "ginseng": {
+   "i": 85,
+   "subject": "ginseng root",
+   "row_id": 1654
+  },
+  "cauldron": {
+   "i": 86,
+   "subject": "cooking cauldron",
+   "row_id": 5869
+  },
+  "anvil": {
+   "i": 87,
+   "subject": "anvil",
+   "row_id": 7201
+  },
+  "scalevest": {
+   "i": 88,
+   "subject": "scale vest",
+   "row_id": 14798
+  },
+  "talisman": {
+   "i": 89,
+   "subject": "talisman",
+   "row_id": 8108
+  },
+  "amulet": {
+   "i": 90,
+   "subject": "amulet",
+   "row_id": 673
+  },
+  "chainmail": {
+   "i": 91,
+   "subject": "chainmail shirt",
+   "row_id": 458
+  },
+  "robe": {
+   "i": 92,
+   "subject": "apprentice robe",
+   "row_id": 1904
+  },
+  "bag": {
+   "i": 93,
+   "subject": "satchel",
+   "row_id": 2983
+  },
+  "broadsword": {
+   "i": 94,
+   "subject": "broadsword",
+   "row_id": 1184
+  },
+  "mortar": {
+   "i": 95,
+   "subject": "mortar and pestle",
+   "row_id": 8954
+  },
+  "flask": {
+   "i": 96,
+   "subject": "round potion flask",
+   "row_id": 2261
+  },
+  "claw": {
+   "i": 97,
+   "subject": "claw talisman",
+   "row_id": 2606
+  },
+  "saber": {
+   "i": 98,
+   "subject": "short sword",
+   "row_id": 926
   }
  }
 }

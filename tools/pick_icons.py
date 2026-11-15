@@ -31,6 +31,10 @@ WANT = {
  'flower':['rose','flower'], 'bed':['bed'], 'clock':['clock','pocket watch'], 'lantern':['lantern'], 'bell':['bell'],
  'feather':['feather'], 'snowball':['snowball'], 'paper':['newspaper'], 'computer':['laptop','desktop computer','computer'],
  'pickaxe':['pickaxe'], 'fishing':['fishing rod'], 'tent':['tent'], 'boat':['boat','sailboat'],
+ # v0.3.0: crafting & inventory
+ 'cloth':['fabric bolt'], 'herb':['herb bundle','healing herb'], 'ginseng':['ginseng root'], 'cauldron':['cooking cauldron'], 'anvil':['anvil'],
+ 'scalevest':['scale vest','scale armor'], 'talisman':['talisman'], 'amulet':['amulet'], 'chainmail':['chainmail shirt'], 'robe':['apprentice robe','ceremonial robe'],
+ 'bag':['satchel','backpack'], 'broadsword':['broadsword'], 'mortar':['mortar and pestle'], 'flask':['round potion flask'], 'claw':['claw talisman'], 'saber':['short sword','viking sword'],
 }
 idx = pd.concat([pd.read_parquet(f, columns=['subject','row_id']).assign(f=f) for f in sorted(glob.glob(sys.argv[1]+'/*.parquet'))])
 subj = idx.groupby('subject')

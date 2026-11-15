@@ -1,7 +1,40 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.2.1';
+export const VERSION = '0.3.2';
 export const CHANGELOG = [
+  { v: '0.3.2', date: '2026-11-15', title: 'Persistent parties & stat caps', notes: [
+    'Co-op rooms now survive refreshes. Reload the page (or let the auto-updater do it) and you rejoin your room automatically; if the host refreshes, everyone reconnects on their own. Chat history is kept too. Use "Leave room" to really leave.',
+    'Stat caps: mortals top out at 100. Every cultivation realm raises the cap (120, 150, 200 … up to 600 at Immortal Ascension).',
+    'Soft caps: past 70% of your cap, training gives less and less. Break through to a higher realm to keep growing.',
+  ] },
+  { v: '0.3.1', date: '2026-11-15', title: 'Battle Knowledge & merchants', notes: [
+    'NEW stat: Battle Knowledge, a fighting sub-skill alongside Strength. The higher it is, the more often you land hits, the harder they land and the more you crit. It grows from every fight and spar, a new "Study fight footage & drills" activity and martial arts class — and fades if you stop training.',
+    'NEW travelling merchants offer deals on materials, pills and gear. Try haggling — Charisma decides whether they cut the price or storm off.',
+    'Charisma now gives you up to 25% off at the Market, material shop, salon, vacations, doctors and therapy.',
+  ] },
+  { v: '0.3.0', date: '2026-11-15', title: 'Crafting, health, bonds & clans', notes: [
+    'NEW Mood stat: a core bar that follows happiness, stress and your bonds, and changes how well your actions go.',
+    'Skills now fade if you stop training them — faster the longer you neglect them. Looks only fade with age (cultivation slows it).',
+    'NEW Health tab: 15 illnesses and mental health conditions (flu, cancer, heart disease, depression, anxiety, PTSD, burnout, Qi deviation, demonic corruption…) with doctors, therapy, rest, Qi healing and Qi medicine.',
+    'NEW Inventory tab showing everything you own: items, equipped gear, property, pets, manuals, recipes and heirlooms.',
+    'NEW Crafting & Gear: 19 recipes for pills, Qi medicines, weapons, armour and charms. Experiment by combining ingredients to discover hidden recipes. Gear boosts you in combat.',
+    'NEW 12 cultivation methods to meditate with, each with its own effects. Learn them from friends, sects, Gates and the Ghost Market.',
+    'Cultivation actions now explain exactly what they do, show success chances with a full breakdown, and list items that help.',
+    'Found your own sect: your surname becomes the clan name, inherited by your children. Disciples join and pay tithes.',
+    'Best friends (80%+) and partners (50%+) give real bonuses to training, study, Qi, salary and crafting.',
+    'People who love you may gift you items, teach you skills, recipes, techniques or cultivation methods.',
+    'Socialising now trains Charisma and builds relationships faster. Every interaction has its own emoji.',
+    '30 new traits across all 8 tiers (66 total), including several only earned through play.',
+    'Gather materials and buy them from the Market; Gates drop crafting materials too.',
+    'Genetic conditions: some are present at birth, others surface decades later, and they can be passed to your children. Get a genetic test at the Health tab.',
+    'Sudden death can now strike at any age — heart problems and serious illness raise the risk.',
+    'Cultivation realms now have 5 stages instead of 9; each stage needs more Qi and gives more power.',
+    'Lifespan now grows a little with every cultivation stage instead of jumping at each realm.',
+    'Difficulty raised 1.5x: enemies are tougher and crimes are riskier.',
+    'Every combat move now has its own pixel icon.',
+    'Fixed: co-op chat no longer erases what you are typing.',
+    'Fixed: the combat screen now fits on phones — all moves are visible.',
+  ] },
   { v: '0.2.1', date: '2026-11-15', title: 'Version tracking', notes: [
     'Version number shown in the top-right corner — click it to open the update log.',
     'New "Update Log" tab under Your Story.',

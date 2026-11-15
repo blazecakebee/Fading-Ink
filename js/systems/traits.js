@@ -3,6 +3,7 @@ import { TRAITS, TIERS, TIER_ORDER, TRAIT_BY_ID } from '../data/traits.js';
 import { ui } from '../core/bus.js';
 import { META } from '../core/state.js';
 import { clamp, chance, weighted } from '../core/rng.js';
+import { REALMS } from '../data/realms.js';
 
 export const has = (c, id) => c.traits.includes(id);
 
@@ -22,7 +23,8 @@ const conflicts = (list, id) => CONFLICTS.some(([a, b]) => (id === a && list.inc
 
 export function applyTraitMods(c, id) {
   const t = TRAIT_BY_ID[id]; if (!t) return;
-  if (t.mods) for (const [k, v] of Object.entries(t.mods)) c.stats[k] = clamp(c.stats[k] + v);
+  const cap = REALMS[c.qi?.realm || 0].cap || 100;
+  if (t.mods) for (const [k, v] of Object.entries(t.mods)) c.stats[k] = clamp(c.stats[k] + v, 0, ['health', 'happiness', 'mood', 'stress'].includes(k) ? 100 : cap);
   if (t.earlyQi) c.qi.known = true;
 }
 // product of multiplicative trait fields (qi, power, study, stressMult, crime...)
@@ -30,6 +32,19 @@ export function traitMult(c, field) { return c.traits.reduce((m, id) => m * (TRA
 // sum of additive trait fields (breakthrough, life, refund)
 export function traitVal(c, field) { return c.traits.reduce((s, id) => s + (TRAIT_BY_ID[id]?.[field] ?? 0), 0); }
 
+// Thresholds for traits earned through play (checked after actions and each birthday)
+export function checkEarned(c) {
+  const sparred = (c.counts.spar || 0) + (c.counts.soc_spar_p || 0) + (c.counts.coop_spar || 0);
+  if (c.wins >= 5) earnTrait(c, 'brawler');
+  if (c.wins >= 25) earnTrait(c, 'battle_hungry');
+  if (sparred >= 50) earnTrait(c, 'sword_saint');
+  if ((c.recipes || []).length >= 8) earnTrait(c, 'first_crafter');
+  if ((c.flags.divorces || 0) >= 3) earnTrait(c, 'heartless');
+  if (c.flags.coopMarried) earnTrait(c, 'soulbound');
+  if (c.ownSect) earnTrait(c, 'clan_founder');
+  if (c.flags.ghostKing) earnTrait(c, 'gate_breaker_king');
+  if (c.gatesCleared >= 10) earnTrait(c, 'gatebreaker');
+}
 export function earnTrait(c, id) {
   if (has(c, id)) return false;
   const t = TRAIT_BY_ID[id]; if (!t) return false;

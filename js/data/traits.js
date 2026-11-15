@@ -58,5 +58,44 @@ export const TRAITS = [
   // GOD
   { id: 'mandate', tier: 'god', name: 'Mandate of Heaven', desc: 'Heaven itself chose you. x3 Qi, tribulations kneel.', qi: 3, breakthrough: 0.4, power: 1.5, life: 200 },
   { id: 'author', tier: 'god', name: 'The Author', desc: 'You found the pen that writes the world. Reach Immortal Ascension to earn.', birth: 0, earn: 'ascend', power: 2 },
+  // ===== v0.3.0 additions =====
+  // COMMON
+  { id: 'early_bird', tier: 'common', name: 'Early Bird', desc: '+3 Health. Studying is a bit more effective.', mods: { health: 3 }, study: 1.1 },
+  { id: 'gym_rat', tier: 'common', name: 'Gym Rat', desc: 'Training gains +20%.', train: 1.2 },
+  { id: 'chatterbox', tier: 'common', name: 'Chatterbox', desc: 'Relationships grow 15% faster. -3 Smarts.', social: 1.15, mods: { smarts: -3 } },
+  { id: 'frugal', tier: 'common', name: 'Frugal', desc: 'You squeeze every coin. Salary +5%.', pay: 1.05 },
+  { id: 'insomniac', tier: 'common', name: 'Insomniac', desc: 'Stress builds 15% faster, but late-night meditation gives +5% Qi.', stressMult: 1.15, qi: 1.05 },
+  { id: 'tinkerer', tier: 'common', name: 'Tinkerer', desc: '+8% crafting success.', craft: 0.08 },
+  // UNCOMMON
+  { id: 'herbalist', tier: 'uncommon', name: 'Herbalist', desc: '+12% crafting success, find 50% more herbs when gathering.', craft: 0.12, gather: 1.5 },
+  { id: 'charming_smile', tier: 'uncommon', name: 'Charming Smile', desc: '+8 Looks, +6 Charisma.', mods: { looks: 8, charisma: 6 } },
+  { id: 'workaholic', tier: 'uncommon', name: 'Workaholic', desc: 'Salary +20%, stress builds 20% faster.', pay: 1.2, stressMult: 1.2 },
+  { id: 'loyal_heart', tier: 'uncommon', name: 'Loyal Heart', desc: 'Relationships grow 30% faster.', social: 1.3 },
+  { id: 'iron_stomach', tier: 'uncommon', name: 'Iron Stomach', desc: 'Pills are 30% more effective.', pill: 1.3 },
+  { id: 'quick_learner', tier: 'uncommon', name: 'Quick Learner', desc: 'Studying and reading are 30% more effective.', study: 1.3 },
+  // RARE
+  { id: 'alchemist', tier: 'rare', name: 'Alchemy Prodigy', desc: '+25% crafting success.', craft: 0.25 },
+  { id: 'beast_tamer', tier: 'rare', name: 'Beast Tamer', desc: 'Spirit beasts drop more cores. Gate loot +20%.', loot: 1.2 },
+  { id: 'twin_soul', tier: 'rare', name: 'Twin Soul', desc: 'Bonds with your partner and best friend are twice as powerful.', bondMult: 2 },
+  { id: 'golden_fingers', tier: 'rare', name: 'Golden Fingers', desc: 'Money finds you. Salary +50%.', pay: 1.5 },
+  { id: 'battle_hungry', tier: 'rare', name: 'Battle Hungry', desc: 'Won 25 fights. +20% combat power.', power: 1.2, birth: 0, earn: 'wins25' },
+  // LEGENDARY
+  { id: 'sword_saint', tier: 'legendary', name: 'Sword Saint', desc: 'Sparred 50 times. +40% combat power, act first more often.', power: 1.4, initiative: 1, birth: 0, earn: 'spar50' },
+  { id: 'clan_founder', tier: 'legendary', name: 'Clan Founder', desc: 'Founded your own sect. Relationships +30%, income +30%.', social: 1.3, pay: 1.3, birth: 0, earn: 'found_sect' },
+  { id: 'cauldron_heart', tier: 'legendary', name: 'Cauldron Heart', desc: '+35% crafting success, pills 50% stronger.', craft: 0.35, pill: 1.5 },
+  { id: 'phoenix_marrow', tier: 'legendary', name: 'Phoenix Marrow', desc: '+40 years lifespan, heal 5 Health every year.', life: 40, heal: 5 },
+  // MYTHICAL
+  { id: 'void_meridians', tier: 'mythical', name: 'Void Meridians', desc: 'x1.8 Qi, meridians open far more easily.', qi: 1.8, merid: 0.3 },
+  { id: 'gate_breaker_king', tier: 'mythical', name: 'Kingslayer of Gates', desc: 'Slew a Ghost King. x1.5 power, x2 Gate loot.', power: 1.5, loot: 2, birth: 0, earn: 'ghost_king' },
+  { id: 'heavenly_tongue', tier: 'mythical', name: 'Heavenly Tongue', desc: '+30 Charisma, relationships grow 60% faster.', mods: { charisma: 30 }, social: 1.6 },
+  { id: 'blood_moon', tier: 'mythical', name: 'Born Under a Blood Moon', desc: 'x1.6 combat power, -10 Luck.', power: 1.6, mods: { luck: -10 } },
+  // SECRET
+  { id: 'first_crafter', tier: 'secret', name: 'First Crafter', desc: 'Discovered 8 recipes. +30% crafting success, crafting never wastes all ingredients.', craft: 0.3, birth: 0, earn: 'recipes8' },
+  { id: 'soulbound', tier: 'secret', name: 'Soulbound', desc: 'Married another player. Partner bonds are 2.5x stronger.', bondMult: 2.5, birth: 0, earn: 'coop_marry' },
+  { id: 'heartless', tier: 'secret', name: 'Heartless', desc: 'Divorced 3 times. Stress barely touches you; relationships grow slower.', stressMult: 0.3, social: 0.6, birth: 0, earn: 'divorce3' },
+  // GLITCHED
+  { id: 'stack_overflow', tier: 'glitched', name: 'STACK_OVERFLOW', desc: '+1 Action every year. The year has a 13th month nobody remembers.', extraAction: 1 },
+  // GOD
+  { id: 'primordial_forge', tier: 'god', name: 'Primordial Forge', desc: 'Everything you craft succeeds. Pills x2.', craft: 1, pill: 2 },
 ];
 export const TRAIT_BY_ID = Object.fromEntries(TRAITS.map(t => [t.id, t]));

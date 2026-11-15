@@ -2,10 +2,14 @@
 // run(c) returns a string (chronicle text) or {text, cls, big}. Returning null means "cancelled, refund".
 import { ui } from '../core/bus.js';
 import { ri, pick, chance, clamp } from '../core/rng.js';
-import { stat, money, fmtMoney, country, addItem, die } from '../systems/life.js';
-import { meditate, openMeridian, breakthrough, learnManual, qiCap } from '../systems/cultivation.js';
+import { stat, money, fmtMoney, country, addItem, die, priceFor } from '../systems/life.js';
+import { meditate, openMeridian, breakthrough, learnManual, qiCap, learnMethod } from '../systems/cultivation.js';
+import { METHODS } from './realms.js';
 import { traitMult, has, earnTrait } from '../systems/traits.js';
-import { makePerson } from '../systems/people.js';
+import { makePerson, gainClose, bondBonus } from '../systems/people.js';
+import { moodMult, addCondition } from '../systems/health.js';
+import { known as knownRecipes } from '../systems/crafting.js';
+import { RECIPES, ITEMS } from './items.js';
 import { ENEMIES, GATE_RANKS } from './combat.js';
 import { MAJORS } from './careers.js';
 import { SECTS } from './realms.js';
@@ -30,7 +34,9 @@ const fight = async (c, id, mods = {}) => {
   if (r === 'win') { c.wins++; if (c.wins >= 5) earnTrait(c, 'brawler'); }
   return r;
 };
-const study = c => traitMult(c, 'study');
+const study = c => traitMult(c, 'study') * bondBonus(c, 'study') * moodMult(c);
+const train = c => traitMult(c, 'train') * bondBonus(c, 'train') * moodMult(c);
+const g = (c, a, b) => Math.max(1, Math.round(ri(a, b) * train(c)));
 
 export const ACTIVITIES = [
   // ---- CHILDHOOD
@@ -46,9 +52,10 @@ export const ACTIVITIES = [
       return pick(['I found a stray cat and named it Ink.', 'The old shrine smelled of incense and rain.', 'Someone was watching me from a rooftop.']); } },
 
   // ---- TRAINING
-  { id: 'gym', cat: 'training', name: 'Hit the gym', icon: 'gym', minAge: 12, run: c => { const g = ri(2, 5); stat(c, 'strength', g); stat(c, 'health', 2); stat(c, 'stress', -3); return `I lifted until my arms shook. Strength +${g}.`; } },
-  { id: 'run', cat: 'training', name: 'Go running', icon: 'kick', minAge: 8, run: c => { const g = ri(2, 4); stat(c, 'agility', g); stat(c, 'health', 3); return `I ran along the river at dawn. Agility +${g}.`; } },
-  { id: 'martial', cat: 'training', name: 'Martial arts class', icon: 'fist', minAge: 6, cost: 'a', price: 300, run: c => { if (c.money < 300 * country(c).econ && c.age >= 18) return null; if (c.age >= 18) money(c, -300 * country(c).econ); stat(c, 'strength', 2); stat(c, 'agility', 3); return 'Kata after kata. My stance is steadier.'; } },
+  { id: 'gym', cat: 'training', name: 'Hit the gym', icon: 'gym', minAge: 12, run: c => { const gg = g(c, 2, 5); stat(c, 'strength', gg); stat(c, 'health', 2); stat(c, 'stress', -3); stat(c, 'mood', 3); return `I lifted until my arms shook. Strength +${gg}.`; } },
+  { id: 'run', cat: 'training', name: 'Go running', icon: 'kick', minAge: 8, run: c => { const gg = g(c, 2, 4); stat(c, 'agility', gg); stat(c, 'health', 3); stat(c, 'mood', 3); return `I ran along the river at dawn. Agility +${gg}.`; } },
+  { id: 'combat_drills', cat: 'training', name: 'Study fight footage & drills', icon: 'combat', minAge: 10, run: c => { const gg = g(c, 2, 4); stat(c, 'battle', gg); return `I broke down fights move by move. Battle Knowledge +${gg}.`; } },
+  { id: 'martial', cat: 'training', name: 'Martial arts class', icon: 'fist', minAge: 6, cost: 'a', price: 300, run: c => { if (c.money < 300 * country(c).econ && c.age >= 18) return null; if (c.age >= 18) money(c, -300 * country(c).econ); stat(c, 'strength', g(c, 1, 3)); stat(c, 'agility', g(c, 2, 4)); stat(c, 'battle', g(c, 2, 4)); return 'Kata after kata. My stance is steadier.'; } },
   { id: 'spar', cat: 'training', name: 'Practice bout', icon: 'combat', minAge: 8, run: async c => {
       const opp = c.people.find(p => p.alive && p.role !== 'Enemy' && Math.abs(p.age - c.age) < 6) || makePerson(c);
       const r = await fight(c, c.qi.realm ? 'gangster' : 'bully', { name: `${opp.first} (sparring)`, hp: 30 + c.age, sparring: true, realm: Math.max(0, c.qi.realm - 1) });
@@ -58,8 +65,8 @@ export const ACTIVITIES = [
   { id: 'meditate', cat: 'cultivation', name: 'Meditate / Gather Qi', icon: 'meditate', minAge: 4, run: c => ({ text: meditate(c), cls: c.qi.known ? 'qi' : '' }) },
   { id: 'meridian', cat: 'cultivation', name: 'Open a meridian', icon: 'lightning', minAge: 10, need: c => c.qi.realm >= 1, run: c => ({ text: openMeridian(c), cls: 'qi' }) },
   { id: 'breakthrough', cat: 'cultivation', name: 'Attempt breakthrough', icon: 'star', minAge: 6, need: c => c.qi.realm >= 1 && c.qi.qi >= qiCap(c), run: async c => ({ text: await breakthrough(c), cls: 'qi', big: true }) },
-  { id: 'pill', cat: 'cultivation', name: 'Consume Qi Pill', icon: 'pill', minAge: 6, need: c => c.inv.qi_pill > 0 && c.qi.realm >= 1, run: c => { addItem(c, 'qi_pill', -1); const g = Math.round(qiCap(c) * 0.4); c.qi.qi = Math.min(qiCap(c), c.qi.qi + g); return { text: `The pill dissolved into warmth. +${g} Qi.`, cls: 'qi' }; } },
-  { id: 'devour', cat: 'cultivation', name: 'Devour Demonic Core', icon: 'demon', minAge: 12, need: c => c.inv.demonic_core > 0, run: c => { addItem(c, 'demonic_core', -1); c.qi.qi = qiCap(c); stat(c, 'happiness', -15); earnTrait(c, 'kinslayer'); return { text: 'I swallowed the core. Something inside me grinned.', cls: 'bad', big: true }; } },
+  { id: 'pill', cat: 'cultivation', name: 'Consume Qi Pill', icon: 'pill', minAge: 6, need: c => c.inv.qi_pill > 0 && c.qi.realm >= 1, run: c => { addItem(c, 'qi_pill', -1); const q = Math.round(qiCap(c) * 0.4 * traitMult(c, 'pill')); c.qi.qi = Math.min(qiCap(c), c.qi.qi + q); return { text: `The pill dissolved into warmth. +${q} Qi.`, cls: 'qi' }; } },
+  { id: 'devour', cat: 'cultivation', name: 'Devour Demonic Core', icon: 'demon', minAge: 12, need: c => c.inv.demonic_core > 0, run: c => { addItem(c, 'demonic_core', -1); c.qi.qi = qiCap(c); stat(c, 'happiness', -15); earnTrait(c, 'kinslayer'); if (chance(0.5)) addCondition(c, 'corruption'); return { text: 'I swallowed the core. Something inside me grinned.', cls: 'bad', big: true }; } },
   { id: 'seek_sect', cat: 'cultivation', name: 'Seek a hidden sect', icon: 'manual', minAge: 12, need: c => c.qi.known && !c.sect, run: async c => {
       const opts = SECTS.filter(s => !s.req.trait || has(c, s.req.trait));
       const s = pick(opts); const ok = Object.entries(s.req).every(([k, v]) => k === 'trait' || c.stats[k] >= v);
@@ -69,12 +76,14 @@ export const ACTIVITIES = [
       c.sect = s.id; learnManual(c, 'breathing');
       if (s.align === 'demonic') learnManual(c, 'blood_art'); else if (s.id === 'iron') learnManual(c, 'iron_skin'); else learnManual(c, pick(['flame_palm', 'river_step']));
       if (chance(0.5)) addItem(c, 'qi_pill', 2);
+      learnMethod(c, s.align === 'demonic' ? 'blood_sea' : pick(['turtle', 'five_elements', 'lotus', 'sword_intent', 'heart_fire']));
       return { text: `I joined the ${s.name}.`, cls: 'qi', big: true }; } },
 
   // ---- MIND & BODY
   { id: 'doctor', cat: 'mind', name: 'Visit the doctor', icon: 'doctor', minAge: 0, run: c => { const cost = Math.round(120 * country(c).econ); if (c.age >= 18) { if (c.money < cost) return null; money(c, -cost); } const g = ri(5, 15); stat(c, 'health', g); return `The doctor patched me up. Health +${g}.`; } },
-  { id: 'library', cat: 'mind', name: 'Go to the library', icon: 'study', minAge: 5, run: c => { const g = Math.round(ri(2, 5) * study(c)); stat(c, 'smarts', g); return `I read about ${pick(['ancient dynasties', 'black holes', 'poisonous mushrooms', 'forgotten sects', 'economics'])}. Smarts +${g}.`; } },
-  { id: 'walk', cat: 'mind', name: 'Take a long walk', icon: 'flower', minAge: 4, run: c => { stat(c, 'stress', -10); stat(c, 'happiness', 4); return 'I walked until the city noise faded.'; } },
+  { id: 'library', cat: 'mind', name: 'Go to the library', icon: 'study', minAge: 5, run: c => { const gs = Math.max(1, Math.round(ri(2, 5) * study(c))); stat(c, 'smarts', gs); return `I read about ${pick(['ancient dynasties', 'black holes', 'poisonous mushrooms', 'forgotten sects', 'economics'])}. Smarts +${gs}.`; } },
+  { id: 'alchemy_texts', cat: 'mind', name: 'Study alchemy texts', icon: 'cauldron', minAge: 10, run: c => { stat(c, 'smarts', 1); const unk = RECIPES.filter(r => !knownRecipes(c).includes(r.id) && r.id !== 'r_ink'); if (unk.length && chance(0.3 * study(c))) { const r = pick(unk); knownRecipes(c).push(r.id); return { text: `In a crumbling text I found the recipe for ${ITEMS[r.out].name}.`, cls: 'qi', big: true }; } return 'I pored over alchemy texts. Half of them were nonsense.'; } },
+  { id: 'walk', cat: 'mind', name: 'Take a long walk', icon: 'flower', minAge: 4, run: c => { stat(c, 'stress', -10); stat(c, 'happiness', 4); stat(c, 'mood', 8); return 'I walked until the city noise faded.'; } },
   { id: 'salon', cat: 'mind', name: 'Salon: change hair', icon: 'salon', minAge: 13, run: async c => { ui.openSalon?.(); return null; } },
   { id: 'journal', cat: 'mind', name: 'Write in my journal', icon: 'feather', minAge: 8, run: c => { stat(c, 'stress', -6); stat(c, 'smarts', 1);
       if (!has(c, 'ink_touched') && chance(0.003)) { earnTrait(c, 'ink_touched'); return { text: 'The ink kept moving after I stopped writing. It wrote back.', cls: 'qi', big: true }; }
@@ -104,8 +113,8 @@ export const ACTIVITIES = [
       return { text: win ? `Blackjack! I won ${fmtMoney(c, bet)}.` : `I lost ${fmtMoney(c, bet)}.`, cls: win ? 'good' : 'bad' }; } },
 
   // ---- LEISURE
-  { id: 'party', cat: 'leisure', name: 'Go to a party', icon: 'beer', minAge: 15, run: c => { stat(c, 'happiness', 8); stat(c, 'stress', -6); if (chance(0.5)) { const p = makePerson(c, { role: 'Friend', close: ri(30, 55) }); c.people.push(p); return `I met ${p.first} at a party and we hit it off.`; } return 'I danced until the lights came on.'; } },
-  { id: 'vacation', cat: 'leisure', name: 'Go on vacation', icon: 'travel', minAge: 18, run: c => { const cost = Math.round(1500 * country(c).econ); if (c.money < cost) return null; money(c, -cost); stat(c, 'happiness', 15); stat(c, 'stress', -20); return `I took a trip to ${pick(['the mountains of Wudang', 'a beach in Bali', 'Kyoto in autumn', 'Paris', 'a desert monastery'])}. (${fmtMoney(c, cost)})`; } },
+  { id: 'party', cat: 'leisure', name: 'Go to a party', icon: 'beer', minAge: 15, run: c => { stat(c, 'happiness', 8); stat(c, 'stress', -6); stat(c, 'mood', 10); if (chance(0.5)) { const p = makePerson(c, { role: 'Friend', close: ri(30, 55) }); c.people.push(p); return `I met ${p.first} at a party and we hit it off.`; } return 'I danced until the lights came on.'; } },
+  { id: 'vacation', cat: 'leisure', name: 'Go on vacation', icon: 'travel', minAge: 18, run: c => { const cost = priceFor(c, 1500 * country(c).econ); if (c.money < cost) return null; money(c, -cost); stat(c, 'happiness', 15); stat(c, 'stress', -20); stat(c, 'mood', 18); return `I took a trip to ${pick(['the mountains of Wudang', 'a beach in Bali', 'Kyoto in autumn', 'Paris', 'a desert monastery'])}. (${fmtMoney(c, cost)})`; } },
   { id: 'social_media', cat: 'leisure', name: 'Post on social media', icon: 'phone', minAge: 13, run: c => { const g = Math.max(0, Math.round(ri(-2, 6) + (c.stats.looks + c.stats.charisma - 100) / 20)); c.fame = clamp((c.fame || 0) + g); return g > 3 ? { text: `My post went viral! Fame +${g}.`, cls: 'good' } : 'Nobody liked my post.'; } },
   { id: 'adopt_pet', cat: 'leisure', name: 'Adopt a pet', icon: 'pet', minAge: 10, need: c => !c.assets.some(a => a.type === 'pet'), run: c => { const kind = pick(['cat', 'dog', 'rabbit', 'crow', 'koi fish']); c.assets.push({ type: 'pet', name: `${pick(['Mochi', 'Ink', 'Bao', 'Pepper', 'Luna', 'Ghost'])} the ${kind}`, value: 0 }); stat(c, 'happiness', 10); return `I adopted a ${kind}.`; } },
 
@@ -122,12 +131,19 @@ export const ACTIVITIES = [
       if (chance(0.1)) { const g = GATE_RANKS[Math.min(5, ri(0, 1) + Math.floor(c.qi.realm / 2))]; c.gates.push({ rank: g.rank, years: ri(2, 5) }); return { text: `A ${g.rank}-rank Gate tore open in the mountainside! It will stay open a few years.`, cls: 'qi', big: true }; }
       if (c.qi.known && chance(0.12)) { addItem(c, 'qi_pill'); return { text: 'I found a spirit herb under a waterfall and refined it into a Qi pill.', cls: 'qi' }; }
       return 'Mist rolled over the peaks.'; } },
+  { id: 'gather', cat: 'adventure', name: 'Gather materials', icon: 'herb', minAge: 10, run: c => {
+      const found = []; const n = Math.round(ri(1, 2) * traitMult(c, 'gather'));
+      if (n) { addItem(c, 'spirit_herb', n); found.push(`${n} Spirit Herb`); }
+      if (chance(0.45)) { addItem(c, 'iron_ore'); found.push('an Iron Ingot (from an old mine)'); }
+      if (chance(0.12)) { addItem(c, 'spirit_stone'); found.push('a Spirit Stone'); }
+      if (chance(0.03 * c.stats.luck / 50)) { addItem(c, 'ginseng'); found.push('a THOUSAND-YEAR GINSENG'); }
+      return { text: `I foraged the hills and found ${found.join(', ') || 'nothing useful'}.`, cls: found.length ? 'good' : '' }; } },
   { id: 'fishing', cat: 'adventure', name: 'Go fishing', icon: 'fishing', minAge: 6, run: c => { stat(c, 'stress', -8); return chance(0.3) ? `I caught a ${pick(['huge carp', 'golden koi', 'boot'])}.` : 'Nothing bit.'; } },
   { id: 'gate', cat: 'adventure', name: 'Enter a Gate', icon: 'gates', minAge: 14, need: c => c.gates.length > 0, run: async c => { ui.openTab?.('gates'); return null; } },
 ];
 
 async function crime(c, risk, loot, text, years) {
-  const caught = chance(risk * traitMult(c, 'crime') * (1 - c.stats.agility / 300));
+  const caught = chance(risk * 1.5 * traitMult(c, 'crime') * (1 - c.stats.agility / 300));
   if (caught) {
     if (years && c.age >= 18) { c.prison = years + ri(0, years); return { text: `${text}... and got caught. Sentenced to ${c.prison} years in prison.`, cls: 'bad', big: true }; }
     stat(c, 'happiness', -8); return { text: `${text}... but got caught. ${c.age < 18 ? 'My parents were called.' : 'I paid a fine.'}`, cls: 'bad' };
@@ -137,34 +153,33 @@ async function crime(c, risk, loot, text, years) {
 
 // Social actions (cost a Social point) — used from the People tab.
 export const SOCIAL = [
-  { id: 'talk', name: 'Conversation', icon: 'letter', run: (c, p) => { p.close = clamp(p.close + ri(3, 10)); stat(c, 'happiness', 2); return `I had a long conversation with ${p.first}.`; } },
-  { id: 'time', name: 'Spend time', icon: 'tea', run: (c, p) => { p.close = clamp(p.close + ri(5, 14)); stat(c, 'stress', -4); return `I spent the afternoon with ${p.first} ${pick(['at the tea house', 'at the arcade', 'by the river', 'watching a movie'])}.`; } },
-  { id: 'compliment', name: 'Compliment', icon: 'star', run: (c, p) => { const ok = chance(0.75); p.close = clamp(p.close + (ok ? 6 : -4)); return ok ? `${p.first} blushed at my compliment.` : `${p.first} thought my compliment was weird.`; } },
-  { id: 'gift', name: 'Give a gift', icon: 'gift', age: 6, run: (c, p) => { const cost = Math.round(40 * country(c).econ); if (c.money < cost) return null; money(c, -cost); p.close = clamp(p.close + 15); return `I gave ${p.first} a gift.`; } },
-  { id: 'train_together', name: 'Train together', icon: 'gym', age: 10, run: (c, p) => { stat(c, 'strength', 2); stat(c, 'agility', 1); p.close = clamp(p.close + 6); return `${p.first} and I trained together.`; } },
-  { id: 'spar_p', name: 'Spar', icon: 'combat', age: 8, run: async (c, p) => { const r = await fight(c, 'bully', { name: p.first, hp: 30 + p.age, str: p.stats.strength, agi: p.stats.agility, realm: p.realm, sparring: true }); p.close = clamp(p.close + 3); return `Spar vs ${p.first}: ${r === 'win' ? 'VICTORY' : 'DEFEAT'}.`; } },
-  { id: 'argue', name: 'Argue', icon: 'brokenheart', run: (c, p) => { p.close = clamp(p.close - ri(8, 18)); stat(c, 'stress', 4); if (p.close < 5 && p.role !== 'Enemy' && !['Father', 'Mother'].includes(p.role)) { p.role = 'Enemy'; return { text: `${p.first} and I are enemies now.`, cls: 'bad' }; } return `I argued with ${p.first}.`; } },
-  { id: 'date', name: 'Ask out', icon: 'flower', age: 14, need: (c, p) => !c.partnerId && !['Father', 'Mother', 'Brother', 'Sister', 'Son', 'Daughter'].includes(p.role) && Math.abs(p.age - c.age) < 10 && p.age >= 14,
-    run: (c, p) => { const ok = chance(0.25 + p.close / 200 + (c.stats.looks - 50) / 200 + (c.stats.charisma - 50) / 300); if (ok) { p.role = 'Partner'; c.partnerId = p.id; p.close = clamp(p.close + 15); return { text: `${p.first} said yes! We're dating.`, cls: 'good', big: true }; } p.close = clamp(p.close - 5); return { text: `${p.first} turned me down.`, cls: 'bad' }; } },
-  { id: 'propose', name: 'Propose', icon: 'ring', age: 18, need: (c, p) => p.role === 'Partner', run: async (c, p) => {
+  { id: 'talk', emoji: '💬', name: 'Conversation', icon: 'letter', run: (c, p) => { gainClose(c, p, ri(3, 10)); stat(c, 'happiness', 2); return `I had a long conversation with ${p.first}.`; } },
+  { id: 'time', emoji: '🍵', name: 'Spend time', icon: 'tea', run: (c, p) => { gainClose(c, p, ri(5, 14)); stat(c, 'stress', -4); return `I spent the afternoon with ${p.first} ${pick(['at the tea house', 'at the arcade', 'by the river', 'watching a movie'])}.`; } },
+  { id: 'compliment', emoji: '✨', name: 'Compliment', icon: 'star', run: (c, p) => { const ok = chance(0.75); gainClose(c, p, (ok ? 6 : -4)); return ok ? `${p.first} blushed at my compliment.` : `${p.first} thought my compliment was weird.`; } },
+  { id: 'gift', emoji: '🎁', name: 'Give a gift', icon: 'gift', age: 6, run: (c, p) => { const cost = Math.round(40 * country(c).econ); if (c.money < cost) return null; money(c, -cost); gainClose(c, p, 15); return `I gave ${p.first} a gift.`; } },
+  { id: 'train_together', emoji: '🏋️', name: 'Train together', icon: 'gym', age: 10, run: (c, p) => { stat(c, 'strength', g(c, 2, 3)); stat(c, 'agility', g(c, 1, 2)); gainClose(c, p, 6); return `${p.first} and I trained together.`; } },
+  { id: 'spar_p', emoji: '⚔️', name: 'Spar', icon: 'combat', age: 8, run: async (c, p) => { const r = await fight(c, 'bully', { name: p.first, hp: 30 + p.age, str: p.stats.strength, agi: p.stats.agility, realm: p.realm, sparring: true }); gainClose(c, p, 3); return `Spar vs ${p.first}: ${r === 'win' ? 'VICTORY' : 'DEFEAT'}.`; } },
+  { id: 'argue', emoji: '😠', name: 'Argue', icon: 'brokenheart', run: (c, p) => { p.close = clamp(p.close - ri(8, 18)); stat(c, 'stress', 4); if (p.close < 5 && p.role !== 'Enemy' && !['Father', 'Mother'].includes(p.role)) { p.role = 'Enemy'; return { text: `${p.first} and I are enemies now.`, cls: 'bad' }; } return `I argued with ${p.first}.`; } },
+  { id: 'date', emoji: '🌹', name: 'Ask out', icon: 'flower', age: 14, need: (c, p) => !c.partnerId && !['Father', 'Mother', 'Brother', 'Sister', 'Son', 'Daughter'].includes(p.role) && Math.abs(p.age - c.age) < 10 && p.age >= 14,
+    run: (c, p) => { const ok = chance(0.25 + p.close / 200 + (c.stats.looks - 50) / 200 + (c.stats.charisma - 50) / 300); if (ok) { p.role = 'Partner'; c.partnerId = p.id; gainClose(c, p, 15); return { text: `${p.first} said yes! We're dating.`, cls: 'good', big: true }; } p.close = clamp(p.close - 5); return { text: `${p.first} turned me down.`, cls: 'bad' }; } },
+  { id: 'propose', emoji: '💍', name: 'Propose', icon: 'ring', age: 18, need: (c, p) => p.role === 'Partner', run: async (c, p) => {
       const ok = chance(0.35 + p.close / 150); if (!ok) { p.close = clamp(p.close - 15); return { text: `${p.first} said no...`, cls: 'bad' }; }
       const pre = c.money > 50000 ? await ui.choice({ title: 'Prenup?', text: 'You have significant assets. Ask for a prenup?', icon: 'paper', options: [{ label: 'Yes, prenup', value: true }, { label: 'No', value: false }] }) : false;
       p.role = 'Spouse'; c.flags.prenup = !!pre; stat(c, 'happiness', 20); return { text: `${p.first} said YES! We got married.${pre ? ' (with a prenup)' : ''}`, cls: 'good', big: true }; } },
-  { id: 'baby', name: 'Try for a baby', icon: 'baby', age: 18, need: (c, p) => ['Spouse', 'Partner'].includes(p.role) && c.age < 50 && p.age < 50, run: (c, p) => {
+  { id: 'baby', emoji: '👶', name: 'Try for a baby', icon: 'baby', age: 18, need: (c, p) => ['Spouse', 'Partner'].includes(p.role) && c.age < 50 && p.age < 50, run: (c, p) => {
       if (!chance(0.55)) return 'No baby this time.';
-      import('../systems/people.js').then(() => {});
       return { text: haveChild(c, p), cls: 'good', big: true }; } },
-  { id: 'divorce', name: 'Divorce / Break up', icon: 'brokenheart', need: (c, p) => ['Spouse', 'Partner'].includes(p.role), run: (c, p) => {
-      const married = p.role === 'Spouse'; p.role = 'Ex'; c.partnerId = null; p.close = clamp(p.close - 40);
+  { id: 'divorce', emoji: '💔', name: 'Divorce / Break up', icon: 'brokenheart', need: (c, p) => ['Spouse', 'Partner'].includes(p.role), run: (c, p) => {
+      const married = p.role === 'Spouse'; p.role = 'Ex'; c.partnerId = null; if (married) c.flags.divorces = (c.flags.divorces || 0) + 1; p.close = clamp(p.close - 40);
       if (married && !c.flags.prenup && c.money > 0) { const loss = Math.round(c.money / 2); money(c, -loss); return { text: `We divorced. ${p.first} took half: ${fmtMoney(c, loss)}.`, cls: 'bad' }; }
       return { text: `${p.first} and I split up.`, cls: 'bad' }; } },
-  { id: 'ask_money', name: 'Ask for money', icon: 'market', need: (c, p) => ['Father', 'Mother'].includes(p.role), run: (c, p) => { if (chance(p.close / 130)) { const g = Math.round(ri(10, 120) * country(c).econ * (['rich', 'royal', 'wealthy'].includes(c.wealth) ? 10 : 1)); money(c, g); return `${p.first} gave me ${fmtMoney(c, g)}.`; } return `${p.first} refused to give me money.`; } },
+  { id: 'ask_money', emoji: '💰', name: 'Ask for money', icon: 'market', need: (c, p) => ['Father', 'Mother'].includes(p.role), run: (c, p) => { if (chance(p.close / 130)) { const g = Math.round(ri(10, 120) * country(c).econ * (['rich', 'royal', 'wealthy'].includes(c.wealth) ? 10 : 1)); money(c, g); return `${p.first} gave me ${fmtMoney(c, g)}.`; } return `${p.first} refused to give me money.`; } },
 ];
 
 import { mixGenes } from '../ui/portrait.js';
 export function haveChild(c, p) {
   const gender = chance(0.5) ? 'F' : 'M';
-  const kid = makePerson(c, { gender, age: 0, last: c.gender === 'M' ? c.last : (p.gender === 'M' ? p.last : c.last), role: gender === 'F' ? 'Daughter' : 'Son', close: 90,
+  const kid = makePerson(c, { gender, age: 0, last: c.ownSect || c.gender === 'M' ? c.last : (p.gender === 'M' ? p.last : c.last), role: gender === 'F' ? 'Daughter' : 'Son', close: 90,
     genes: mixGenes(c.genes, p.genes, gender), extra: { otherParent: p.id } });
   kid.stats = Object.fromEntries(Object.keys(kid.stats).map(k => [k, clamp(Math.round(((c.stats[k] ?? 50) + (p.stats?.[k] ?? 50)) / 2 + ri(-15, 15)))]));
   c.people.push(kid); stat(c, 'happiness', 15);

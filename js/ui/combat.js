@@ -4,7 +4,7 @@ import { h, icon } from './dom.js';
 import { openModal } from './modal.js';
 import { portraitFor, randomGenes } from './portrait.js';
 import { fx, floatText, shake } from './fx.js';
-import { MOVES, BASE_MOVES } from '../data/combat.js';
+import { MOVES, BASE_MOVES, DIFFICULTY } from '../data/combat.js';
 import { REALMS } from '../data/realms.js';
 import { power } from '../systems/cultivation.js';
 import { traitMult } from '../systems/traits.js';
@@ -13,20 +13,24 @@ import { ri, chance, clamp } from '../core/rng.js';
 import { G } from '../core/state.js';
 import { playStation, currentStation } from '../audio/music.js';
 import { S } from '../settings.js';
+import { gearStats } from '../systems/crafting.js';
+import { bleedMult } from '../systems/health.js';
 
+const bkLabel = v => v >= 80 ? 'Master' : v >= 60 ? 'Veteran' : v >= 40 ? 'Seasoned' : v >= 20 ? 'Trained' : 'Novice';
 const realmLabel = r => r === 0 ? 'Mortal' : REALMS[r].name;
 
 export function fight(enemyDef, opts = {}) {
   const c = G.char;
   return new Promise(resolve => {
-    const pPow = power(c);
+    const pPow = power(c), gs = gearStats(c);
     const me = {
-      name: 'You', maxHp: Math.round((40 + c.stats.health * 0.5 + c.stats.strength * 0.3) * (1 + (pPow - 1) * 0.5)),
-      str: c.stats.strength, agi: c.stats.agility, pow: pPow, stam: 100, qi: c.qi.qi, maxQi: Math.max(1, c.qi.qi), mom: 0, guard: false, armor: 0, evade: false, burn: 0,
+      name: 'You', maxHp: Math.round((40 + c.stats.health * 0.5 + c.stats.strength * 0.3) * (1 + (pPow - 1) * 0.5) + gs.hp), gear: gs,
+      str: c.stats.strength, agi: c.stats.agility + gs.agi, bk: c.stats.battle || 0, pow: pPow, stam: 100, qi: c.qi.qi, maxQi: Math.max(1, c.qi.qi), mom: 0, guard: false, armor: 0, evade: false, burn: 0,
     };
     me.hp = me.maxHp;
     const ePow = REALMS[enemyDef.realm || 0].power * (enemyDef.kind === 'spirit' ? traitMult(c, 'spiritBane') ** -1 : 1);
-    const en = { ...enemyDef, maxHp: Math.round(enemyDef.hp * (1 + (ePow - 1) * 0.5)), str: enemyDef.str, agi: enemyDef.agi, pow: ePow, stam: 100, qi: 999, mom: 0, guard: false, armor: 0, evade: false, burn: 0, stun: false };
+    const diff = enemyDef.sparring ? 1 : DIFFICULTY;
+    const en = { ...enemyDef, maxHp: Math.round(enemyDef.hp * (1 + (ePow - 1) * 0.5) * diff), str: Math.round(enemyDef.str * diff), agi: enemyDef.agi, pow: ePow, stam: 100, qi: 999, mom: 0, guard: false, armor: 0, evade: false, burn: 0, stun: false };
     en.hp = en.maxHp;
     const prevStation = currentStation(); if (S().musicOn && !opts.quietMusic) playStation('battle');
 
@@ -40,7 +44,7 @@ export function fight(enemyDef, opts = {}) {
       ui[isMe ? 'meHp' : 'enHp'] = hp; ui[isMe ? 'meMom' : 'enMom'] = mom;
       const hpTxt = h('div', { class: 'flvl' }); ui[isMe ? 'meHpTxt' : 'enHpTxt'] = hpTxt;
       const info = h('div', { class: 'info' }, h('div', { class: 'fname' }, isMe ? 'You' : who.name),
-        h('div', { class: 'flvl' }, `${isMe ? realmLabel(c.qi.realm) + (c.qi.realm ? ' ' + c.qi.stage : '') : realmLabel(who.realm || 0)} · Power ${Math.round(who.pow * 10) / 10}`),
+        h('div', { class: 'flvl' }, `${isMe ? realmLabel(c.qi.realm) + (c.qi.realm ? ' ' + c.qi.stage : '') : realmLabel(who.realm || 0)} · Power ${Math.round(who.pow * 10) / 10}${isMe ? ` · ${bkLabel(c.stats.battle || 0)}` : ''}`),
         h('div', { class: 'hpbar' }, hp), hpTxt, mom);
       const pf = h('div', { class: 'fportrait' }, isMe ? mePortrait : ePortrait); ui[isMe ? 'mePf' : 'enPf'] = pf;
       return h('div', { class: 'fighter' + (isMe ? ' me' : '') }, isMe ? [pf, info] : [info, pf]);
@@ -58,7 +62,7 @@ export function fight(enemyDef, opts = {}) {
     const m = openModal(box, { cls: 'fight', dismiss: false });
 
     const myMoves = [...BASE_MOVES, ...(c.qi.realm >= 1 ? ['qi_palm'] : []), ...c.qi.techs];
-    infoBox.append(...myMoves.map(k => h('div', {}, h('b', {}, MOVES[k].name + ': '), MOVES[k].info, MOVES[k].qi ? ` (${MOVES[k].qi} Qi)` : '')));
+    infoBox.append(...myMoves.map(k => h('div', {}, icon(MOVES[k].icon, 'sm'), ' ', h('b', {}, MOVES[k].name + ': '), MOVES[k].info, MOVES[k].qi ? ` (${MOVES[k].qi} Qi)` : '')));
     if (!opts.noFlee) myMoves.push('flee');
 
     function draw() {
@@ -68,9 +72,9 @@ export function fight(enemyDef, opts = {}) {
       ui.meMom.classList.toggle('off', me.mom === 0); ui.enMom.classList.toggle('off', en.mom === 0);
       stamBar.style.width = me.stam + '%'; qiBar.style.width = (me.qi / me.maxQi * 100) + '%';
       movesBox.replaceChildren(...myMoves.map(k => {
-        if (k === 'flee') return h('button', { class: 'btn', style: { background: '#6a6a72' }, onclick: () => turn('flee') }, 'Flee');
+        if (k === 'flee') return h('button', { class: 'btn', style: { background: '#6a6a72' }, onclick: () => turn('flee') }, icon('travel', 'sm'), 'Flee');
         const mv = MOVES[k]; const can = me.stam >= Math.max(0, mv.cost) && (!mv.qi || me.qi >= mv.qi);
-        return h('button', { class: 'btn', disabled: !can, onclick: () => turn(k) }, mv.name, mv.qi ? h('small', {}, `${mv.qi} Qi`) : mv.cost > 0 ? h('small', {}, `${mv.cost} sta`) : null);
+        return h('button', { class: 'btn', disabled: !can, onclick: () => turn(k) }, icon(mv.icon, 'sm'), mv.name, mv.qi ? h('small', {}, `${mv.qi} Qi`) : mv.cost > 0 ? h('small', {}, `${mv.cost} sta`) : null);
       }));
     }
     function attack(att, def, mvKey, attIsMe) {
@@ -78,14 +82,14 @@ export function fight(enemyDef, opts = {}) {
       att.stam = clamp(att.stam - mv.cost); if (mv.qi && attIsMe) att.qi -= mv.qi;
       if (mv.guard) { att.guard = true; return `${attIsMe ? 'You brace' : en.name + ' braces'} and steady${attIsMe ? '' : 's'} ${attIsMe ? 'your' : 'its'} breath.`; }
       if (mv.armor) { att.armor = mv.armor; return `${attIsMe ? 'Your' : en.name + "'s"} skin hardens like iron.`; }
-      let acc = mv.acc + (att.agi - def.agi) / 400 - (def.evade ? 0.4 : 0); def.evade = false;
+      let acc = mv.acc + (att.agi - def.agi) / 400 + (att.bk || 0) / 400 - (def.evade ? 0.4 : 0); def.evade = false;
       const defPf = attIsMe ? ui.enPf : ui.mePf, attPf = attIsMe ? ui.mePf : ui.enPf;
       attPf.classList.add(attIsMe ? 'lunge-r' : 'lunge-l'); setTimeout(() => attPf.classList.remove('lunge-r', 'lunge-l'), 140);
       if (!chance(clamp(acc, 0.1, 0.98) * 100 / 100)) { att.mom = 0; fx('miss'); return `${attIsMe ? 'You' : en.name} used ${mv.name}... and missed.`; }
       const statV = mv.stat === 'qi' ? 60 + (attIsMe ? c.qi.affinity : 40) : mv.stat === 'agility' ? att.agi : att.str;
-      let dmg = ri(...mv.dmg) * (0.6 + statV / 100) * (mv.stat === 'qi' ? att.pow : Math.sqrt(att.pow)) * (1 + att.mom * 0.1);
+      let dmg = ri(...mv.dmg) * (0.6 + statV / 100) * (mv.stat === 'qi' ? att.pow : Math.sqrt(att.pow)) * (1 + att.mom * 0.1) * (1 + (att.gear?.dmg || 0)) * (1 + (att.bk || 0) / 250);
       if (def.guard) { dmg *= 0.5; def.guard = false; } if (def.armor) { dmg *= 0.5; def.armor--; }
-      const crit = chance(0.08 + (attIsMe ? c.stats.luck / 1000 : 0)); if (crit) dmg *= 1.7;
+      const crit = chance(0.08 + (attIsMe ? (c.stats.luck + gs.luck) / 1000 + (c.stats.battle || 0) / 2000 : 0)); if (crit) dmg *= 1.7;
       if (enemyDef.sparring && attIsMe === false) dmg *= 0.7;
       dmg = Math.max(1, Math.round(dmg)); def.hp -= dmg; att.mom = Math.min(3, att.mom + (mv.mom || 1)); def.mom = 0;
       if (mv.drain) att.hp = Math.min(att.maxHp, att.hp + dmg * mv.drain);
@@ -126,8 +130,9 @@ export function fight(enemyDef, opts = {}) {
       draw(); log.textContent = text; fx(result === 'win' ? 'win' : result === 'lose' ? 'lose' : 'click');
       c.lastFightHpPct = Math.max(0, me.hp) / me.maxHp;
       if (c.qi.realm) c.qi.qi = Math.max(0, Math.round(me.qi));
-      const hurt = Math.round((1 - c.lastFightHpPct) * (enemyDef.sparring ? 4 : 12));
+      const hurt = Math.round((1 - c.lastFightHpPct) * (enemyDef.sparring ? 4 : 12) * bleedMult(c));
       if (hurt) stat(c, 'health', -hurt);
+      stat(c, 'battle', (enemyDef.sparring ? ri(2, 3) : result === 'win' ? 2 : 1)); // every fight teaches you something
       movesBox.replaceChildren(h('button', { class: 'btn', onclick: () => { m.close(); if (S().musicOn) playStation(prevStation || S().station); resolve(result); } },
         result === 'win' ? 'Victory — continue' : result === 'flee' ? 'Escaped — continue' : 'Defeat — continue'));
     }

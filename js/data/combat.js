@@ -1,18 +1,20 @@
 // Combat moves. cost = stamina, qi = qi cost. dmg = [min,max] base, scaled by stats & realm power.
 export const MOVES = {
-  slap:   { name: 'Slap', cost: 4, dmg: [2, 4], acc: 0.95, stat: 'agility', info: 'Fast, cheap, weak. Builds momentum.' , mom: 1 },
-  jab:    { name: 'Jab', cost: 6, dmg: [3, 6], acc: 0.9, stat: 'agility', info: 'Quick strike. Builds momentum.', mom: 1 },
-  punch:  { name: 'Punch', cost: 10, dmg: [5, 10], acc: 0.8, stat: 'strength', info: 'Solid hit. Uses Strength.' },
-  kick:   { name: 'Kick', cost: 14, dmg: [7, 13], acc: 0.7, stat: 'strength', info: 'Heavy but easy to dodge.' },
-  guard:  { name: 'Guard', cost: -12, dmg: [0, 0], acc: 1, guard: true, info: 'Halve the next hit and recover stamina.' },
-  qi_palm:{ name: 'Qi Palm', cost: 4, qi: 15, dmg: [12, 20], acc: 0.9, stat: 'qi', info: 'Channel Qi into a palm strike. Needs Qi Condensation.', realm: 1 },
-  flame_palm:  { name: 'Burning Palm', cost: 6, qi: 25, dmg: [18, 28], acc: 0.85, stat: 'qi', burn: 3, info: 'Sets the enemy alight for 2 turns.' },
-  river_step:  { name: 'Flowing River Step', cost: 2, qi: 12, dmg: [6, 10], acc: 1, stat: 'qi', evade: true, info: 'Strike and become hard to hit next turn.' },
-  thunder_fist:{ name: 'Nine Thunder Fist', cost: 10, qi: 40, dmg: [30, 44], acc: 0.8, stat: 'qi', stun: 0.3, info: 'May stun. Huge damage.' },
-  iron_skin:   { name: 'Iron Skin', cost: 0, qi: 20, dmg: [0, 0], acc: 1, armor: 3, info: 'Reduce incoming damage for 3 turns.' },
-  blood_drain: { name: 'Blood Drain', cost: 6, qi: 20, dmg: [14, 22], acc: 0.85, stat: 'qi', drain: 0.5, info: 'Heals you for half the damage. Demonic.' },
+  slap:   { icon: 'feather', name: 'Slap', cost: 4, dmg: [2, 4], acc: 0.95, stat: 'agility', info: 'Fast, cheap, weak. Builds momentum.' , mom: 1 },
+  jab:    { icon: 'fist', name: 'Jab', cost: 6, dmg: [3, 6], acc: 0.9, stat: 'agility', info: 'Quick strike. Builds momentum.', mom: 1 },
+  punch:  { icon: 'hammer', name: 'Punch', cost: 10, dmg: [5, 10], acc: 0.8, stat: 'strength', info: 'Solid hit. Uses Strength.' },
+  kick:   { icon: 'kick', name: 'Kick', cost: 14, dmg: [7, 13], acc: 0.7, stat: 'strength', info: 'Heavy but easy to dodge.' },
+  guard:  { icon: 'shield', name: 'Guard', cost: -12, dmg: [0, 0], acc: 1, guard: true, info: 'Halve the next hit and recover stamina.' },
+  qi_palm:{ icon: 'cultivation', name: 'Qi Palm', cost: 4, qi: 15, dmg: [12, 20], acc: 0.9, stat: 'qi', info: 'Channel Qi into a palm strike. Needs Qi Condensation.', realm: 1 },
+  flame_palm:  { icon: 'fire', name: 'Burning Palm', cost: 6, qi: 25, dmg: [18, 28], acc: 0.85, stat: 'qi', burn: 3, info: 'Sets the enemy alight for 2 turns.' },
+  river_step:  { icon: 'water', name: 'Flowing River Step', cost: 2, qi: 12, dmg: [6, 10], acc: 1, stat: 'qi', evade: true, info: 'Strike and become hard to hit next turn.' },
+  thunder_fist:{ icon: 'lightning', name: 'Nine Thunder Fist', cost: 10, qi: 40, dmg: [30, 44], acc: 0.8, stat: 'qi', stun: 0.3, info: 'May stun. Huge damage.' },
+  iron_skin:   { icon: 'metal', name: 'Iron Skin', cost: 0, qi: 20, dmg: [0, 0], acc: 1, armor: 3, info: 'Reduce incoming damage for 3 turns.' },
+  blood_drain: { icon: 'demon', name: 'Blood Drain', cost: 6, qi: 20, dmg: [14, 22], acc: 0.85, stat: 'qi', drain: 0.5, info: 'Heals you for half the damage. Demonic.' },
 };
 export const BASE_MOVES = ['jab', 'punch', 'kick', 'guard'];
+// Overall difficulty: enemies get this much more HP and hit this much harder.
+export const DIFFICULTY = 1.5;
 
 // Enemies by gate rank / encounter. lvl scales stats.
 export const ENEMIES = [
@@ -42,6 +44,12 @@ export const LOOT = [
   { id: 'spirit_stone', name: 'Spirit Stone', icon: 'gem', w: 30, use: 'sell' },
   { id: 'foundation_pill', name: 'Foundation Establishment Pill', icon: 'pill', w: 8, use: 'key' },
   { id: 'manual', name: 'Martial Manual', icon: 'manual', w: 10, use: 'manual' },
+  { id: 'spirit_herb', name: 'Spirit Herb', icon: 'herb', w: 25 },
+  { id: 'iron_ore', name: 'Iron Ingot', icon: 'metal', w: 20 },
+  { id: 'beast_core', name: 'Beast Core', icon: 'earth', w: 18 },
+  { id: 'cloth', name: 'Silk Cloth', icon: 'cloth', w: 12 },
+  { id: 'dragon_scale', name: 'Dragon Scale', icon: 'fire', w: 2 },
+  { id: 'mending_salve', name: 'Meridian Mending Salve', icon: 'mortar', w: 5 },
   { id: 'demonic_core', name: 'Demonic Core', icon: 'demon', w: 4, use: 'devour' },
   { id: 'gold', name: 'Gold Pouch', icon: 'market', w: 25, use: 'money' },
 ];

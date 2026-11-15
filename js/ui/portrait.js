@@ -2,6 +2,7 @@
 // Portraits change with age stage, salon hair changes, and cultivation realm (eye glow, aura, forehead mark).
 import { seeded, ri, chance, pick, clamp } from '../core/rng.js';
 import { REALMS } from '../data/realms.js';
+const GENETIC_IDS = ['congenital_heart', 'cystic_fibrosis', 'hemophilia', 'sickle_cell', 'muscular_dystrophy', 'huntingtons', 'alzheimers', 'bipolar'];
 
 export const SKINS = ['#ffe6d8', '#fcd7bd', '#f3c79a', '#e0ac74', '#c68a52', '#94603a', '#6a4129'];
 export const HAIR_COLORS = {
@@ -22,6 +23,7 @@ export function randomGenes(gender) {
     seed: ri(1, 1e9), skin: ri(0, SKINS.length - 1), hairColor: pick(NATURAL_HAIR),
     eye: chance(0.03) ? ri(7, 8) : ri(0, 6), style: pick(HAIR_STYLES[gender]), looks: clamp(Math.round(30 + Math.random() * 45 + (chance(0.1) ? 25 : 0))),
     freckles: chance(0.15), glasses: chance(0.1), mole: chance(0.12),
+    carriers: GENETIC_IDS.filter(() => chance(0.03)), // hidden genetic conditions
   };
 }
 // Child genes: each feature from one parent, skin blends, small mutation chance, looks averaged with RNG.
@@ -32,6 +34,8 @@ export function mixGenes(a, b, gender) {
     hairColor: chance(0.05) ? pick(NATURAL_HAIR) : from().hairColor, eye: chance(0.04) ? ri(0, 8) : from().eye,
     style: pick(HAIR_STYLES[gender]), looks: clamp(Math.round((a.looks + b.looks) / 2 + ri(-18, 18))),
     freckles: from().freckles, glasses: chance(0.1), mole: chance(0.1),
+    // each carried gene passes to a child half the time; rare fresh mutations
+    carriers: [...new Set([...(a.carriers || []), ...(b.carriers || [])])].filter(() => chance(0.5)).concat(GENETIC_IDS.filter(() => chance(0.01))),
   };
   if (!NATURAL_HAIR.includes(g.hairColor)) g.hairColor = pick(NATURAL_HAIR);
   return g;

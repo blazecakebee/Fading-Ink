@@ -27,3 +27,14 @@ export function openInfo(title, body, ic) { return openModal([h('h2', {}, ic ? i
 export function toast(text, cls = '') {
   const el = h('div', { class: 'toast ' + cls }, text); document.getElementById('toasts').append(el); setTimeout(() => el.remove(), 3200);
 }
+// Text-input dialog. fields: [{ key, label, placeholder, max }] → resolves {key: value} or null
+export function prompt({ title, text, icon: ic, fields, okLabel = 'Confirm' }) {
+  return new Promise(res => {
+    let done = false; const inputs = {};
+    const finish = v => { if (done) return; done = true; m.close(); res(v); };
+    const m = openModal([h('h2', {}, ic ? icon(ic, 'lg') : null, title), h('div', { class: 'text' }, text || ''),
+      ...fields.map(f => h('label', { class: 'field' }, f.label, inputs[f.key] = h('input', { class: 'chat-in', placeholder: f.placeholder || '', maxlength: f.max || 30 }))),
+      h('div', { class: 'opts' }, h('button', { class: 'btn', onclick: () => { const v = Object.fromEntries(Object.entries(inputs).map(([k, el]) => [k, el.value.trim()])); if (Object.values(v).some(x => !x)) return; fx('click'); finish(v); } }, okLabel),
+        h('button', { class: 'btn ghost', onclick: () => finish(null) }, 'Cancel'))], { onClose: () => { if (!done) { done = true; res(null); } } });
+  });
+}

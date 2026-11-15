@@ -7,7 +7,8 @@ import { ui } from '../core/bus.js';
 import { ri, pick, clamp, chance, uid } from '../core/rng.js';
 import { mixGenes } from '../ui/portrait.js';
 import { stat } from '../systems/life.js';
-import { learnManual } from '../systems/cultivation.js';
+import { learnManual, sectName } from '../systems/cultivation.js';
+import { gainClose } from '../systems/people.js';
 import { SECTS } from '../data/realms.js';
 
 const PREFIX = 'fadingink-v1-';
@@ -35,36 +36,68 @@ export function myProfile() {
 }
 
 // ---------- connecting
-export async function hostRoom() {
-  await loadLib(); leave(true);
-  const code = Array.from({ length: 5 }, () => 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[ri(0, 30)]).join('');
-  setStatus('connecting');
+// ---- the room survives refreshes: we remember it and quietly reconnect on load
+const ROOM_KEY = 'fadingink.room.v1';
+const remember = () => { try { localStorage.setItem(ROOM_KEY, JSON.stringify({ code: net.code, role: net.role, chat: net.chat.slice(-40) })); } catch (e) {} };
+const forget = () => { try { localStorage.removeItem(ROOM_KEY); } catch (e) {} };
+let retryTimer = null, retries = 0;
+const newCode = () => Array.from({ length: 5 }, () => 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[ri(0, 30)]).join('');
+
+export function resumeRoom() {
+  let saved = null; try { saved = JSON.parse(localStorage.getItem(ROOM_KEY) || 'null'); } catch (e) {}
+  if (!saved?.code) return;
+  net.chat = saved.chat || [];
+  sys(`Reconnecting to room ${saved.code}…`);
+  if (saved.role === 'host') hostRoom(saved.code, true); else joinRoom(saved.code, true);
+}
+
+// Host with a fresh code, or re-claim an existing code after a refresh (PeerJS may hold the old id for a few seconds).
+export async function hostRoom(code, resuming) {
+  await loadLib(); teardown(); clearTimeout(retryTimer);
+  code = code || newCode(); if (!resuming) retries = 0;
+  setStatus(resuming ? 'reconnecting' : 'connecting');
   const peer = new window.Peer(PREFIX + code, peerOpts()); net.peer = peer;
-  peer.on('open', id => { net.myId = id; net.role = 'host'; net.code = code; setStatus('online'); sys(`Room ${code} is open. Share the code with your friends.`); });
+  peer.on('open', id => { retries = 0; net.myId = id; net.role = 'host'; net.code = code; setStatus('online'); remember();
+    sys(resuming ? `Room ${code} is back up. Friends will reconnect automatically.` : `Room ${code} is open. Share the code with your friends.`); });
   peer.on('connection', conn => wire(conn));
-  peer.on('error', e => { if (e.type === 'unavailable-id') return hostRoom(); fail(e); });
+  peer.on('error', e => {
+    if (e.type === 'unavailable-id') {
+      if (resuming && retries++ < 12) { teardown(); retryTimer = setTimeout(() => hostRoom(code, true), 2500); return; }
+      return hostRoom(resuming ? code : newCode(), false);
+    }
+    if (resuming && retries++ < 12) { teardown(); retryTimer = setTimeout(() => hostRoom(code, true), 3000); return; }
+    fail(e);
+  });
   peer.on('disconnected', () => { if (net.peer === peer && !peer.destroyed) peer.reconnect(); });
 }
-export async function joinRoom(code) {
+export async function joinRoom(code, resuming) {
   code = String(code || '').trim().toUpperCase(); if (!code) return;
-  await loadLib(); leave(true); setStatus('connecting');
+  await loadLib(); teardown(); clearTimeout(retryTimer); if (!resuming) retries = 0;
+  setStatus(resuming ? 'reconnecting' : 'connecting');
   const peer = new window.Peer(undefined, peerOpts()); net.peer = peer;
+  const retry = () => { if (retries++ < 25) { teardown(); setStatus('reconnecting'); retryTimer = setTimeout(() => joinRoom(code, true), 3000); return true; } return false; };
   peer.on('open', id => {
-    net.myId = id; net.role = 'client'; net.code = code;
+    net.myId = id; net.role = 'client'; net.code = code; remember();
     const conn = peer.connect(PREFIX + code, { reliable: true }); wire(conn);
-    setTimeout(() => { if (net.status === 'connecting') fail({ type: 'timeout', message: 'No room with that code answered.' }); }, 12000);
+    setTimeout(() => { if (net.peer === peer && net.status !== 'online') { if (!(resuming && retry())) fail({ type: 'timeout', message: 'No room with that code answered.' }); } }, 9000);
   });
-  peer.on('error', fail);
+  peer.on('error', e => { if (resuming && retry()) return; fail(e); });
+}
+// teardown = close sockets but keep the remembered room; leave = the player chose to go
+function teardown() {
+  if (net.peer) { try { net.peer.destroy(); } catch (e) {} }
+  Object.assign(net, { peer: null, myId: null }); net.conns.clear(); net.peers.clear();
+  for (const [, p] of net.pending) p.resolve(null); net.pending.clear(); markAllOffline();
 }
 export function leave(silent) {
-  if (net.peer) { try { broadcast({ t: 'bye' }); } catch (e) {} try { net.peer.destroy(); } catch (e) {} }
-  Object.assign(net, { peer: null, role: null, code: null, myId: null, status: 'offline' }); net.conns.clear(); net.peers.clear();
-  for (const [, p] of net.pending) p.resolve(null); net.pending.clear();
-  markAllOffline(); if (!silent) { sys('You left the room.'); refresh(); }
+  clearTimeout(retryTimer); retries = 99;
+  if (net.peer) { try { broadcast({ t: 'bye' }); } catch (e) {} }
+  teardown(); Object.assign(net, { role: null, code: null, status: 'offline' }); forget();
+  if (!silent) { sys('You left the room.'); refresh(); }
 }
 function fail(e) {
   const msg = e?.type === 'peer-unavailable' ? 'No room with that code exists (or the host left).' : e?.message || String(e);
-  ui.toast('Co-op: ' + msg); sys('Error: ' + msg); if (net.status !== 'online' || net.role === 'client') leave(true); setStatus('offline');
+  ui.toast('Co-op: ' + msg); sys('Error: ' + msg); leave(true); setStatus('offline');
 }
 function wire(conn) {
   conn.on('open', () => {
@@ -78,7 +111,7 @@ function wire(conn) {
 }
 function dropped(pid) {
   net.conns.delete(pid);
-  if (net.role === 'client') { sys('Lost connection to the host.'); leave(true); refresh(); return; }
+  if (net.role === 'client') { if (net.status === 'online') { sys('Lost connection to the host — reconnecting…'); const code = net.code; retries = 0; teardown(); setStatus('reconnecting'); retryTimer = setTimeout(() => joinRoom(code, true), 2000); } return; }
   gone(pid); broadcast({ t: 'bye', from: pid });
 }
 
@@ -125,7 +158,7 @@ function handle(d) {
 function gone(pid) { net.peers.delete(pid); const c = G.char; c?.people.forEach(p => { if (p.peerId === pid) p.online = false; }); }
 function markAllOffline() { G.char?.people.forEach(p => { if (p.coop) p.online = false; }); }
 const sys = text => { net.chat.push({ who: '•', text }); trimChat(); };
-const trimChat = () => { if (net.chat.length > 80) net.chat.splice(0, net.chat.length - 80); };
+const trimChat = () => { if (net.chat.length > 80) net.chat.splice(0, net.chat.length - 80); if (net.code) remember(); };
 export function sendChat(text) { text = String(text || '').trim(); if (!text || !net.peer) return; net.chat.push({ who: G.char.first, text, me: true }); broadcast({ t: 'chat', text }); refresh(); }
 
 // Co-op players live in your People list (role "Co-op Friend" until you date/marry them).
@@ -143,15 +176,15 @@ function upsertPerson(peerId, prof) {
 
 // ---------- requests: sender pays a Social action; receiver gets a popup to accept or decline
 export const COOP_ACTIONS = [
-  { id: 'hangout', name: 'Hang out', ask: 'wants to hang out.' },
-  { id: 'gym', name: 'Hit the gym together', ask: 'wants to hit the gym with you.', age: 12 },
-  { id: 'train', name: 'Train Qi together', ask: 'wants to circulate Qi together.', need: (c, p) => c.qi.realm >= 1 && p.realm >= 1 },
-  { id: 'spar', name: 'Spar', ask: 'challenges you to a friendly spar.', age: 8 },
-  { id: 'sect', name: 'Invite to my sect/gang', ask: 'invites you to join their', need: (c, p) => !!c.sect && p.sect !== c.sect && p.age >= 12 },
-  { id: 'date', name: 'Ask out', ask: 'is asking you out!', age: 14, need: (c, p) => !c.partnerId && p.role === 'Co-op Friend' && p.age >= 14 },
-  { id: 'marry', name: 'Propose', ask: 'is proposing to you!', age: 18, need: (c, p) => p.role === 'Partner' && p.age >= 18 },
-  { id: 'baby', name: 'Try for a baby', ask: 'wants to have a child with you.', age: 18, need: (c, p) => ['Partner', 'Spouse'].includes(p.role) && c.age < 50 && p.age < 50 },
-  { id: 'breakup', name: 'Break up', need: (c, p) => ['Partner', 'Spouse'].includes(p.role), notice: true },
+  { id: 'hangout', emoji: '🍵', name: 'Hang out', ask: 'wants to hang out.' },
+  { id: 'gym', emoji: '🏋️', name: 'Hit the gym together', ask: 'wants to hit the gym with you.', age: 12 },
+  { id: 'train', emoji: '🌀', name: 'Train Qi together', ask: 'wants to circulate Qi together.', need: (c, p) => c.qi.realm >= 1 && p.realm >= 1 },
+  { id: 'spar', emoji: '⚔️', name: 'Spar', ask: 'challenges you to a friendly spar.', age: 8 },
+  { id: 'sect', emoji: '🏯', name: 'Invite to my sect/gang', ask: 'invites you to join their', need: (c, p) => !!c.sect && c.sect !== 'guest' && p.sect !== c.sect && p.age >= 12 },
+  { id: 'date', emoji: '🌹', name: 'Ask out', ask: 'is asking you out!', age: 14, need: (c, p) => !c.partnerId && p.role === 'Co-op Friend' && p.age >= 14 },
+  { id: 'marry', emoji: '💍', name: 'Propose', ask: 'is proposing to you!', age: 18, need: (c, p) => p.role === 'Partner' && p.age >= 18 },
+  { id: 'baby', emoji: '👶', name: 'Try for a baby', ask: 'wants to have a child with you.', age: 18, need: (c, p) => ['Partner', 'Spouse'].includes(p.role) && c.age < 50 && p.age < 50 },
+  { id: 'breakup', emoji: '💔', name: 'Break up', need: (c, p) => ['Partner', 'Spouse'].includes(p.role), notice: true },
 ];
 
 function request(peerId, kind, data = {}) {
@@ -170,10 +203,10 @@ export async function doCoopAction(p, kind) {
   const A = COOP_ACTIONS.find(a => a.id === kind);
   if (A.notice) { // one-way, no permission needed
     sendTo(p.peerId, { t: 'note', kind, profile: myProfile() });
-    p.role = 'Ex'; c.partnerId = null; p.close = clamp(p.close - 30); return { text: `${p.first} and I broke up.`, cls: 'bad' };
+    if (p.role === 'Spouse') c.flags.divorces = (c.flags.divorces || 0) + 1; p.role = 'Ex'; c.partnerId = null; p.close = clamp(p.close - 30); return { text: `${p.first} and I broke up.`, cls: 'bad' };
   }
   let data = {};
-  if (kind === 'sect') data.sect = c.sect;
+  if (kind === 'sect') { data.sect = c.sect; data.name = sectName(c); }
   if (kind === 'baby') data.kid = makeKid(c, p);
   ui.toast(`Waiting for ${p.first} to answer…`);
   const r = await request(p.peerId, kind, data);
@@ -190,8 +223,8 @@ async function onRequest(d) {
   const blocked = !c.alive || (A.age && c.age < A.age) || (d.kind === 'date' && c.partnerId) || (d.kind === 'marry' && p.role !== 'Partner') || (d.kind === 'baby' && (c.age >= 50 || !['Partner', 'Spouse'].includes(p.role)));
   if (blocked) return respond(d.from, d.id, false);
   ui.fx('milestone');
-  const sectName = d.kind === 'sect' ? ' ' + (SECTS.find(s => s.id === d.data.sect)?.name || 'sect') + '.' : '';
-  const ok = await ui.choice({ title: `${d.profile.first} ${d.profile.last}`, icon: 'people', text: `${d.profile.first} ${A.ask}${sectName}`, dismiss: false,
+  const sn = d.kind === 'sect' ? ' ' + (d.data.name || 'sect') + '.' : '';
+  const ok = await ui.choice({ title: `${d.profile.first} ${d.profile.last}`, icon: 'people', text: `${d.profile.first} ${A.ask}${sn}`, dismiss: false,
     options: [{ label: 'Accept', value: true }, { label: 'Decline', value: false, ghost: true }] });
   respond(d.from, d.id, !!ok);
   if (ok) { applyAccepted(c, p, d.kind, d.data, {}, false); save(); refresh(); }
@@ -205,25 +238,26 @@ function onNote(d) {
 
 function applyAccepted(c, p, kind, data, resData, iAmSender) {
   switch (kind) {
-    case 'hangout': p.close = clamp(p.close + ri(8, 15)); stat(c, 'happiness', 6); stat(c, 'stress', -6);
+    case 'hangout': gainClose(c, p, ri(8, 15)); stat(c, 'happiness', 6); stat(c, 'stress', -6);
       return logRet(c, iAmSender, `I hung out with ${p.first} ${pick(['at the night market', 'on the rooftop', 'at the arcade', 'by the river'])}.`, 'good');
-    case 'gym': { const g = ri(3, 6); stat(c, 'strength', g); stat(c, 'health', 3); p.close = clamp(p.close + 6); return logRet(c, iAmSender, `${p.first} and I hit the gym together. Strength +${g}.`, 'good'); }
-    case 'train': { const g = Math.round(15 + (c.qi.affinity + 50) / 4); c.qi.qi += g; p.close = clamp(p.close + 6); return logRet(c, iAmSender, `${p.first} and I circulated Qi in harmony. +${g} Qi.`, 'qi'); }
+    case 'gym': { const g = ri(3, 6); stat(c, 'strength', g); stat(c, 'health', 3); gainClose(c, p, 6); return logRet(c, iAmSender, `${p.first} and I hit the gym together. Strength +${g}.`, 'good'); }
+    case 'train': { const g = Math.round(15 + (c.qi.affinity + 50) / 4); c.qi.qi += g; gainClose(c, p, 6); return logRet(c, iAmSender, `${p.first} and I circulated Qi in harmony. +${g} Qi.`, 'qi'); }
     case 'spar': {
       if (!iAmSender) { ui.log(`I accepted ${p.first}'s spar challenge.`); return; }
       return ui.fight({ id: 'player', kind: 'human', name: `${p.first} ${p.last}`, genes: p.genes, gender: p.gender, age: p.age, hair: p.hair, realm: p.realm || 0, hp: 30 + (p.stats.health || 50) * 0.5, str: p.stats.strength, agi: p.stats.agility,
         moves: ['jab', 'punch', 'kick', 'guard', ...(p.realm >= 1 ? ['qi_palm'] : []), ...(p.techs || [])], sparring: true }).then(r => {
-        const txt = r === 'win' ? 'VICTORY' : r === 'flee' ? 'I yielded' : 'DEFEAT'; p.close = clamp(p.close + 3); if (r === 'win') c.wins++;
+        const txt = r === 'win' ? 'VICTORY' : r === 'flee' ? 'I yielded' : 'DEFEAT'; gainClose(c, p, 3); if (r === 'win') c.wins++;
         sendTo(p.peerId, { t: 'note', kind: 'spar_result', text: r === 'win' ? 'they won.' : 'I won.', profile: myProfile() });
         return { text: `Spar vs ${p.first} (player): ${txt}.`, cls: r === 'win' ? 'good' : '' }; });
     }
     case 'sect': {
-      if (iAmSender) return { text: `${p.first} joined my ${SECTS.find(s => s.id === data.sect)?.name}.`, cls: 'good', big: true };
-      c.sect = data.sect; learnManual(c, 'breathing'); ui.log(`I joined the ${SECTS.find(s => s.id === data.sect)?.name} with ${p.first}.`, 'qi'); return;
+      if (iAmSender) return { text: `${p.first} joined my ${data.name}.`, cls: 'good', big: true };
+      if (SECTS.some(s => s.id === data.sect)) c.sect = data.sect; else { c.sect = 'guest'; c.guestSect = data.name; }
+      learnManual(c, 'breathing'); ui.log(`I joined the ${data.name} with ${p.first}.`, 'qi'); return;
     }
-    case 'date': p.role = 'Partner'; c.partnerId = p.id; p.close = clamp(p.close + 15); stat(c, 'happiness', 12);
+    case 'date': p.role = 'Partner'; c.partnerId = p.id; gainClose(c, p, 15); stat(c, 'happiness', 12);
       return logRet(c, iAmSender, `${p.first} and I are dating!`, 'good', true);
-    case 'marry': p.role = 'Spouse'; c.partnerId = p.id; p.close = clamp(p.close + 20); stat(c, 'happiness', 20);
+    case 'marry': p.role = 'Spouse'; c.partnerId = p.id; c.flags.coopMarried = true; gainClose(c, p, 20); stat(c, 'happiness', 20);
       return logRet(c, iAmSender, `${p.first} and I got married!`, 'good', true);
     case 'baby': {
       const kid = { ...data.kid, otherParent: p.id, last: data.kid.last };
@@ -240,7 +274,7 @@ function makeKid(c, p) {
   const gender = chance(0.5) ? 'F' : 'M';
   const names = gender === 'F' ? ['Mei', 'Yuna', 'Aoi', 'Luna', 'Sofia', 'Amara', 'Lin', 'Ivy'] : ['Kai', 'Ren', 'Leo', 'Arjun', 'Mateo', 'Jin', 'Ezra', 'Tao'];
   const st = {}; for (const k of ['smarts', 'strength', 'agility', 'charisma', 'luck']) st[k] = clamp(Math.round(((c.stats[k] ?? 50) + (p.stats?.[k] ?? 50)) / 2 + ri(-15, 15)));
-  return { id: uid(), first: pick(names), last: c.gender === 'M' ? c.last : p.gender === 'M' ? p.last : c.last, gender, age: 0, role: gender === 'F' ? 'Daughter' : 'Son', alive: true, close: 90,
+  return { id: uid(), first: pick(names), last: c.ownSect || c.gender === 'M' ? c.last : p.gender === 'M' ? p.last : c.last, gender, age: 0, role: gender === 'F' ? 'Daughter' : 'Son', alive: true, close: 90,
     genes: mixGenes(c.genes, p.genes, gender), stats: st, realm: 0, met: G.world.year };
 }
 

@@ -10,9 +10,12 @@ import { makePerson, yearlyPeople, familyAtBirth } from './people.js';
 import { randomGenes, mixGenes } from '../ui/portrait.js';
 import { yearlyEvents } from '../data/events.js';
 import { cultivationYear } from './cultivation.js';
+import { healthYear, TRAINABLE, trauma, geneticCheck, suddenDeathChance } from './health.js';
+import { bonds, bondBonus } from './people.js';
+import { checkEarned } from './traits.js';
 
 export const ACTIONS_PER_YEAR = 4, SOCIAL_PER_YEAR = 4;
-export const STAT_KEYS = ['health', 'happiness', 'stress', 'smarts', 'looks', 'strength', 'agility', 'charisma', 'luck'];
+export const STAT_KEYS = ['health', 'happiness', 'mood', 'stress', 'smarts', 'looks', 'strength', 'battle', 'agility', 'charisma', 'luck'];
 
 export const country = c => COUNTRIES.find(x => x.id === c.country) || COUNTRIES[0];
 export const realm = c => REALMS[c.qi.realm];
@@ -31,12 +34,28 @@ export function makeName(cty, gender) {
 }
 
 // ---- stats helpers ---------------------------------------------------------
+// Stat caps rise with each cultivation realm; past the soft cap (70%) gains shrink toward zero.
+export const CAPPED = ['strength', 'battle', 'agility', 'smarts', 'charisma', 'luck', 'looks'];
+export const statCap = c => REALMS[c.qi.realm].cap || 100;
+export const softCap = c => Math.round(statCap(c) * 0.7);
+export function gainMult(c, k) {
+  const v = c.stats[k] ?? 0, cap = statCap(c), soft = softCap(c);
+  return v < soft ? 1 : Math.max(0.1, (cap - v) / (cap - soft));
+}
 export function stat(c, k, d) {
   if (d === undefined) return c.stats[k];
+  if (CAPPED.includes(k)) {
+    if (d > 0) { (c.lastTrained ||= {})[k] = c.age; const x = d * gainMult(c, k); d = Math.floor(x) + (Math.random() < x % 1 ? 1 : 0); }
+    c.stats[k] = clamp(Math.round((c.stats[k] ?? 50) + d), 0, statCap(c)); return c.stats[k];
+  }
   if (k === 'stress' && d > 0) d *= traitMult(c, 'stressMult');
-  c.stats[k] = clamp(c.stats[k] + d);
+  if (d > 0 && TRAINABLE.includes(k)) (c.lastTrained ||= {})[k] = c.age; // training resets decay
+  c.stats[k] = clamp(Math.round((c.stats[k] ?? 50) + d));
   return c.stats[k];
 }
+// Charisma (and a few traits) get you better prices from merchants: up to 25% off.
+export function discount(c) { return clamp(Math.max(0, (c.stats.charisma - 40) / 240) + (traitMult(c, 'social') > 1 ? 0.03 : 0), 0, 0.25); }
+export function priceFor(c, base) { return Math.round(base * (1 - discount(c))); }
 export function money(c, d) { c.money = Math.round(c.money + d); return c.money; }
 export function addItem(c, id, n = 1) { c.inv[id] = (c.inv[id] || 0) + n; if (c.inv[id] <= 0) delete c.inv[id]; }
 
@@ -52,7 +71,7 @@ export function newLife(opts = {}) {
     id: uid(), first: nm.first, last: nm.last, gender, country: cty.id, city: pick(cty.city), wealth: wealth.id,
     age: 0, alive: true, birthYear: G.world.year, generation: opts.generation || 1,
     money: 0, fame: 0, genes, hair: null,
-    stats: { health: ri(60, 100), happiness: ri(60, 100), stress: ri(0, 15), smarts: base(), looks: genes.looks,
+    stats: { health: ri(60, 100), happiness: ri(60, 100), mood: ri(55, 85), stress: ri(0, 15), smarts: base(), looks: genes.looks, battle: ri(0, 8),
              strength: ri(10, 40), agility: ri(10, 40), charisma: base(), luck: base() },
     traits: [], qi: { known: false, realm: 0, stage: 1, qi: 0, elem: pick(ELEMENTS).id, affinity: ri(5, 60), meridians: 0, manuals: [], techs: [] },
     inv: {}, edu: { level: 0, school: null, uniYears: 0, major: null, grades: ri(40, 80) },
@@ -73,6 +92,7 @@ export function newLife(opts = {}) {
   if (opts.inheritMoney) c.money += opts.inheritMoney;
   // birth log
   beginYear(c);
+  geneticCheck(c, true);
   const parents = c.people.filter(p => p.role === 'Father' || p.role === 'Mother');
   ui.log(`I was born a ${gender === 'F' ? 'girl' : 'boy'} in ${c.city}, ${cty.name}, to a ${wealth.name.toLowerCase()} family.`, 'big');
   parents.forEach(p => ui.log(`My ${p.role.toLowerCase()} is ${fullName(p)}, ${p.age}${p.job ? ', a ' + p.job : ''}.`));
@@ -86,7 +106,7 @@ export function newLife(opts = {}) {
 
 export function beginYear(c) {
   c.log.push({ age: c.age, year: G.world.year, lines: [] });
-  c.actions = ACTIONS_PER_YEAR; c.social = SOCIAL_PER_YEAR; c.usedThisYear = 0;
+  c.maxActions = ACTIONS_PER_YEAR + traitVal(c, 'extraAction'); c.actions = c.maxActions; c.social = SOCIAL_PER_YEAR; c.usedThisYear = 0;
 }
 
 // ---- yearly aging ----------------------------------------------------------
@@ -111,19 +131,22 @@ export async function ageUp() {
   }
 
   // passive stat drift
-  if (c.age > 30) stat(c, 'health', -ri(0, c.age > 60 ? 4 : 2));
-  else stat(c, 'health', ri(1, 4)); // young bodies heal
+  // bodies recover toward a baseline that drops with age; old age wears you down
+  const target = c.age < 40 ? 88 : c.age < 60 ? 72 : 58;
+  if (c.stats.health < target) stat(c, 'health', c.age < 18 ? ri(2, 6) : ri(1, 4)); else if (c.age > 30) stat(c, 'health', -ri(0, c.age > 65 ? 4 : 2));
+  // happiness slowly settles back toward normal
+  stat(c, 'happiness', c.stats.happiness < 60 ? ri(1, 4) : c.stats.happiness > 80 ? -ri(0, 2) : 0);
   if (c.qi.realm) stat(c, 'health', c.qi.realm * 2);
-  if (c.age > 45 && !c.qi.realm) stat(c, 'looks', -ri(0, 1));
+  if (traitVal(c, 'heal')) stat(c, 'health', traitVal(c, 'heal'));
   stat(c, 'stress', -ri(2, 6));
   if (c.stats.stress > 75) { stat(c, 'health', -3); stat(c, 'happiness', -5); }
-  if (has(c, 'null_ptr')) { const k = pick(STAT_KEYS.filter(k => k !== 'stress')); c.stats[k] = 100; ui.log(`ERR 0x${ri(4096, 65535).toString(16)}: ${k} = 100`, 'glitch'); }
+  if (has(c, 'null_ptr')) { const k = pick(STAT_KEYS.filter(k => k !== 'stress')); c.stats[k] = CAPPED.includes(k) ? statCap(c) : 100; ui.log(`ERR 0x${ri(4096, 65535).toString(16)}: ${k} = 100`, 'glitch'); }
 
   // school / job / money
   educationYear(c);
   if (c.job && !c.prison) {
     const job = CAREERS.find(j => j.id === c.job.id);
-    const pay = Math.round(job.pay * country(c).econ * (1 + c.job.years * 0.04) * (job.part ? 0.5 : 1));
+    const pay = Math.round(job.pay * country(c).econ * (1 + c.job.years * 0.04) * (job.part ? 0.5 : 1) * traitMult(c, 'pay') * bondBonus(c, 'work'));
     money(c, pay); c.job.years++; c.job.perf = clamp(c.job.perf - ri(0, 6));
     ui.log(`Earned ${fmtMoney(c, pay)} as a ${job.name}.`);
     if (c.job.perf < 15 && chance(0.4)) { ui.log(`I was fired from my job as a ${job.name}.`, 'bad'); c.job = null; }
@@ -139,9 +162,21 @@ export async function ageUp() {
   // gates countdown
   c.gates = c.gates.filter(g => --g.years > 0 || (ui.log(`The ${g.rank}-rank Gate near ${c.city} closed on its own.`), false));
 
+  // bonds
+  const bd = bonds(c);
+  if (bd.best) stat(c, 'happiness', 2);
+  if (bd.partner) { stat(c, 'happiness', 3); stat(c, 'stress', -3); }
+  // your own sect grows and pays tithes
+  if (c.ownSect) {
+    const o = c.ownSect; const gain = Math.max(0, ri(-1, 3) + Math.floor(c.stats.charisma / 40) + c.qi.realm);
+    o.disciples += gain; const tithe = Math.round(o.disciples * 150 * country(c).econ * traitMult(c, 'pay'));
+    money(c, tithe); ui.log(`The ${o.name} grew to ${o.disciples} disciples. Tithes: ${fmtMoney(c, tithe)}.`, 'qi');
+  }
   yearlyPeople(c);
+  healthYear(c);
   cultivationYear(c);
   await yearlyEvents(c);
+  checkEarned(c);
   checkDeath(c);
   save(); ui.refresh();
 }
@@ -159,19 +194,22 @@ function educationYear(c) {
     e.uniYears++;
     if (e.uniYears >= 4) { e.level = 2; e.school = null; ui.log(`I graduated from university with a degree in ${e.major}!`, 'big'); ui.fx('milestone'); }
   }
-  if (e.school) e.grades = clamp(e.grades + ri(-6, 3) + Math.round((c.stats.smarts - 50) / 20));
+  if (e.school) { e.grades = clamp(e.grades + ri(-6, 3) + Math.round((c.stats.smarts - 50) / 20)); (c.lastTrained ||= {}).smarts = c.age; } // school keeps your mind in use
 }
 
 export function lifespan(c) {
-  let l = c.lifespan; for (let r = 1; r <= c.qi.realm; r++) l += REALMS[r].life; return l;
+  // cultivation adds lifespan little by little: earlier realms in full, the current realm grows with each stage
+  let l = c.lifespan; for (let r = 1; r < c.qi.realm; r++) l += REALMS[r].life;
+  const R = REALMS[c.qi.realm]; if (c.qi.realm) l += Math.round(R.life * c.qi.stage / R.stages);
+  return Math.round(l);
 }
 function checkDeath(c) {
   const ls = lifespan(c);
   let cause = null;
-  if (c.stats.health <= 0 && c.age < 18 && !c.flags.rescued) { c.flags.rescued = true; c.stats.health = 25; ui.log('I nearly died, but a doctor pulled me back from the edge.', 'bad'); }
+  if (c.stats.health <= 0 && c.age < 18 && !c.flags.rescued) { c.flags.rescued = true; c.stats.health = 25; ui.log('I nearly died, but a doctor pulled me back from the edge.', 'bad'); trauma(c, 0.4); }
   if (c.stats.health <= 0) cause = 'my body finally gave out';
   else if (c.age > ls - 8 && chance(0.12 + (c.age - (ls - 8)) * 0.08)) cause = 'I passed peacefully of old age';
-  else if (c.age > 3 && chance(0.002)) cause = pick(['a freak accident', 'a sudden illness', 'a stray spirit beast']);
+  else if (chance(suddenDeathChance(c))) cause = c.conditions?.some(x => ['heart', 'congenital_heart'].includes(x.id)) && chance(0.6) ? 'a sudden heart attack' : pick(['a freak accident', 'a sudden aneurysm', 'a car accident', 'a stray spirit beast', 'a fall down the stairs']);
   if (cause) die(c, cause);
 }
 
