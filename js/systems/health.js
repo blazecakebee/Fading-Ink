@@ -106,7 +106,7 @@ export function treat(c, id, how) {
   if (how.startsWith('med:')) addItem(c, how.slice(4), -1);
   if (how === 'rest') { stat(c, 'stress', -12); stat(c, 'mood', 5); }
   if (how === 'therapy') { stat(c, 'mood', 6); stat(c, 'stress', -6); }
-  if (chance(opt.chance)) return { text: cure(c, id, opt.label.toLowerCase()), cls: 'good', big: true };
+  if (chance(opt.chance)) { c.flags.cured = true; return { text: cure(c, id, opt.label.toLowerCase()), cls: 'good', big: true }; }
   if (how === 'qi' && chance(0.15)) { addCondition(c, 'qi_deviation', true); return { text: `My Qi turned on me while healing my ${C.name}. Qi Deviation Sickness!`, cls: 'bad' }; }
   if (x.sev > 1) x.sev = Math.max(1, x.sev - 0.5);
   return { text: `${opt.label} helped a little, but my ${C.name} remains.${opt.cost ? ` (${fmtMoney(c, opt.cost)})` : ''}`, cls: '' };

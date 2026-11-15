@@ -56,8 +56,9 @@ export function buildPortrait(genes, { age = 20, gender = 'F', realm = 0, hair =
   // cultivators age slowly
   const visAge = realm >= 2 ? Math.min(age, 28 + age * 0.08) : realm === 1 ? Math.min(age, 18 + (age - 18) * 0.7) : age;
   const st = ageStage(age < 18 ? age : visAge);
-  const P = { infant: { cy: 17, rx: 8, ry: 7.6, chin: 0.15 }, child: { cy: 15, rx: 7.8, ry: 8, chin: 0.35 }, teen: { cy: 14.5, rx: 7.5, ry: 8.4, chin: 0.62 },
-    adult: { cy: 14.5, rx: 7.4, ry: 8.6, chin: gender === 'F' ? 0.68 : 0.5 }, middle: { cy: 14.5, rx: 7.5, ry: 8.6, chin: 0.45 }, elder: { cy: 14.8, rx: 7.5, ry: 8.4, chin: 0.4 } }[st];
+  // rounder, softer faces: smaller chin taper, slightly wider heads
+  const P = { infant: { cy: 17, rx: 8, ry: 7.6, chin: 0.1 }, child: { cy: 15, rx: 7.8, ry: 8, chin: 0.22 }, teen: { cy: 14.5, rx: 7.6, ry: 8.3, chin: 0.34 },
+    adult: { cy: 14.5, rx: 7.6, ry: 8.5, chin: gender === 'F' ? 0.36 : 0.3 }, middle: { cy: 14.5, rx: 7.7, ry: 8.5, chin: 0.28 }, elder: { cy: 14.8, rx: 7.7, ry: 8.3, chin: 0.26 } }[st];
   const cx = 16, { cy, rx, ry, chin } = P;
   const skin = SKINS[genes.skin], skinS = shade(skin, -0.14), skinD = shade(skin, -0.3);
   let hc = HAIR_COLORS[hair?.color || genes.hairColor] || HAIR_COLORS.black;
@@ -110,8 +111,9 @@ export function buildPortrait(genes, { age = 20, gender = 'F', realm = 0, hair =
 
   // 3. head
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (inHead(x, y)) set(x, y, skin);
-  // cheek / jaw shading on right side
-  for (let y = eyeY; y <= bottomHead; y++) for (let x = cx; x < W; x++) if (inHead(x, y) && !inHead(x + 1, y)) set(x, y, skinS);
+  // soft jaw shading, mirrored on both sides so the face stays symmetrical
+  const jaw = shade(skin, -0.07);
+  for (let y = eyeY + 3; y <= bottomHead; y++) for (let x = 0; x < W; x++) if (inHead(x, y) && (!inHead(x + 1, y) || !inHead(x - 1, y))) set(x, y, jaw);
   // ears
   if (!long || style === 'longtied') { set(Math.round(cx - rx) - 1, eyeY + 1, skinS); set(Math.round(cx + rx), eyeY + 1, skinS); }
 
@@ -140,7 +142,7 @@ export function buildPortrait(genes, { age = 20, gender = 'F', realm = 0, hair =
     }
   }
   // nose, mouth, blush
-  const ny = eyeY + (big ? 4 : 3); set(cx, ny, skinS);
+  const ny = eyeY + (big ? 4 : 3); set(cx - 1, ny, shade(skin, -0.08)); set(cx, ny, shade(skin, -0.08)); // centred 2px nose
   const my = Math.min(bottomHead - 2, eyeY + (st === 'infant' ? 5 : 6));
   if (gender === 'F' || st === 'infant' || st === 'child') { set(cx - 1, my, '#c25a68'); set(cx, my, '#d97a86'); }
   else { set(cx - 1, my, shade(skin, -0.42)); set(cx, my, shade(skin, -0.42)); }

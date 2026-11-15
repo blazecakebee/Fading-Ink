@@ -7,6 +7,8 @@ import { COUNTRIES } from '../data/countries.js';
 import { choice, toast } from './modal.js';
 import { fx } from './fx.js';
 import { VERSION } from '../version.js';
+import { playStation } from '../audio/music.js';
+import { S } from '../settings.js';
 import { cloud, cloudConfigured, cloudLinked, connect, syncNow, disconnect } from '../net/cloud.js';
 
 let raf = null;
@@ -15,7 +17,7 @@ function cityCanvas() {
   const cv = h('canvas', { class: 'menu-city' }); const ctx = cv.getContext('2d');
   const W = 320, H = 180; cv.width = W; cv.height = H;
   const rnd = (s => () => (s = (s * 16807) % 2147483647) / 2147483647)(42);
-  const layers = [0.15, 0.35, 0.7].map((speed, li) => ({ speed, b: Array.from({ length: 40 }, (_, i) => ({ x: i * (14 + li * 6), w: 10 + Math.floor(rnd() * (12 + li * 8)), h: 30 + Math.floor(rnd() * (50 + li * 35)), lit: Array.from({ length: 60 }, () => rnd() < 0.35), sign: rnd() < 0.12 ? ['#ff2f6a', '#2fe0ff', '#ffd23f'][Math.floor(rnd() * 3)] : null })) }));
+  const layers = [0.025, 0.06, 0.12].map((speed, li) => ({ speed, b: Array.from({ length: 40 }, (_, i) => ({ x: i * (14 + li * 6), w: 10 + Math.floor(rnd() * (12 + li * 8)), h: 30 + Math.floor(rnd() * (50 + li * 35)), lit: Array.from({ length: 60 }, () => rnd() < 0.35), sign: rnd() < 0.12 ? ['#ff2f6a', '#2fe0ff', '#ffd23f'][Math.floor(rnd() * 3)] : null })) }));
   const drops = Array.from({ length: 70 }, () => ({ x: rnd() * W, y: rnd() * H, v: 1.5 + rnd() * 2 }));
   let t = 0;
   const draw = () => {
@@ -78,10 +80,13 @@ export function showMenu(onPlay) {
       cloudBox,
       h('div', { class: 'menu-foot muted small' }, `v${VERSION} · Legacy ${META.legacy} · ${META.lives} lives lived`)));
   document.body.append(root);
+  // menu theme (browsers only allow sound after the first click/tap)
+  const startMenuMusic = () => { if (document.getElementById('menu') && S().musicOn) playStation('menu'); };
+  startMenuMusic(); addEventListener('pointerdown', startMenuMusic, { once: true });
 }
 function leave(then) {
   const m = document.getElementById('menu'); if (!m) return then();
   const wipe = h('div', { class: 'ink-wipe' }); document.body.append(wipe);
-  setTimeout(() => { cancelAnimationFrame(raf); m.remove(); document.getElementById('app').style.display = ''; then(); }, 650);
+  setTimeout(() => { cancelAnimationFrame(raf); m.remove(); document.getElementById('app').style.display = ''; then(); if (S().musicOn) playStation(S().station); }, 650);
   setTimeout(() => wipe.remove(), 1400);
 }

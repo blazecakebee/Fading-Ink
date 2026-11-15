@@ -50,6 +50,8 @@ function merge(remote, firstLink) {
   const m = remote.meta || {};
   META.legacy = Math.max(META.legacy || 0, m.legacy || 0); META.lives = Math.max(META.lives || 0, m.lives || 0); META.bestRealm = Math.max(META.bestRealm || 0, m.bestRealm || 0);
   for (const [k, v] of Object.entries(m.perks || {})) META.perks[k] = Math.max(META.perks[k] || 0, v);
+  META.tree ||= {}; for (const [k, v] of Object.entries(m.tree || {})) META.tree[k] = Math.max(META.tree[k] || 0, v);
+  META.achievements ||= {}; for (const [k, v] of Object.entries(m.achievements || {})) META.achievements[k] ||= v;
   Object.assign(META.unlockedTraits, m.unlockedTraits || {});
   for (const rs of remote.slots || []) {
     const ls = SLOTS.list.find(s => s.id === rs.id); const { data, ...entry } = rs;

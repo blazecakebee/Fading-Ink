@@ -1,0 +1,62 @@
+// Achievements: one-time firsts across all your lives. Each pays a few Legacy Points.
+// check(c) reads the current character; flags are set by game systems at the moment something happens.
+const kids = c => c.people.filter(p => ['Son', 'Daughter'].includes(p.role));
+export const ACHIEVEMENTS = [
+  // life milestones
+  { id: 'first_steps', name: 'First Steps', desc: 'Reach age 2.', pts: 2, check: c => c.age >= 2 },
+  { id: 'graduate', name: 'Diploma', desc: 'Graduate from secondary school.', pts: 3, check: c => c.edu.level >= 1 },
+  { id: 'degree', name: 'Scholar', desc: 'Graduate from university.', pts: 5, check: c => c.edu.level >= 2 },
+  { id: 'hired', name: 'Employed', desc: 'Get your first job.', pts: 3, check: c => !!c.job },
+  { id: 'married', name: 'Till Death', desc: 'Get married.', pts: 5, check: c => c.people.some(p => p.role === 'Spouse') },
+  { id: 'parent', name: 'New Generation', desc: 'Have a child.', pts: 5, check: c => kids(c).length > 0 },
+  { id: 'big_family', name: 'Full House', desc: 'Have 4 children in one life.', pts: 8, check: c => kids(c).length >= 4 },
+  { id: 'centenarian', name: 'Century', desc: 'Live to 100.', pts: 10, check: c => c.age >= 100 },
+  { id: 'heir', name: 'Pass the Torch', desc: 'Continue as your own child.', pts: 5, check: c => c.generation >= 2 },
+  { id: 'dynasty', name: 'Dynasty', desc: 'Reach the 4th generation of a family.', pts: 15, check: c => c.generation >= 4 },
+  // money & stuff
+  { id: 'homeowner', name: 'Homeowner', desc: 'Buy a home.', pts: 4, check: c => c.assets.some(a => a.type === 'house') },
+  { id: 'wheels', name: 'Wheels', desc: 'Buy a car.', pts: 3, check: c => c.assets.some(a => a.type === 'car') },
+  { id: 'pet', name: 'Best Buddy', desc: 'Adopt a pet.', pts: 2, check: c => c.assets.some(a => a.type === 'pet') },
+  { id: 'millionaire', name: 'Millionaire', desc: 'Hold a net worth of 1,000,000.', pts: 8, check: c => c.money + (c.stocks || 0) + c.assets.reduce((s, a) => s + a.value, 0) >= 1e6 },
+  { id: 'landlord', name: 'Landlord', desc: 'Rent out a property.', pts: 4, check: c => c.assets.some(a => a.tenant) },
+  { id: 'jackpot', name: 'Jackpot', desc: 'Win at the casino.', pts: 2, check: c => c.flags.casinoWin },
+  { id: 'haggler', name: 'Haggler', desc: 'Talk a merchant down.', pts: 2, check: c => c.flags.haggled },
+  { id: 'new_face', name: 'New Face', desc: 'Get plastic surgery.', pts: 3, check: c => c.flags.surgery },
+  // social
+  { id: 'bestie', name: 'Ride or Die', desc: 'Make a best friend.', pts: 3, check: c => c.people.some(p => p.alive && ['Friend', 'Co-op Friend', 'Classmate', 'Coworker'].includes(p.role) && p.close >= 80) },
+  { id: 'mind_reader', name: 'Mind Reader', desc: 'Discover everything on someone\'s index card.', pts: 4, check: c => c.people.some(p => p.persona && p.persona.every(t => p.known?.includes(t)) && p.known?.includes('likes')) },
+  { id: 'viral', name: 'Gone Viral', desc: 'Have a post go viral.', pts: 2, check: c => c.flags.viral },
+  { id: 'together', name: 'Better Together', desc: 'Meet another player in co-op.', pts: 4, check: c => c.people.some(p => p.coop) },
+  { id: 'coop_kid', name: 'Shared Legacy', desc: 'Have a child with another player.', pts: 8, check: c => kids(c).some(k => c.people.find(p => p.id === k.otherParent)?.coop) },
+  // trouble
+  { id: 'jailbird', name: 'Behind Bars', desc: 'Go to prison.', pts: 2, check: c => c.flags.prisonEver },
+  { id: 'clean_getaway', name: 'Clean Getaway', desc: 'Get away with a crime.', pts: 2, check: c => c.flags.crimeWin },
+  { id: 'cured', name: 'Recovery', desc: 'Recover from an illness or mental health condition with treatment.', pts: 3, check: c => c.flags.cured },
+  { id: 'lost_limb', name: 'Flesh Wound', desc: 'Lose a limb.', pts: 3, check: c => c.flags.limbLost },
+  { id: 'prosthetic', name: 'Upgraded', desc: 'Get fitted with a prosthetic.', pts: 3, check: c => c.flags.prosthetic },
+  { id: 'regrowth', name: 'Like Nothing Happened', desc: 'Regrow a lost limb with Qi.', pts: 8, check: c => c.flags.regrown },
+  // combat & gates
+  { id: 'first_win', name: 'First Blood', desc: 'Win a fight.', pts: 2, check: c => c.wins >= 1 },
+  { id: 'veteran', name: 'Veteran', desc: 'Win 50 fights in one life.', pts: 8, check: c => c.wins >= 50 },
+  { id: 'gate_one', name: 'Through the Gate', desc: 'Clear a Gate.', pts: 4, check: c => c.gatesCleared >= 1 },
+  { id: 'gate_s', name: 'S-Rank', desc: 'Clear an S-rank Gate.', pts: 15, check: c => c.flags.gateS },
+  { id: 'trick_shot', name: 'Trick Shot', desc: 'Win a combat mini-game.', pts: 2, check: c => c.flags.miniWin },
+  { id: 'fully_geared', name: 'Fully Geared', desc: 'Equip a weapon, armour and a charm at once.', pts: 4, check: c => c.gear && c.gear.weapon && c.gear.armor && c.gear.charm },
+  // cultivation & crafting
+  { id: 'qi_real', name: 'It\'s Real', desc: 'Discover that Qi exists.', pts: 2, check: c => c.qi.known },
+  { id: 'qi_cond', name: 'First Breath', desc: 'Reach Qi Condensation.', pts: 4, check: c => c.qi.realm >= 1 },
+  { id: 'foundation', name: 'Foundation Laid', desc: 'Reach Foundation Establishment.', pts: 8, check: c => c.qi.realm >= 2 },
+  { id: 'core', name: 'Golden Core', desc: 'Reach Core Formation.', pts: 12, check: c => c.qi.realm >= 3 },
+  { id: 'nascent', name: 'Soul Born', desc: 'Reach Nascent Soul.', pts: 20, check: c => c.qi.realm >= 4 },
+  { id: 'storm_rider', name: 'Storm Rider', desc: 'Survive a Heavenly Tribulation.', pts: 6, check: c => c.flags.tribSurvived },
+  { id: 'all_meridians', name: 'Twelve Rivers', desc: 'Open all 12 meridians.', pts: 8, check: c => c.qi.meridians >= 12 },
+  { id: 'sect_member', name: 'Disciple', desc: 'Join a sect or gang.', pts: 3, check: c => !!c.sect },
+  { id: 'founder', name: 'Patriarch', desc: 'Found your own sect.', pts: 10, check: c => !!c.ownSect },
+  { id: 'crafter', name: 'Handmade', desc: 'Craft your first item.', pts: 2, check: c => (c.counts.crafted || 0) >= 1 },
+  { id: 'alchemist', name: 'Alchemist', desc: 'Know 8 recipes.', pts: 6, check: c => (c.recipes || []).length >= 8 },
+  // traits
+  { id: 'legendary', name: 'Born Different', desc: 'Have a Legendary-or-rarer trait.', pts: 5, check: (c, T) => c.traits.some(id => ['legendary', 'mythical', 'secret', 'glitched', 'god'].includes(T[id]?.tier)) },
+  { id: 'glitch', name: 'ERR_0x0', desc: 'Have a GLITCHED trait.', pts: 10, check: (c, T) => c.traits.some(id => T[id]?.tier === 'glitched') },
+  { id: 'divine', name: 'Chosen', desc: 'Have a God-tier trait.', pts: 20, check: (c, T) => c.traits.some(id => T[id]?.tier === 'god') },
+];
+export const ACH_BY_ID = Object.fromEntries(ACHIEVEMENTS.map(a => [a.id, a]));

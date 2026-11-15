@@ -1,7 +1,14 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.5.1';
+export const VERSION = '0.5.2';
 export const CHANGELOG = [
+  { v: '0.5.2', date: '2026-11-15', title: 'Legacy tree, achievements & surgery', notes: [
+    'The Legacy shop is now a skill tree with 4 branches (Fortune, Cultivation, Body, Mind & Spirit) and 20 upgrades — including being born knowing Qi, starting with recipes or a cultivation method, longer lifespans, cleaner genes, merchant discounts and +1 Action a year. Perks you already bought carry over.',
+    'NEW 49 achievements for doing things for the first time. Each pays a little Legacy and pops up in the top-right. See them all in the new Achievements tab.',
+    'NEW plastic surgery (18+): three clinics from a cheap touch-up to an elite surgeon abroad. Better Looks if it works — but it can go wrong.',
+    'Faces are rounder and fully symmetrical (softer chins, mirrored shading, centred nose).',
+    'Main menu: the city scrolls much more slowly, and there is a new original main-menu theme.',
+  ] },
   { v: '0.5.1', date: '2026-11-15', title: 'Cloud saves are live', notes: [
     'Google cloud saves are now switched on. Use "Connect with Google" on the main menu to back up and sync your save slots. Connecting merges with your local saves and never deletes anything.',
   ] },

@@ -44,7 +44,7 @@ export function renderSettings() {
     slider('Effects volume', 'sfx', 0, 1, 0.05, v => Math.round(v * 100) + '%'),
     toggle('Background music', 'musicOn', syncMusic),
     h('p', { class: 'muted' }, 'Stations are original music composed live by the game, each going for a different mood. You can also play your own audio files — they stay on your device.'),
-    h('div', { class: 'grid2' }, [...Object.entries(STATIONS).map(([id, st]) => [id, st.name, st.mood]), ['files', 'Your Music', playlistNames().length ? `${playlistNames().length} file(s) loaded` : 'Load files below']].map(([id, name, mood]) =>
+    h('div', { class: 'grid2' }, [...Object.entries(STATIONS).filter(([, st]) => !st.menuOnly).map(([id, st]) => [id, st.name, st.mood]), ['files', 'Your Music', playlistNames().length ? `${playlistNames().length} file(s) loaded` : 'Load files below']].map(([id, name, mood]) =>
       h('button', { class: 'card', style: { textAlign: 'left', borderColor: s.station === id ? 'var(--accent)' : '' }, onclick: () => { set('station', id); set('musicOn', true); syncMusic(); rerender(); } },
         h('b', {}, (s.station === id && s.musicOn ? '♪ ' : '') + name), h('div', { class: 'muted' }, mood)))),
     h('div', { class: 'row', style: { marginTop: '10px' } },

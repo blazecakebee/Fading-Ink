@@ -145,7 +145,7 @@ export function fight(enemyDef, opts = {}) {
       if (mini === 'qi_clash') line = ok ? (en.hp -= Math.round(en.maxHp * 0.25), `Your Qi crashes through! ${en.name} reels.`) : (me.hp -= Math.round(me.maxHp * 0.15), 'Your Qi buckles — the backlash hurts.');
       if (mini === 'breath') line = ok ? (en.stun = 2, `${en.name} loses track of you.`) : `${en.name} hears you breathe.`;
       if (mini === 'weakpoint') line = ok ? (en.weak = true, 'You found the weak point! Your hits deal +50% from now on.') : 'You strike solid stone.';
-      if (ok) shake(ui.enPf);
+      if (ok) { shake(ui.enPf); c.flags.miniWin = true; }
       log.textContent = line; draw();
       if (en.hp <= 0) return end('win', `${en.name} is defeated!`);
       await wait(500); log.textContent = line + ' ' + await enemyTurn(true); if (fatal) me.hp = 0; draw();

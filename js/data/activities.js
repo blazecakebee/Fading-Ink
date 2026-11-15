@@ -112,13 +112,13 @@ export const ACTIVITIES = [
       if (amt <= 0) return null; money(c, -amt); c.stocks += amt; return `I invested ${fmtMoney(c, amt)}.`; } },
   { id: 'casino', cat: 'leisure', name: 'Gamble at the casino', icon: 'cards', minAge: 18, run: async c => {
       const bet = await ui.choice({ title: 'Casino', text: `Cash: ${fmtMoney(c, c.money)}. Place a bet on blackjack.`, icon: 'cards', options: [50, 500, 5000].filter(b => b <= c.money).map(b => ({ label: `Bet ${fmtMoney(c, b)}`, value: b })) });
-      if (!bet) return null; const win = chance(0.46 + c.stats.luck / 1000); money(c, win ? bet : -bet); stat(c, 'happiness', win ? 8 : -6);
+      if (!bet) return null; const win = chance(0.46 + c.stats.luck / 1000); if (win) c.flags.casinoWin = true; money(c, win ? bet : -bet); stat(c, 'happiness', win ? 8 : -6);
       return { text: win ? `Blackjack! I won ${fmtMoney(c, bet)}.` : `I lost ${fmtMoney(c, bet)}.`, cls: win ? 'good' : 'bad' }; } },
 
   // ---- LEISURE
   { id: 'party', cat: 'leisure', name: 'Go to a party', icon: 'beer', minAge: 15, run: c => { stat(c, 'happiness', 8); stat(c, 'stress', -6); stat(c, 'mood', 10); if (chance(0.5)) { const p = makePerson(c, { role: 'Friend', close: ri(30, 55) }); c.people.push(p); return `I met ${p.first} at a party and we hit it off.`; } return 'I danced until the lights came on.'; } },
   { id: 'vacation', cat: 'leisure', name: 'Go on vacation', icon: 'travel', minAge: 18, run: c => { const cost = priceFor(c, 1500 * country(c).econ); if (c.money < cost) return null; money(c, -cost); stat(c, 'happiness', 15); stat(c, 'stress', -20); stat(c, 'mood', 18); return `I took a trip to ${pick(['the mountains of Wudang', 'a beach in Bali', 'Kyoto in autumn', 'Paris', 'a desert monastery'])}. (${fmtMoney(c, cost)})`; } },
-  { id: 'social_media', cat: 'leisure', name: 'Post on social media', icon: 'phone', minAge: 13, need: c => c.age >= ({ developing: 18, emerging: 14, developed: 12 }[country(c).tier] || 12) || ['wealthy', 'rich', 'royal'].includes(c.wealth), run: c => { const g = Math.max(0, Math.round(ri(-2, 6) + (c.stats.looks + c.stats.charisma - 100) / 20)); c.fame = clamp((c.fame || 0) + g); return g > 3 ? { text: `My post went viral! Fame +${g}.`, cls: 'good' } : 'Nobody liked my post.'; } },
+  { id: 'social_media', cat: 'leisure', name: 'Post on social media', icon: 'phone', minAge: 13, need: c => c.age >= ({ developing: 18, emerging: 14, developed: 12 }[country(c).tier] || 12) || ['wealthy', 'rich', 'royal'].includes(c.wealth), run: c => { const g = Math.max(0, Math.round(ri(-2, 6) + (c.stats.looks + c.stats.charisma - 100) / 20)); c.fame = clamp((c.fame || 0) + g); if (g > 3) c.flags.viral = true; return g > 3 ? { text: `My post went viral! Fame +${g}.`, cls: 'good' } : 'Nobody liked my post.'; } },
   { id: 'adopt_pet', cat: 'leisure', name: 'Adopt a pet', icon: 'pet', minAge: 10, need: c => !c.assets.some(a => a.type === 'pet'), run: c => { const kind = pick(['cat', 'dog', 'rabbit', 'crow', 'koi fish']); c.assets.push({ type: 'pet', name: `${pick(['Mochi', 'Ink', 'Bao', 'Pepper', 'Luna', 'Ghost'])} the ${kind}`, value: 0 }); stat(c, 'happiness', 10); return `I adopted a ${kind}.`; } },
 
   // ---- CRIME
@@ -148,10 +148,10 @@ export const ACTIVITIES = [
 async function crime(c, risk, loot, text, years) {
   const caught = chance(risk * 1.5 * traitMult(c, 'crime') * (1 - c.stats.agility / 300));
   if (caught) {
-    if (years && c.age >= 18) { c.prison = years + ri(0, years); return { text: `${text}... and got caught. Sentenced to ${c.prison} years in prison.`, cls: 'bad', big: true }; }
+    if (years && c.age >= 18) { c.prison = years + ri(0, years); c.flags.prisonEver = true; return { text: `${text}... and got caught. Sentenced to ${c.prison} years in prison.`, cls: 'bad', big: true }; }
     stat(c, 'happiness', -8); return { text: `${text}... but got caught. ${c.age < 18 ? 'My parents were called.' : 'I paid a fine.'}`, cls: 'bad' };
   }
-  const g = Math.round(ri(...loot) * country(c).econ); money(c, g); return { text: `${text}. Got away with ${fmtMoney(c, g)}.`, cls: 'good' };
+  const g = Math.round(ri(...loot) * country(c).econ); money(c, g); c.flags.crimeWin = true; return { text: `${text}. Got away with ${fmtMoney(c, g)}.`, cls: 'good' };
 }
 
 // Social actions (cost a Social point) — used from the People tab.

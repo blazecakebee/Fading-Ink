@@ -79,7 +79,7 @@ export function hitBody(c, { amount, type = 'blunt', group = null, ratio = 1, sp
   if (inj === 'fracture') ui.fx('heavy');
   if (s.hp <= 0 && !sparring) {
     if (p.limb && (type === 'cut' || ratio >= 2) && chance(type === 'cut' ? 0.45 : 0.3)) {
-      s.missing = true; s.lostAt = c.age; s.inj = []; lost = true; text = `${p.name} SEVERED`; ui.fx('limb');
+      s.missing = true; s.lostAt = c.age; s.inj = []; lost = true; c.flags.limbLost = true; text = `${p.name} SEVERED`; ui.fx('limb');
     } else if (p.vital) {
       if (chance(0.5)) { s.hp = 1; text = `${p.name} critically damaged`; } else { fatal = true; text = `${p.name} destroyed`; }
     } else text = `${p.name} destroyed`;
@@ -124,13 +124,13 @@ export function qiHeal(c) {
   for (const p of PARTS) { const s = c.body.parts[p.id]; if (s.missing) continue;
     s.inj = s.inj.filter(i => { if (i.type === 'scar') return true; healed++; if (chance(info.scarChance)) { i.type = 'scar'; scars++; return true; } return false; });
     s.hp = maxHp(c, p.id); }
-  if (info.regrow.length && c.qi.realm >= 2 && chance(0.5 + c.qi.realm * 0.08)) { const p = info.regrow[0]; c.body.parts[p.id].missing = false; c.body.parts[p.id].hp = Math.round(maxHp(c, p.id) * 0.5); c.body.parts[p.id].prosthetic = null; regrown = p.name; ui.fx('breakthrough', { major: false }); }
+  if (info.regrow.length && c.qi.realm >= 2 && chance(0.5 + c.qi.realm * 0.08)) { const p = info.regrow[0]; c.body.parts[p.id].missing = false; c.body.parts[p.id].hp = Math.round(maxHp(c, p.id) * 0.5); c.body.parts[p.id].prosthetic = null; regrown = p.name; c.flags.regrown = true; ui.fx('breakthrough', { major: false }); }
   c.conditions = (c.conditions || []).filter(x => x.id !== 'blindness' || (partEff(c, 'eye_l') === 0 && partEff(c, 'eye_r') === 0));
   return { text: `I guided Qi through my wounds. ${healed ? `${healed} injur${healed === 1 ? 'y' : 'ies'} mended` : 'My body is whole'}${scars ? `, but ${scars} healed as scar${scars > 1 ? 's' : ''} — my Qi was too weak` : ''}.${regrown ? ` My ${regrown.toLowerCase()} GREW BACK!` : ''}`, cls: regrown ? 'qi' : 'good', big: !!regrown };
 }
 export function prostheticOptions(c, id) { const k = kindOf(id); return k ? [k, k + '2'].map(x => ({ id: x, ...PROSTHETICS[x] })) : []; }
 export function fitProsthetic(c, id, pid, price) {
-  if (c.money < price) return null; c.money -= price; c.body.parts[id].prosthetic = pid;
+  if (c.money < price) return null; c.money -= price; c.body.parts[id].prosthetic = pid; c.flags.prosthetic = true;
   return { text: `I was fitted with a ${PROSTHETICS[pid].name.toLowerCase()} for my missing ${PART_BY_ID[id].name.toLowerCase()}.`, cls: 'good' };
 }
 // Muscle from training; a little looks boost as you get fitter

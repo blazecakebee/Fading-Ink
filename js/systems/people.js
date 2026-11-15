@@ -10,6 +10,7 @@ import { learnMethod, learnManual } from './cultivation.js';
 import { known as _known } from './crafting.js';
 import { METHODS, MANUALS } from '../data/realms.js';
 import { ITEMS, RECIPES } from '../data/items.js';
+import { perk as _perk } from '../data/legacyTree.js';
 
 const JOBS = ['teacher', 'factory worker', 'nurse', 'shopkeeper', 'taxi driver', 'accountant', 'farmer', 'chef', 'police officer', 'tea house owner', 'mechanic'];
 
@@ -107,7 +108,7 @@ export function bondList(c) {
   return out;
 }
 // Positive closeness changes scale with Social traits.
-export function gainClose(c, p, d) { p.close = clamp(p.close + (d > 0 ? Math.round(d * 1.3 * _tm(c, 'social')) : d)); return p.close; }
+export function gainClose(c, p, d) { p.close = clamp(p.close + (d > 0 ? Math.round(d * 1.3 * _tm(c, 'social') * (_perk('m2') ? 1.1 : 1)) : d)); return p.close; }
 
 // People who like you a lot sometimes give you things, teach you skills, recipes, or even cultivation methods.
 export function favor(c, p) {

@@ -10,7 +10,7 @@ export const has = (c, id) => c.traits.includes(id);
 // Roll 1-3 birth traits. Higher tiers are exponentially rarer. Legacy perk "luckyStars" improves odds.
 export function rollBirthTraits(c) {
   const out = []; const n = chance(0.25) ? 3 : chance(0.6) ? 2 : 1;
-  const boost = 1 + (META.perks?.stars || 0) * 0.5;
+  const boost = 1 + (META.tree?.m4 || 0) * 0.5;
   for (let i = 0; i < n; i++) {
     const tierId = weighted(TIER_ORDER.map(t => ({ t, weight: TIERS[t].birth * (t === 'common' ? 1 : boost) })), x => x.weight).t;
     const pool = TRAITS.filter(t => t.tier === tierId && t.birth !== 0 && !out.includes(t.id) && !conflicts(out, t.id));
@@ -33,7 +33,9 @@ export function traitMult(c, field) { return c.traits.reduce((m, id) => m * (TRA
 export function traitVal(c, field) { return c.traits.reduce((s, id) => s + (TRAIT_BY_ID[id]?.[field] ?? 0), 0); }
 
 // Thresholds for traits earned through play (checked after actions and each birthday)
+import { checkAchievements } from './achievements.js';
 export function checkEarned(c) {
+  checkAchievements(c);
   const sparred = (c.counts.spar || 0) + (c.counts.soc_spar_p || 0) + (c.counts.coop_spar || 0);
   if (c.wins >= 5) earnTrait(c, 'brawler');
   if (c.wins >= 25) earnTrait(c, 'battle_hungry');

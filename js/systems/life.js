@@ -3,6 +3,9 @@ import { G, META, save } from '../core/state.js';
 import { ui } from '../core/bus.js';
 import { ri, pick, chance, clamp, uid, weighted, rand } from '../core/rng.js';
 import { COUNTRIES, WEALTH, ERAS, TIERS, BIOMES } from '../data/countries.js';
+import { perk } from '../data/legacyTree.js';
+import { METHODS } from '../data/realms.js';
+import { RECIPES, ITEMS } from '../data/items.js';
 import { REALMS, ELEMENTS } from '../data/realms.js';
 import { CAREERS } from '../data/careers.js';
 import { rollBirthTraits, applyTraitMods, traitVal, traitMult, earnTrait, has } from './traits.js';
@@ -56,7 +59,7 @@ export function stat(c, k, d) {
   return c.stats[k];
 }
 // Charisma (and a few traits) get you better prices from merchants: up to 25% off.
-export function discount(c) { return clamp(Math.max(0, (c.stats.charisma - 40) / 240) + (traitMult(c, 'social') > 1 ? 0.03 : 0), 0, 0.25); }
+export function discount(c) { return clamp(Math.max(0, (c.stats.charisma - 40) / 240) + (traitMult(c, 'social') > 1 ? 0.03 : 0) + (perk('f4') ? 0.05 : 0), 0, 0.3); }
 export function priceFor(c, base) { return Math.round(base * (1 - discount(c))); }
 // Current wealth status from net worth (adjusted for the country's economy). Kids show their family's class.
 export function netWorth(c) { return c.money + (c.stocks || 0) + c.assets.reduce((s, a) => s + (a.value || 0), 0); }
@@ -77,7 +80,7 @@ export function addItem(c, id, n = 1) { c.inv[id] = (c.inv[id] || 0) + n; if (c.
 export function newLife(opts = {}) {
   const cty = opts.country || weighted(COUNTRIES, () => 1);
   const gender = opts.gender || (chance(0.5) ? 'F' : 'M');
-  const wealth = opts.wealth || weighted(WEALTH.map(w => ({ ...w, weight: w.weight * (w.id === 'royal' ? 1 + (META.perks.royal || 0) : 1) })));
+  const wealth = opts.wealth || weighted(WEALTH.map(w => ({ ...w, weight: w.weight * (w.id === 'royal' ? 1 + perk('f3') * 1.5 : 1) * (perk('f2') && ['destitute', 'poor'].includes(w.id) ? 0.35 : 1) })));
   const nm = opts.name || makeName(cty, gender);
   const genes = opts.genes || randomGenes(gender);
   const base = () => ri(20, 80);
@@ -97,8 +100,19 @@ export function newLife(opts = {}) {
   if (opts.inherit) Object.entries(opts.inherit).forEach(([k, v]) => { c.stats[k] = clamp(Math.round(v)); });
   c.traits = opts.traits || rollBirthTraits(c);
   c.traits.forEach(t => applyTraitMods(c, t));
-  if (META.perks.qiborn) c.qi.affinity = clamp(c.qi.affinity + 15 * META.perks.qiborn);
-  if (META.perks.wealth) c.money += 500 * META.perks.wealth;
+  // Legacy tree perks
+  if (perk('c1')) c.qi.affinity = clamp(c.qi.affinity + 15 * perk('c1'));
+  if (perk('f1')) c.money += 500 * perk('f1');
+  if (perk('c2')) { c.qi.known = true; if (!c.qi.manuals.includes('breathing')) c.qi.manuals.push('breathing'); }
+  if (perk('c5')) { const m = METHODS.filter(x => x.id !== 'basic' && !x.demonic && !x.minRealm); c.qi.methods = ['basic', m[Math.floor(Math.random() * m.length)].id]; }
+  if (perk('b1')) c.stats.health = clamp(c.stats.health + 5 * perk('b1'));
+  if (perk('b2')) c.stats.strength += 5;
+  if (perk('b3')) c.lifespan += 5 * perk('b3');
+  if (perk('b5')) { c.stats.battle += 5; c.stats.agility += 5; }
+  if (perk('m1')) c.stats.smarts = clamp(c.stats.smarts + 5);
+  if (perk('m2')) c.stats.charisma = clamp(c.stats.charisma + 5);
+  if (perk('m3')) { const pills = RECIPES.filter(r => ITEMS[r.out].type === 'consumable' && r.id !== 'r_ink').sort(() => Math.random() - 0.5).slice(0, 2); c.recipes = [...(c.recipes || []), ...pills.map(r => r.id)]; }
+  if (perk('b4') && genes.carriers) genes.carriers = genes.carriers.filter(() => Math.random() < 0.5);
   c.lifespan += traitVal(c, 'life');
   c.money += ri(...wealth.money) * (opts.moneyBonus ? 1 : 1);
   G.char = c;
@@ -120,7 +134,7 @@ export function newLife(opts = {}) {
 }
 
 // Action points grow as you grow up: 4 as a child → 5 at 16 → 6 at 25 → 7 at 35 → 8 at 50. Traits get you there sooner. Cap 8.
-export function maxActions(c) { return Math.min(8, ACTIONS_PER_YEAR + [16, 25, 35, 50].filter(a => c.age >= a).length + traitVal(c, 'extraAction')); }
+export function maxActions(c) { return Math.min(8, ACTIONS_PER_YEAR + [16, 25, 35, 50].filter(a => c.age >= a).length + traitVal(c, 'extraAction') + perk('m5')); }
 // Social actions: 4 → 5 at 18 → 6 at 30. Cap 6.
 export function maxSocial(c) { return Math.min(6, SOCIAL_PER_YEAR + [18, 30].filter(a => c.age >= a).length + traitVal(c, 'extraSocial')); }
 export function beginYear(c) {
@@ -166,7 +180,7 @@ export async function ageUp() {
   educationYear(c);
   if (c.job && !c.prison) {
     const job = CAREERS.find(j => j.id === c.job.id);
-    const pay = Math.round(job.pay * country(c).econ * (1 + c.job.years * 0.04) * (job.part ? 0.5 : 1) * traitMult(c, 'pay') * bondBonus(c, 'work'));
+    const pay = Math.round(job.pay * country(c).econ * (1 + c.job.years * 0.04) * (job.part ? 0.5 : 1) * traitMult(c, 'pay') * bondBonus(c, 'work') * (perk('f5') ? 1.1 : 1));
     money(c, pay); c.job.years++; c.job.perf = clamp(c.job.perf - ri(0, 6));
     ui.log(`Earned ${fmtMoney(c, pay)} as a ${job.name}.`);
     if (c.job.perf < 15 && chance(0.4)) { ui.log(`I was fired from my job as a ${job.name}.`, 'bad'); c.job = null; }
@@ -256,6 +270,7 @@ export function die(c, cause) {
   pts = Math.round(pts * tierOf(c).legacy);
   c.legacyEarned = pts; META.legacy += pts; META.bestRealm = Math.max(META.bestRealm, c.qi.realm);
   c.traits.forEach(t => META.unlockedTraits[t] = true);
+  checkEarned(c);
   ui.fx('death'); save();
 }
 

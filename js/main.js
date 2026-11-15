@@ -1,6 +1,9 @@
 // Boot: load saves & icons, wire UI hooks into the game systems, start the first life.
 import { G, META, SLOTS, loadMeta, loadSlot, newSlotId, startSlot, save, onSave } from './core/state.js';
 import { showMenu } from './ui/menu.js';
+import { migratePerks } from './data/legacyTree.js';
+import { h } from './ui/dom.js';
+import { sfx } from './audio/sfx.js';
 import { ensureBody } from './systems/body.js';
 import { scheduleSync } from './net/cloud.js';
 import { ui } from './core/bus.js';
@@ -20,7 +23,15 @@ import { startUpdateChecks } from './core/updates.js';
 import { openChangelog } from './ui/render.js';
 import { resumeRoom } from './net/coop.js';
 
+// Achievement popup (top-right). Several in a row stack and play one after another.
+const achQueue = []; let achBusy = false;
+function showAch() {
+  if (achBusy || !achQueue.length) return; achBusy = true; const a = achQueue.shift();
+  const el = h('div', { class: 'ach-pop' }, h('span', { class: 'trophy' }, '🏆'), h('div', {}, h('small', {}, 'Achievement unlocked'), h('div', {}, h('b', {}, a.name)), h('div', { class: 'muted small' }, `${a.desc} · +${a.pts} Legacy`)));
+  document.body.append(el); sfx('trait'); setTimeout(() => { el.remove(); achBusy = false; showAch(); }, 4300);
+}
 Object.assign(ui, {
+  achievement: a => { achQueue.push(a); showAch(); },
   log: logLine, toast, fx, choice, fight, refresh: render, openSalon,
   openTab: tab => { G.ui.tab = tab; render(); },
 });
@@ -59,7 +70,7 @@ ui.toMenu = toMenu;
 
 async function boot() {
   await loadIcons();
-  loadMeta(); apply();
+  loadMeta(); migratePerks(); apply();
   onSave(scheduleSync);
   // ?play skips the menu straight into your last slot (handy after the auto-updater refreshes mid-game)
   const resume = sessionStorage.getItem('fi-in-game') && SLOTS.active;

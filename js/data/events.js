@@ -61,7 +61,7 @@ const E = [
         text: `"${n}× ${it.name}, friend. ${fmtMoney(c, base)}… for you, ${fmtMoney(c, price)}."${off ? `\n(Your charisma got you ${off}% off.)` : ''}\n${it.desc}`,
         options: [{ label: `Buy for ${fmtMoney(c, price)}`, value: 'buy', disabled: c.money < price }, { label: 'Haggle (Charisma)', value: 'haggle' }, { label: 'Walk away', value: 'no', ghost: true }] });
       if (v === 'haggle') {
-        if (chance(0.25 + c.stats.charisma / 200)) { price = Math.round(price * 0.7); stat(c, 'charisma', 1); const ok = await ui.choice({ title: 'Haggled!', icon: 'shop', text: `"Fine, fine — ${fmtMoney(c, price)}, and you're robbing me."`, options: [{ label: `Buy for ${fmtMoney(c, price)}`, value: true, disabled: c.money < price }, { label: 'No thanks', value: false, ghost: true }] }); if (!ok) return ui.log('I talked a merchant down, then walked away anyway.'); }
+        if (chance(0.25 + c.stats.charisma / 200)) { price = Math.round(price * 0.7); c.flags.haggled = true; stat(c, 'charisma', 1); const ok = await ui.choice({ title: 'Haggled!', icon: 'shop', text: `"Fine, fine — ${fmtMoney(c, price)}, and you're robbing me."`, options: [{ label: `Buy for ${fmtMoney(c, price)}`, value: true, disabled: c.money < price }, { label: 'No thanks', value: false, ghost: true }] }); if (!ok) return ui.log('I talked a merchant down, then walked away anyway.'); }
         else return ui.log('I tried to haggle with a merchant. They packed up and left in a huff.', 'bad');
       } else if (v !== 'buy') return;
       if (c.money < price) return; money(c, -price); addItem(c, id, n); ui.log(`I bought ${n}× ${it.name} from a merchant for ${fmtMoney(c, price)}.`, 'good'); } },

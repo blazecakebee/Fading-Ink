@@ -9,6 +9,7 @@ import { bondBonus } from './people.js';
 import { condQiMult, addCondition } from './health.js';
 import { gearStats } from './crafting.js';
 import { SECTS, METHODS } from '../data/realms.js';
+import { perk as perkC } from '../data/legacyTree.js';
 import { ITEMS } from '../data/items.js';
 
 export const realmName = c => c.qi.realm === 0 ? 'Mortal' : `${REALMS[c.qi.realm].name} ${REALMS[c.qi.realm].stages > 1 ? 'Stage ' + c.qi.stage : ''}`.trim();
@@ -21,7 +22,7 @@ export function qiGain(c, base) {
   const stress = c.stats.stress > 60 ? 0.6 : 1;
   const sect = c.ownSect ? 1.1 : 1;
   const M = method(c); const meth = M.qi * (M.dual && bondBonus(c, 'qi') > 1 ? 1 + M.dual : 1);
-  return Math.max(1, Math.round(base * aff * merid * manual * traitMult(c, 'qi') * stress * bondBonus(c, 'qi') * condQiMult(c) * (1 + gearStats(c).qi) * sect * meth));
+  return Math.max(1, Math.round(base * aff * merid * manual * traitMult(c, 'qi') * stress * bondBonus(c, 'qi') * condQiMult(c) * (1 + gearStats(c).qi) * sect * meth * (perkC('c3') ? 1.15 : 1)));
 }
 
 // Meditate: main Qi source. Returns text for the chronicle.
@@ -64,6 +65,7 @@ export function breakthroughInfo(c) {
   add(`Qi affinity ${c.qi.affinity}`, c.qi.affinity / 400);
   add(`Meridians ${c.qi.meridians}/12`, c.qi.meridians * 0.015);
   add('Traits', traitVal(c, 'breakthrough'));
+  if (perkC('c4')) add('Legacy: Tribulation Scars', 0.05);
   add(`Stress ${c.stats.stress}`, -c.stats.stress / 300);
   add('Mood', ((c.stats.mood ?? 60) - 60) / 600);
   add('Partner (dual cultivation)', bondBonus(c, 'breakthrough') - 1);
@@ -100,6 +102,7 @@ export async function breakthrough(c) {
     const soft = ward ? 0.7 : 1;
     const res = await ui.fight({ ...t, hp: Math.round((80 * lvl * lvl + 60) * soft), str: Math.round((50 + lvl * 25) * soft), agi: 50 + lvl * 15, realm: c.qi.realm, name: `Heavenly Tribulation (${lvl} bolts)` }, { noFlee: true, tribulation: true });
     if (res !== 'win') { c.qi.qi = Math.round(c.qi.qi * 0.3); stat(c, 'health', -40); if (c.stats.health <= 0) die(c, 'struck down by Heavenly Tribulation'); return 'The lightning tore through me. The breakthrough failed.'; }
+    c.flags.tribSurvived = true;
     if (c.lastFightHpPct < 0.15) earnTrait(c, 'heaven_defier');
     p = Math.max(p, 0.9);
   }

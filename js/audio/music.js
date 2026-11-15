@@ -75,6 +75,12 @@ export const STATIONS = {
       if (i % 2 === 0 && Math.random() < 0.65) { const n = walk(PENTA_MIN, ch[0] + 12); v(N(n), t, s * 6, { type: 'triangle', gain: 0.07, cut: 3500, cutEnd: 700, verb: 1, delay: 1 }); if (Math.random() < 0.2) v(N(n), t + s * 0.5, s * 3, { type: 'triangle', gain: 0.03, cut: 2000, verb: 1 }); }
       if (i === 0) [0, 7].forEach(k => v(N(ch[0] - 12 + k), t, s * 16, { type: 'sine', gain: 0.05, attack: 1.5, sustain: 1, verb: 1 }));
       if (i === 8 && Math.random() < 0.3) noise(t, 0.6, { freq: 400, gain: 0.05, q: 8, out: bus.music }); } },
+  menu: { name: 'Fading Ink (Menu Theme)', mood: 'Gentle rainy-night guitar with a slow, wistful melody', bpm: 84, prog: [[52, 'add9'], [48, 'maj7'], [55, 'maj'], [50, 'sus']], hiss: true, menuOnly: true,
+    play(st, t, s, ch) { const i = st % 16; const notes = chordNotes(ch[0], ch[1]);
+      if (i % 2 === 0) v(N(notes[(i / 2) % notes.length] + 12), t, s * 6, { type: 'triangle', gain: 0.055, cut: 2400, cutEnd: 800, delay: 1, verb: 1 });
+      if (i === 0) { v(N(ch[0] - 12), t, s * 15, { type: 'sine', gain: 0.07 }); notes.forEach(n => v(N(n), t, s * 16, { type: 'sine', gain: 0.018, attack: 1.2, sustain: 1, verb: 1 })); }
+      if ((i === 3 || i === 7 || i === 11) && Math.random() < 0.6) v(N(walk(PENTA_MAJ, ch[0] + 24)), t, s * 4, { type: 'sine', gain: 0.045, vib: 5, vibAmt: 8, delay: 1, verb: 1 });
+      if (i === 8 && Math.random() < 0.4) noise(t, 0.05, { freq: 6000, gain: 0.015, q: 1, type: 'highpass', out: bus.music }); } },
   battle: { name: 'Clash of Qi', mood: 'Driving drums for fights', bpm: 140, prog: [[45, 'min'], [45, 'min'], [43, 'maj'], [44, 'maj']],
     play(st, t, s, ch) { const i = st % 16;
       if ([0, 3, 6, 8, 10].includes(i)) kick(t); if (i === 4 || i === 12) snare(t, 0.14); hat(t, 0.025);

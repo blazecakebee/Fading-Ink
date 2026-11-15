@@ -25,12 +25,13 @@ import { ri, pick, chance, weighted } from '../core/rng.js';
 import { renderSettings } from './settingsPanel.js';
 import { renderLegacy } from './legacyPanel.js';
 import { VERSION, CHANGELOG } from '../version.js';
+import { ACHIEVEMENTS } from '../data/achievements.js';
 import { net, hostRoom, joinRoom, leave, sendChat, doCoopAction, COOP_ACTIONS, coopTick } from '../net/coop.js';
 
 export const NAV = [
   ['Your Life', [['life', 'Life', 'life'], ['status', 'Status', 'robe'], ['character', 'Character', 'character'], ['skills', 'Skills & Traits', 'skills'], ['health', 'Health', 'doctor'], ['inventory', 'Inventory', 'bag'], ['cultivation', 'Cultivation', 'cultivation'], ['crafting', 'Crafting & Gear', 'anvil'], ['gates', 'Dungeons & Gates', 'gates']]],
   ['People & Places', [['people', 'People', 'people'], ['career', 'Career', 'career'], ['education', 'Education', 'education'], ['assets', 'Assets & Market', 'assets'], ['world', 'World', 'world']]],
-  ['Your Story', [['chronicle', 'Chronicle', 'study'], ['legacy', 'Legacy & Family', 'legacy'], ['coop', 'Co-op', 'people'], ['updates', 'Update Log', 'letter'], ['settings', 'Settings', 'settings']]],
+  ['Your Story', [['chronicle', 'Chronicle', 'study'], ['legacy', 'Legacy & Family', 'legacy'], ['coop', 'Co-op', 'people'], ['achievements', 'Achievements', 'trophy'], ['updates', 'Update Log', 'letter'], ['settings', 'Settings', 'settings']]],
 ];
 
 // ---------- chronicle logging (used through bus.ui.log)
@@ -175,8 +176,8 @@ const TABS = {
         h('table', { class: 'kv' }, [['Born', `${c.city}, ${cty.name} (year ${c.birthYear})`], ['Family wealth', WEALTH.find(w => w.id === c.wealth).name], ['Age', `${c.age} · ${lifeStage(c.age)}`],
           ['Expected lifespan', `~${lifespan(c)} years`], ['Hair', `${(c.hair?.style || c.genes.style)} · ${(c.hair?.color || c.genes.hairColor)}`], ['Base looks', c.genes.looks + ' (fixed at birth)'],
           ['Generation', c.generation], ['Heirlooms', c.heirlooms.join(', ') || '—']].map(([k, v]) => h('tr', {}, h('td', {}, k), h('td', {}, v)))),
-        h('div', { class: 'row', style: { marginTop: '12px' } }, h('button', { class: 'btn', disabled: c.age < 13 || !c.alive, onclick: openSalon }, icon('salon', 'sm'), ' Visit the salon')),
-        h('p', { class: 'muted' }, 'You can\'t change your face or base looks — you play the hand you were dealt. The salon can change your hairstyle and color; cultivation and major events can change the rest.'))),
+        h('div', { class: 'row', style: { marginTop: '12px' } }, h('button', { class: 'btn', disabled: c.age < 13 || !c.alive, onclick: openSalon }, icon('salon', 'sm'), ' Visit the salon'), h('button', { class: 'btn ghost', disabled: c.age < 18 || !c.alive || c.actions <= 0, onclick: openSurgery }, icon('doctor', 'sm'), ' Plastic surgery')),
+        h('p', { class: 'muted' }, 'You\'re born with your face and base looks. The salon changes your hair; plastic surgery (18+) can raise your Looks — at a price, and with a risk of going wrong. Cultivation and fitness help too.'))),
       h('div', { class: 'box', style: { marginTop: '16px' } }, h('h3', {}, 'Traits'), c.traits.map(id => { const t = TRAIT_BY_ID[id]; return h('div', { style: { margin: '6px 0' } }, traitChip(id), ' ', h('span', { class: 'muted' }, t.desc)); }))];
   },
 
@@ -360,6 +361,11 @@ const TABS = {
   inventory: () => inventoryTab(),
   crafting: () => craftingTab(),
   health: () => healthTab(),
+  achievements() {
+    const done = META.achievements || {}; const n = ACHIEVEMENTS.filter(a => done[a.id]).length;
+    return [h('h2', { class: 'display' }, 'Achievements'), h('p', { class: 'muted' }, `${n} / ${ACHIEVEMENTS.length} unlocked across all your lives · each one pays Legacy Points the first time.`),
+      h('div', { class: 'ach-grid' }, ACHIEVEMENTS.map(a => h('div', { class: 'ach' + (done[a.id] ? ' done' : '') }, h('b', {}, (done[a.id] ? '🏆 ' : '🔒 ') + a.name), h('div', { class: 'small muted' }, a.desc), h('div', { class: 'small', style: { color: 'var(--legend)' } }, `+${a.pts} Legacy`))))];
+  },
   updates() {
     return [h('h2', { class: 'display' }, 'Update Log'), h('p', { class: 'muted' }, `You're playing version ${VERSION}. When a new version goes live, the game lets you know and refreshes itself.`), changelogBody(CHANGELOG)];
   },
@@ -406,7 +412,7 @@ async function enterGate(i) {
       if (r !== 'win') return { text: r === 'flee' ? `I fled the ${T.name}.` : `I was beaten inside the ${g.rank}-rank ${T.name} and dragged myself out.`, cls: 'bad' };
       cc.wins++;
     }
-    cc.gates.splice(i, 1); cc.gatesCleared++; if (cc.gatesCleared >= 10) earnTrait(cc, 'gatebreaker');
+    cc.gates.splice(i, 1); cc.gatesCleared++; if (cc.gatesCleared >= 10) earnTrait(cc, 'gatebreaker'); if (g.rank === 'S') cc.flags.gateS = true;
     const tier = 'EDCBAS'.indexOf(g.rank);
     const n = Math.round((ri(2, 3) + Math.floor(tier / 2)) * traitVal0(cc));
     const table = Object.entries(T.loot).map(([id, w]) => ({ id, w }));
@@ -421,6 +427,24 @@ async function enterGate(i) {
     }
     return { text: `I cleared the ${g.rank}-rank ${T.name}! Loot: ${Object.entries(got).map(([k, v]) => v > 1 ? `${v}× ${k}` : k).join(', ')}.`, cls: 'good', big: true };
   } });
+}
+
+// Plastic surgery: pay for a chance at better Looks. Cheaper clinics fail (and botch) more often.
+export async function openSurgery() {
+  const c = G.char, k = country(c).econ;
+  const CLINICS = [
+    { id: 'minor', name: 'Touch-up at a local clinic', price: 4000, ok: 0.75, gain: [2, 5], botch: 0.1 },
+    { id: 'major', name: 'Full facial reconstruction', price: 20000, ok: 0.6, gain: [6, 14], botch: 0.18 },
+    { id: 'elite', name: 'Elite surgeon abroad', price: 80000, ok: 0.85, gain: [8, 18], botch: 0.04 },
+  ].map(x => ({ ...x, cost: priceFor(c, x.price * k) }));
+  const v = await choice({ title: 'Plastic surgery', icon: 'doctor', text: `Looks: ${c.stats.looks}. Results aren't guaranteed — a botched job can make things worse.\nCosts 1 Action.`,
+    options: [...CLINICS.map(x => ({ label: `${x.name} — ${fmtMoney(c, x.cost)} · ${Math.round(x.ok * 100)}% success · +${x.gain[0]}–${x.gain[1]} Looks`, value: x.id, disabled: c.money < x.cost })), { label: 'Never mind', value: null, ghost: true }] });
+  const x = CLINICS.find(y => y.id === v); if (!x) return;
+  await runActivity({ id: 'surgery', cat: 'mind', run: cc => {
+    money(cc, -x.cost); cc.flags.surgery = true; stat(cc, 'stress', 6);
+    if (chance(x.ok)) { const g = ri(...x.gain); stat(cc, 'looks', g); stat(cc, 'happiness', 10); return { text: `The surgery went well. Looks +${g}. I barely recognise myself in the mirror — in a good way.`, cls: 'good', big: true }; }
+    if (chance(x.botch / (1 - x.ok))) { const l = ri(3, 10); stat(cc, 'looks', -l); stat(cc, 'mood', -15); return { text: `The surgery was botched. Looks -${l}. I can't stop staring at the scars.`, cls: 'bad', big: true }; }
+    return { text: 'The surgery healed fine, but nobody can tell the difference.', cls: '' }; } });
 }
 
 export function openSalon() {
