@@ -534,3 +534,9 @@ body:not([data-theme='clean']):not([data-theme='parchment']):not([data-theme='pa
 .mission .grow { flex: 1; }
 .rel-pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; color: #111; }
 @media (max-width: 700px) { .gene-tree { grid-template-columns: repeat(2, 1fr); } }
+
+/* co-op age-up vote */
+#ageup.voting { line-height: 1.1; }
+#ageup.voting.ready:disabled { opacity: 1; cursor: default; background: linear-gradient(180deg, #3f9a5a, #2a6a3c); color: #effff3; border-color: #7fe3a0; animation: votePulse 1.6s ease-in-out infinite; }
+#ageup.voting:not(.ready) { animation: votePulse 1.2s ease-in-out infinite; }
+@keyframes votePulse { 50% { box-shadow: 0 0 18px 2px color-mix(in srgb, var(--accent2, #ffd84a) 55%, transparent); } }

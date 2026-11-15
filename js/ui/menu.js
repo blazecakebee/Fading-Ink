@@ -54,9 +54,9 @@ export function showMenu(onPlay) {
     if (!cloudConfigured()) return cloudBox.replaceChildren(h('span', { class: 'muted small' }, '☁ Cloud saves are not set up on this site yet.'));
     const linked = cloudLinked();
     cloudBox.replaceChildren(
-      h('button', { class: 'btn ghost', onclick: async () => { try { cloud.status = 'syncing'; drawCloud(); linked ? await syncNow() : await connect(); toast('Cloud save synced ✓'); rebuild(); } catch (e) { toast('Cloud: ' + e.message); drawCloud(); } } },
-        h('span', { class: 'g-logo' }, 'G'), linked ? ' Sync with Google now' : ' Connect with Google'),
-      h('span', { class: 'muted small' }, cloud.status === 'syncing' ? 'Syncing…' : cloud.status === 'error' ? `⚠ ${cloud.error}` : linked ? `Linked${cloud.last ? ' · synced ' + ago(cloud.last) : ''}. Your local saves are always kept.` : 'Back up and sync your saves. Connecting never deletes local progress.'),
+      h('button', { class: 'btn ghost', disabled: linked, title: linked ? 'Your saves sync to Google Drive automatically' : '', onclick: async () => { try { cloud.status = 'syncing'; drawCloud(); linked ? await syncNow() : await connect(); toast('Cloud save synced ✓'); rebuild(); } catch (e) { toast('Cloud: ' + e.message); drawCloud(); } } },
+        h('span', { class: 'g-logo' }, 'G'), linked ? ' Linked ✓' : ' Connect with Google'),
+      h('span', { class: 'muted small' }, cloud.status === 'syncing' ? 'Syncing…' : cloud.status === 'error' ? `⚠ ${cloud.error}` : linked ? `Syncs automatically${cloud.last ? ' · last synced ' + ago(cloud.last) : ''}. Your local saves are always kept.` : 'Back up and sync your saves. Connecting never deletes local progress.'),
       linked ? h('button', { class: 'btn ghost mini', onclick: () => { disconnect(); drawCloud(); } }, 'Unlink') : null);
   };
   const rebuild = () => showMenu(onPlay);

@@ -32,7 +32,7 @@ import { VERSION, CHANGELOG } from '../version.js';
 import { ACHIEVEMENTS } from '../data/achievements.js';
 import { flagEl } from './flags.js';
 import { svgMap, osmLink } from './worldMap.js';
-import { net, hostRoom, joinRoom, leave, sendChat, doCoopAction, COOP_ACTIONS, coopTick } from '../net/coop.js';
+import { net, hostRoom, joinRoom, leave, sendChat, doCoopAction, COOP_ACTIONS, coopTick, voteInfo, voteAgeUp, inCoopRoom } from '../net/coop.js';
 
 export const NAV = [
   ['Your Life', [['life', 'Life', 'life'], ['status', 'Status', 'robe'], ['character', 'Character', 'character'], ['skills', 'Skills & Traits', 'skills'], ['health', 'Health', 'doctor'], ['inventory', 'Inventory', 'bag'], ['cultivation', 'Cultivation', 'cultivation'], ['crafting', 'Crafting & Gear', 'anvil'], ['gates', 'Dungeons & Gates', 'gates'], ['bloodline', 'Bloodline', 'legacy']]],
@@ -94,12 +94,26 @@ function agebar() {
     h('span', { class: 'age-title display' }, `AGE ${c.age}`), h('span', { class: 'muted' }, '· ' + lifeStage(c.age)),
     h('span', { class: 'hint' }, c.alive ? 'Use your actions, then age up when you\'re ready.' : 'This life has ended.'),
     h('span', { class: 'budget' }, 'Actions ', h('b', {}, `${c.actions}/${c.maxActions || ACTIONS_PER_YEAR}`), pips(c.actions, c.maxActions || ACTIONS_PER_YEAR, ''), '  Social ', h('b', {}, `${c.social}/${c.maxSocial || SOCIAL_PER_YEAR}`), pips(c.social, c.maxSocial || SOCIAL_PER_YEAR, 'social')),
-    h('button', { id: 'ageup', disabled: !c.alive, onclick: onAgeUp }, 'AGE UP ▶ ', c.age + 1));
+    ageBtn(c));
 }
+// In a co-op room the button becomes a vote: shows who's ready and the countdown.
+function ageBtn(c) {
+  const v = voteInfo();
+  if (!v) return h('button', { id: 'ageup', disabled: !c.alive, onclick: onAgeUp }, 'AGE UP ▶ ', c.age + 1);
+  return h('button', { id: 'ageup', class: 'voting' + (v.mine ? ' ready' : ''), disabled: v.mine, title: `Waiting for: ${v.waiting.join(', ')}`, onclick: onAgeUp },
+    v.mine ? `READY ${v.yes}/${v.total} · ${v.left}s` : `AGE UP ▶ ${c.age + 1}`, h('small', { style: { display: 'block', fontSize: '11px', opacity: 0.85 } }, v.mine ? `waiting for ${v.waiting.join(', ')}` : `${v.yes}/${v.total} ready · ${v.left}s left`));
+}
+net.onVote = () => { const b = document.getElementById('ageup'); if (b && G.char) b.replaceWith(ageBtn(G.char)); };
+net.doAgeUp = () => realAgeUp();
 let aging = false;
 async function onAgeUp() {
-  const c = G.char; if (aging || !c.alive) return;
+  const c = G.char; if (aging || !c.alive && !inCoopRoom()) return;
   if (META.settings.confirmAgeUp && (c.actions || c.social)) { const ok = await choice({ title: 'Age up?', text: `You still have ${c.actions} actions and ${c.social} social actions left.`, options: [{ label: 'Age up anyway', value: true }, { label: 'Wait', value: false, ghost: true }] }); if (!ok) return; }
+  if (inCoopRoom()) { voteAgeUp(); return; }
+  return realAgeUp();
+}
+async function realAgeUp() {
+  const c = G.char; if (aging || !c?.alive) return;
   aging = true; try { await ageUp(); } finally { aging = false; }
   G.ui.tab = c.alive ? G.ui.tab : 'life'; render();
   if (!c.alive) import('./legacyPanel.js').then(m => m.deathScreen());

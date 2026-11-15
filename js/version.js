@@ -1,7 +1,8 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.6.1';
+export const VERSION = '0.6.2';
 export const CHANGELOG = [
+  { v: '0.6.2', date: '2026-11-15', title: 'Co-op: age up together', notes: ['In a co-op room, everyone must agree before the year advances. The first player to press AGE UP starts a 60-second timer; when everyone is ready (or the timer runs out) all players move on to the next year together.', 'Players whose life has ended don\'t hold the vote up.'] },
   { v: '0.6.1', date: '2026-11-15', title: 'Cleaner cloud button', notes: ['When your Google account is linked, the menu button now just says "Linked ✓" and can\'t be clicked — your saves already sync automatically.'] },
   { v: '0.6.0', date: '2026-11-15', title: 'Bloodlines', notes: [
     'Heirlooms: family treasures with small bonuses — Heirloom, Rare, Legendary and Mythic (0.1% of finds). Only your 3 finest are attuned. They pass only to your children, can be lost along the way, and end with the bloodline.',

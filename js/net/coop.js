@@ -153,9 +153,12 @@ function handle(d) {
     case 'req': return onRequest(d);
     case 'res': { const p = net.pending.get(d.id); if (p) { net.pending.delete(d.id); p.resolve(d); } return; }
     case 'note': return onNote(d);
+    case 'vote_yes': return net.role === 'host' ? hostVote(d.from) : undefined;
+    case 'vote': net.vote = d.vote; voteTick(); return;
+    case 'vote_go': return voteGo(d.id);
   }
 }
-function gone(pid) { net.peers.delete(pid); const c = G.char; c?.people.forEach(p => { if (p.peerId === pid) p.online = false; }); }
+function gone(pid) { net.peers.delete(pid); if (net.role === 'host' && net.vote) checkVote(); const c = G.char; c?.people.forEach(p => { if (p.peerId === pid) p.online = false; }); }
 function markAllOffline() { G.char?.people.forEach(p => { if (p.coop) p.online = false; }); }
 const sys = text => { net.chat.push({ who: '•', text }); trimChat(); };
 const trimChat = () => { if (net.chat.length > 80) net.chat.splice(0, net.chat.length - 80); if (net.code) remember(); };
@@ -280,6 +283,45 @@ function makeKid(c, p) {
 
 // Push my profile to everyone whenever my character changes (throttled).
 let lastSent = 0, queued = false;
+// ---------- shared age-up vote: everyone in the room must agree. The first "yes" starts a 60s timer;
+// when everyone has agreed (or the timer runs out) every player moves on to the next year together.
+export const VOTE_SECONDS = 60;
+// only living players vote (a finished life shouldn't hold the room up)
+const voters = () => [...(G.char?.alive ? [net.myId] : []), ...[...net.peers.entries()].filter(([, p]) => p.alive !== false).map(([id]) => id)];
+export const inCoopRoom = () => net.status === 'online' && voters().length > 1 && !!G.char?.alive;
+export function voteInfo() {
+  const v = net.vote; if (!v) return null;
+  const need = voters();
+  return { left: Math.max(0, Math.ceil((v.ends - Date.now()) / 1000)), yes: v.yes.filter(id => need.includes(id)).length, total: need.length, mine: v.yes.includes(net.myId),
+    waiting: need.filter(id => !v.yes.includes(id)).map(id => id === net.myId ? 'you' : net.peers.get(id)?.first || '?') };
+}
+export function voteAgeUp() {
+  if (net.vote?.yes.includes(net.myId)) return;
+  if (net.role === 'host') hostVote(net.myId); else net.conns.forEach(c => c.send({ t: 'vote_yes', from: net.myId }));
+}
+function hostVote(pid) {
+  if (!net.vote) { net.vote = { id: Math.random().toString(36).slice(2, 8), ends: Date.now() + VOTE_SECONDS * 1000, yes: [] }; const who = pid === net.myId ? G.char.first : net.peers.get(pid)?.first || 'Someone'; sys(`${who} is ready to age up. Everyone has ${VOTE_SECONDS}s to agree.`); }
+  if (!net.vote.yes.includes(pid)) net.vote.yes.push(pid);
+  broadcast({ t: 'vote', vote: net.vote }); voteTick(); checkVote();
+}
+function checkVote() {
+  const v = net.vote; if (!v) return;
+  const need = voters();
+  const all = need.every(id => v.yes.includes(id));
+  if (all || Date.now() >= v.ends) { sys(all ? 'Everyone agreed — on to the next year.' : 'Time\'s up — the year moves on for everyone.'); broadcast({ t: 'vote_go', id: v.id }); voteGo(v.id); }
+}
+let voteTimer = null;
+function voteTick() {
+  clearInterval(voteTimer);
+  if (!net.vote) { net.onVote?.(); return; }
+  net.onVote?.(); refresh();
+  voteTimer = setInterval(() => { if (!net.vote) return clearInterval(voteTimer); if (net.role === 'host') checkVote(); net.onVote?.(); }, 1000);
+}
+function voteGo(id) {
+  if (!net.vote || net.vote.id !== id) { if (net.lastGo === id) return; }
+  net.lastGo = id; net.vote = null; clearInterval(voteTimer); net.onVote?.();
+  net.doAgeUp?.();
+}
 export function coopTick() {
   if (net.status !== 'online') return;
   const now = Date.now(); if (now - lastSent < 1500) { if (!queued) { queued = true; setTimeout(() => { queued = false; coopTick(); }, 1600); } return; }
