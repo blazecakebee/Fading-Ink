@@ -1,9 +1,12 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.5.6';
+export const VERSION = '0.5.7';
 export const CHANGELOG = [
+  { v: '0.5.7', date: '2026-11-15', title: 'Map fix', notes: [
+    'Fixed: the World map showed "API key required". It is now drawn by the game itself from public-domain Natural Earth borders — your country highlighted among its neighbours, English city names and a pin on your home, in your theme\'s colours. No map service needed, works offline.',
+  ] },
   { v: '0.5.6', date: '2026-11-15', title: 'English world map', notes: [
-    'The World map now uses English place names, with a dark style on dark themes and a light style on light ones, plus a new pin for your city.',
+    'The World map is now drawn by the game itself: your country highlighted among its neighbours, English city names and a pin on your home. It matches your theme, needs no map service and works offline. (Fixes the "API key required" tiles.)',
   ] },
   { v: '0.5.5', date: '2026-11-15', title: 'Comfort, inheritance, maps & body diagram', notes: [
     'Owning things now makes life better: a home (+2 to +6 Happiness and -2 to -6 Stress a year, depending on how nice), a car and pets all give yearly comfort. See the Comfort box in Assets & Market.',

@@ -27,7 +27,7 @@ import { renderLegacy } from './legacyPanel.js';
 import { VERSION, CHANGELOG } from '../version.js';
 import { ACHIEVEMENTS } from '../data/achievements.js';
 import { flagEl } from './flags.js';
-import { tileMap, osmLink } from './worldMap.js';
+import { svgMap, osmLink } from './worldMap.js';
 import { net, hostRoom, joinRoom, leave, sendChat, doCoopAction, COOP_ACTIONS, coopTick } from '../net/coop.js';
 
 export const NAV = [
@@ -334,8 +334,8 @@ const TABS = {
     const map = h('div', { class: 'map-card' },
       h('div', { class: 'map-head' }, flagEl(cty.id), h('b', {}, ` ${cty.name}`), h('span', { class: 'muted small' }, ` · 📍 ${c.city}`),
         h('div', { class: 'seg mini-seg' }, h('button', { class: zoom ? '' : 'on', onclick: () => { G.ui.mapZoom = false; render(); } }, 'Country'), h('button', { class: zoom ? 'on' : '', onclick: () => { G.ui.mapZoom = true; render(); } }, 'City'))),
-      tileMap(cty.id, c.city, zoom, !['clean', 'parchment', 'pastel'].includes(META.settings.theme || 'amber')),
-      h('div', { class: 'muted small map-credit' }, '© ', h('a', { href: osmLink(cty.id, c.city), target: '_blank', rel: 'noopener' }, 'OpenStreetMap'), ' contributors © ', h('a', { href: 'https://carto.com/attributions', target: '_blank', rel: 'noopener' }, 'CARTO')));
+      svgMap(cty.id, cty.name, c.city, zoom),
+      h('div', { class: 'muted small map-credit' }, 'Borders: Natural Earth (public domain) · ', h('a', { href: osmLink(cty.id, c.city), target: '_blank', rel: 'noopener' }, 'Open in OpenStreetMap ↗')));
     return [h('h2', { class: 'display' }, 'World'), map, h('table', { class: 'kv', style: { marginTop: '10px' } },
       [['Year', G.world.year], ['Era', G.world.era], ['Country', h('span', {}, flagEl(cty.id), ' ', cty.name)], ['Development', `${TIERS_C[cty.tier]?.name} — ${TIERS_C[cty.tier]?.desc} (Legacy ×${TIERS_C[cty.tier]?.legacy})`], ['Climate', BIOMES_C[cty.biome]?.name || '—'], ['City', c.city], ['Economy', cty.econ >= 1.2 ? 'Strong' : cty.econ >= 0.8 ? 'Average' : 'Developing'], ['Spiritual density (Qi)', cty.qi >= 1.3 ? 'Very high' : cty.qi >= 1 ? 'High' : 'Thin'], ['Danger', cty.danger > 0.45 ? 'High' : cty.danger > 0.25 ? 'Moderate' : 'Low']].map(([a, b]) => h('tr', {}, h('td', {}, a), h('td', {}, b)))),
       h('h3', { class: 'display', style: { margin: '16px 0 8px' } }, 'Headlines'), h('div', { class: 'feed' }, news.length ? news.map(n => h('p', { class: 'world' }, n)) : h('p', { class: 'muted' }, 'Quiet years.'))];

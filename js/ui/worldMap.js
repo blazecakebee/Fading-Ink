@@ -22,29 +22,40 @@ export function mapUrl(countryId, city, zoomCity) {
 }
 export const osmLink = (countryId, city) => { const p = GEO[countryId]?.cities[city]; return p ? `https://www.openstreetmap.org/?mlat=${p[0]}&mlon=${p[1]}#map=6/${p[0]}/${p[1]}` : 'https://www.openstreetmap.org'; };
 
-// Builds the map ourselves from CARTO tiles so the labels are in English (OSM's own embed uses local scripts).
-const merc = (lat, lon, z) => { const n = 256 * 2 ** z, r = lat * Math.PI / 180; return [(lon + 180) / 360 * n, (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * n]; };
-export function tileMap(countryId, city, zoomCity, dark) {
-  const g = GEO[countryId]; const wrap = document.createElement('div'); wrap.className = 'tile-map';
-  if (!g) return wrap;
-  const pin = g.cities[city];
-  const draw = () => {
-    const W = wrap.clientWidth || 800, H = wrap.clientHeight || 360;
-    let [w, s, e, n] = g.bbox, z;
-    if (zoomCity && pin) z = 8;
-    else for (z = 10; z > 1; z--) { const [x1, y1] = merc(n, w, z), [x2, y2] = merc(s, e, z); if (x2 - x1 <= W * 0.95 && y2 - y1 <= H * 0.95) break; }
-    const [cx, cy] = zoomCity && pin ? merc(pin[0], pin[1], z) : (() => { const [x1, y1] = merc(n, w, z), [x2, y2] = merc(s, e, z); return [(x1 + x2) / 2, (y1 + y2) / 2]; })();
-    const left = cx - W / 2, top = cy - H / 2, max = 2 ** z;
-    const style = dark ? 'dark_all' : 'rastertiles/voyager', tiles = [];
-    for (let tx = Math.floor(left / 256); tx <= Math.floor((left + W) / 256); tx++) for (let ty = Math.floor(top / 256); ty <= Math.floor((top + H) / 256); ty++) {
-      if (ty < 0 || ty >= max) continue; const wx = ((tx % max) + max) % max;
-      const img = document.createElement('img'); img.alt = ''; img.draggable = false; img.loading = 'lazy';
-      img.src = `https://${'abcd'[(wx + ty) % 4]}.basemaps.cartocdn.com/${style}/${z}/${wx}/${ty}@2x.png`;
-      img.style.left = (tx * 256 - left) + 'px'; img.style.top = (ty * 256 - top) + 'px'; tiles.push(img);
+// Our own vector map: Natural Earth outlines (public domain), English labels, coloured by the current theme.
+// Needs no map service or API key and works offline. The outline data is loaded only when the World tab opens.
+const NS = 'http://www.w3.org/2000/svg';
+const el = (t, a = {}) => { const e = document.createElementNS(NS, t); for (const [k, v] of Object.entries(a)) e.setAttribute(k, v); return e; };
+const my = lat => -Math.log(Math.tan(Math.PI / 4 + Math.max(-85, Math.min(85, lat)) * Math.PI / 360)) * 180 / Math.PI; // mercator y in degree units
+export function svgMap(countryId, countryName, city, zoomCity) {
+  const wrap = document.createElement('div'); wrap.className = 'svg-map';
+  const g = GEO[countryId]; if (!g) return wrap;
+  import('../data/mapShapes.js').then(({ MAP_SHAPES }) => {
+    const W = wrap.clientWidth || 900, H = wrap.clientHeight || 380, pin = g.cities[city];
+    let [w, s, e, n] = g.bbox;
+    if (zoomCity && pin) { const d = 2.2; [w, s, e, n] = [pin[1] - d * 1.5, pin[0] - d, pin[1] + d * 1.5, pin[0] + d]; }
+    let x0 = w, x1 = e, y0 = my(n), y1 = my(s);
+    const padX = (x1 - x0) * 0.06, padY = (y1 - y0) * 0.06; x0 -= padX; x1 += padX; y0 -= padY; y1 += padY;
+    // grow the box to match the container's shape so nothing is stretched
+    const want = W / H, have = (x1 - x0) / (y1 - y0);
+    if (have < want) { const d = ((y1 - y0) * want - (x1 - x0)) / 2; x0 -= d; x1 += d; } else { const d = ((x1 - x0) / want - (y1 - y0)) / 2; y0 -= d; y1 += d; }
+    const span = x1 - x0, fs = span / 55;
+    const svg = el('svg', { viewBox: `${x0} ${y0} ${span} ${y1 - y0}`, preserveAspectRatio: 'xMidYMid meet', class: 'map-svg' });
+    svg.append(el('rect', { x: x0, y: y0, width: span, height: y1 - y0, class: 'map-sea' }));
+    for (const sh of MAP_SHAPES[countryId] || []) {
+      const d = sh.rings.map(r => 'M' + r.map(([lon, lat]) => `${lon},${my(lat).toFixed(3)}`).join('L') + 'Z').join('');
+      const path = el('path', { d, class: sh.home ? 'map-home' : 'map-land', 'stroke-width': span / 700, 'fill-rule': 'evenodd' });
+      const t = el('title'); t.textContent = sh.name; path.append(t); svg.append(path);
     }
-    const nodes = [...tiles];
-    if (pin) { const [px, py] = merc(pin[0], pin[1], z); const m = document.createElement('div'); m.className = 'map-pin'; m.style.left = (px - left) + 'px'; m.style.top = (py - top) + 'px'; m.title = city; m.innerHTML = '<span></span>'; nodes.push(m); }
-    wrap.replaceChildren(...nodes);
-  };
-  requestAnimationFrame(draw); return wrap;
+    if (!zoomCity) { const t = el('text', { x: (g.bbox[0] + g.bbox[2]) / 2, y: (my(g.bbox[1]) + my(g.bbox[3])) / 2, class: 'map-country', 'font-size': fs * 1.6, 'text-anchor': 'middle' }); t.textContent = countryName.toUpperCase(); svg.append(t); }
+    for (const [name, [lat, lon]] of Object.entries(g.cities)) {
+      const mine = name === city, x = lon, y = my(lat);
+      svg.append(el('circle', { cx: x, cy: y, r: fs * (mine ? 0.45 : 0.3), class: mine ? 'map-city mine' : 'map-city' }));
+      const t = el('text', { x: x + fs * 0.6, y: y + fs * 0.35, class: mine ? 'map-label mine' : 'map-label', 'font-size': fs * (mine ? 1.05 : 0.85) }); t.textContent = name; svg.append(t);
+    }
+    if (pin) { const x = pin[1], y = my(pin[0]), r = fs * 0.9;
+      svg.append(el('path', { d: `M${x},${y} l${-r * 0.6},${-r * 1.3} a${r * 0.66},${r * 0.66} 0 1,1 ${r * 1.2},0 z`, class: 'map-pin-svg' })); }
+    wrap.replaceChildren(svg);
+  });
+  return wrap;
 }

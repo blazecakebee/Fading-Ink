@@ -463,3 +463,14 @@ body:not([data-theme='clean']):not([data-theme='parchment']):not([data-theme='pa
 .map-pin { position: absolute; width: 0; height: 0; } .map-pin span { position: absolute; left: -9px; top: -26px; width: 18px; height: 18px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--accent); border: 2px solid #fff; box-shadow: 0 3px 8px #000a; animation: pinDrop .5s ease-out; }
 .map-pin span::after { content: ''; position: absolute; left: 4px; top: 4px; width: 6px; height: 6px; border-radius: 50%; background: #fff; }
 @keyframes pinDrop { from { transform: translateY(-20px) rotate(-45deg); opacity: 0; } }
+
+.svg-map { position: relative; height: clamp(260px, 40vh, 480px); background: color-mix(in srgb, var(--panel) 70%, #06121f); }
+.map-svg { display: block; width: 100%; height: 100%; }
+.map-sea { fill: color-mix(in srgb, var(--panel) 55%, #0a2236); }
+.map-land { fill: color-mix(in srgb, var(--text) 10%, var(--panel2)); stroke: color-mix(in srgb, var(--text) 25%, transparent); }
+.map-home { fill: color-mix(in srgb, var(--accent) 35%, var(--panel2)); stroke: var(--accent); }
+.map-country { fill: color-mix(in srgb, var(--text) 45%, transparent); font-family: var(--font-display); letter-spacing: .15em; pointer-events: none; }
+.map-city { fill: var(--text); stroke: var(--panel); stroke-width: .05; } .map-city.mine { fill: var(--accent2); }
+.map-label { fill: var(--text2); font-family: var(--font-ui); font-weight: 700; paint-order: stroke; stroke: var(--panel); stroke-width: .12; pointer-events: none; }
+.map-label.mine { fill: var(--accent2); }
+.map-pin-svg { fill: var(--accent); stroke: #fff; stroke-width: .08; filter: drop-shadow(0 .1px .2px #0008); }
