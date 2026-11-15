@@ -46,10 +46,11 @@ export function playMini(kind, box, difficulty = 1) {
     if (kind === 'qi_clash') { // timing bar
       let wins = 0, tries = 0; const bar = h('div', { class: 'mg-bar' }); const zone = h('i', { class: 'mg-zone' }); const mark = h('b', { class: 'mg-mark' }); bar.append(zone, mark);
       const btn = h('button', { class: 'btn' }, 'STRIKE'); area.append(bar, btn);
-      let x = 0, dir = 1, raf; const speed = 1.1 + difficulty * 0.35;
-      const placeZone = () => { const w = Math.max(10, 20 - difficulty * 3); zone.style.left = ri(10, 85 - w) + '%'; zone.style.width = w + '%'; zone.dataset.l = parseFloat(zone.style.left); zone.dataset.w = w; };
+      // speed in % of the bar per second (time-based, so it's the same on 60Hz and 144Hz screens)
+      let x = 0, dir = 1, raf, last = performance.now(); const speed = 32 + difficulty * 8;
+      const placeZone = () => { const w = Math.max(14, 24 - difficulty * 3); zone.style.left = ri(10, 85 - w) + '%'; zone.style.width = w + '%'; zone.dataset.l = parseFloat(zone.style.left); zone.dataset.w = w; };
       placeZone();
-      const tick = () => { x += dir * speed; if (x >= 100 || x <= 0) dir *= -1; mark.style.left = x + '%'; raf = requestAnimationFrame(tick); }; tick();
+      const tick = now => { const dt = Math.min(0.05, ((now || performance.now()) - last) / 1000); last = now || performance.now(); x += dir * speed * dt; if (x >= 100) { x = 100; dir = -1; } if (x <= 0) { x = 0; dir = 1; } mark.style.left = x + '%'; raf = requestAnimationFrame(tick); }; tick();
       btn.onclick = () => {
         const l = +zone.dataset.l, w = +zone.dataset.w; const ok = x >= l && x <= l + w; tries++; if (ok) wins++; sfx(ok ? 'qi' : 'miss');
         status.textContent = `${wins} / ${tries} (need 2 of 3)`; placeZone();

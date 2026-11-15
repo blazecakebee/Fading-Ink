@@ -1,5 +1,6 @@
 // Main screen rendering: top bar, age bar, left nav, center tab content, right stats column.
 import { G, META, save } from '../core/state.js';
+import { ui } from '../core/bus.js';
 import { h, icon, $ } from './dom.js';
 import { portraitFor, HAIR_COLORS, HAIR_STYLES, NATURAL_HAIR } from './portrait.js';
 import { fx } from './fx.js';
@@ -11,7 +12,7 @@ import { COND_BY_ID } from '../data/conditions.js';
 import { ITEMS } from '../data/items.js';
 import { METHODS } from '../data/realms.js';
 import { wealthLabel, statCap, softCap, gainMult, CAPPED, discount, priceFor, country, lifeStage, fullName, fmtMoney, realm as realmOf, lifespan, ageUp, money, stat, addItem, ACTIONS_PER_YEAR, SOCIAL_PER_YEAR } from '../systems/life.js';
-import { realmName, qiCap, power, learnManual, breakthroughInfo, meridianInfo, meditateRange, HELPFUL_ITEMS, sectName, foundReq, foundSect, method, learnMethod } from '../systems/cultivation.js';
+import { fatigueMult, realmName, qiCap, power, learnManual, breakthroughInfo, meridianInfo, meditateRange, HELPFUL_ITEMS, sectName, foundReq, foundSect, method, learnMethod } from '../systems/cultivation.js';
 import { relLabel, isFamily, bonds, bondList, favor } from '../systems/people.js';
 import { traitVal, earnTrait, checkEarned } from '../systems/traits.js';
 import { ACTIVITIES, CATEGORIES, SOCIAL } from '../data/activities.js';
@@ -19,7 +20,7 @@ import { TRAITS, TIERS, TIER_ORDER, TRAIT_BY_ID } from '../data/traits.js';
 import { REALMS, ELEMENTS, MANUALS, SECTS } from '../data/realms.js';
 import { CAREERS, EDUCATION } from '../data/careers.js';
 import { GATE_RANKS, ENEMIES, LOOT, GATE_TYPES, makeGate } from '../data/combat.js';
-import { WEALTH } from '../data/countries.js';
+import { WEALTH, TIERS as TIERS_C, BIOMES as BIOMES_C } from '../data/countries.js';
 import { ri, pick, chance, weighted } from '../core/rng.js';
 import { renderSettings } from './settingsPanel.js';
 import { renderLegacy } from './legacyPanel.js';
@@ -53,6 +54,7 @@ export async function runActivity(a) {
   c[cost]--; c.usedThisYear = (c.usedThisYear || 0) + 1;
   if (traitVal(c, 'refund') && chance(traitVal(c, 'refund'))) { c[cost]++; r.text += ' (D̷U̷P̷L̷I̷C̷A̷T̷E̷D̷ — action refunded)'; }
   c.counts[a.id] = (c.counts[a.id] || 0) + 1; const n = c.counts[a.id];
+  if (a.id !== 'meditate' && c.qi.fatigue) c.qi.fatigue = Math.max(0, c.qi.fatigue - 0.5);
   logLine(r.text, r.cls || '');
   if (cost === 'social') { // socialising trains charisma, and close friends may do you a favor
     stat(c, 'charisma', chance(0.6) ? 2 : 1);
@@ -62,6 +64,7 @@ export async function runActivity(a) {
   // subtle feedback only the first time / on milestones / big moments, so grinding stays quiet
   if (r.big || [1, 10, 25, 50, 100].includes(n)) fx(r.big ? 'milestone' : 'action');
   save(); render();
+  if (!c.alive) import('./legacyPanel.js').then(m => m.deathScreen());
 }
 
 // ---------- top + age bar
@@ -69,12 +72,12 @@ function topbar() {
   const c = G.char, cty = country(c);
   $('#topbar').replaceChildren(
     h('div', { class: 'who' }, h('div', { class: 'mini' }, portraitFor(c, 64)),
-      h('div', {}, h('div', { class: 'name display' }, fullName(c)), h('div', { class: 'sub' }, `${c.qi.realm ? realmName(c) : 'Human'} · ${c.gender === 'F' ? 'Female' : 'Male'} · Age ${c.age} · ${lifeStage(c.age)}`), c.ownSect ? h('div', { class: 'clan' }, `👑 ${c.gender === 'F' ? 'Matriarch' : 'Patriarch'} of the ${c.ownSect.clan} Clan · ${c.ownSect.name}`) : null)),
+      h('div', {}, h('div', { class: 'name display' }, h('span', { class: 'flag', title: country(c).name }, country(c).flag || ''), ' ', fullName(c)), h('div', { class: 'sub' }, `${c.qi.realm ? realmName(c) : 'Human'} · ${c.gender === 'F' ? 'Female' : 'Male'} · Age ${c.age} · ${lifeStage(c.age)}`), c.ownSect ? h('div', { class: 'clan' }, `👑 ${c.gender === 'F' ? 'Matriarch' : 'Patriarch'} of the ${c.ownSect.clan} Clan · ${c.ownSect.name}`) : null)),
     h('div', { class: 'center' }, h('div', {}, h('b', {}, `Year ${G.world.year}`), ' · ', h('span', { class: 'era' }, G.world.era)),
       h('div', { class: 'where' }, '📍 ', `${c.city}, ${cty.name}`)),
     h('div', { class: 'right' }, h('div', {}, icon('market', 'sm'), ' ', h('span', { class: 'money' }, fmtMoney(c, c.money)), ' ', h('span', { class: 'muted', title: `Born into a ${WEALTH.find(w => w.id === c.wealth).name.toLowerCase()} family` }, wealthLabel(c))),
       h('div', { class: 'sub' }, `Fame: ${c.fame > 60 ? 'Famous' : c.fame > 25 ? 'Known' : 'Unknown'} · Life #${META.lives} · Gen ${c.generation}`),
-      h('button', { class: 'version-chip', title: 'Update log', onclick: () => openChangelog(CHANGELOG) }, `v${VERSION}`)));
+      h('div', { class: 'row', style: { justifyContent: 'flex-end', gap: '6px' } }, h('button', { class: 'version-chip', title: 'Save & return to the main menu', onclick: () => ui.toMenu?.() }, '☰ Menu'), h('button', { class: 'version-chip', title: 'Update log', onclick: () => openChangelog(CHANGELOG) }, `v${VERSION}`))));
 }
 function agebar() {
   const c = G.char;
@@ -188,12 +191,12 @@ const TABS = {
       h('div', { class: 'box', style: { marginTop: '14px' } }, h('h3', {}, 'Records'), h('table', { class: 'kv' },
         [['Fights won', c.wins], ['Lives taken', c.kills], ['Gates cleared', c.gatesCleared], ['Combat power', power(c).toFixed(2)], ['Most repeated activity', Object.entries(c.counts).sort((a, b) => b[1] - a[1])[0]?.join(' × ') || '—']].map(([k, v]) => h('tr', {}, h('td', {}, k), h('td', {}, v))))),
       h('div', { class: 'box', style: { marginTop: '14px' } }, h('h3', {}, 'Trait Codex'), h('p', { class: 'muted' }, 'Traits come in 8 tiers. Some can only be earned by doing specific things.'),
-        h('p', { class: 'muted small' }, `Discovered ${TRAITS.filter(t => META.unlockedTraits[t.id] || c.traits.includes(t.id)).length} / ${TRAITS.length}. A trait's effect stays hidden until you've had it in some life.`),
+        h('p', { class: 'muted small' }, `Discovered ${TRAITS.filter(t => META.unlockedTraits[t.id] || c.traits.includes(t.id)).length} / ${TRAITS.length}. A trait's name and effect stay hidden until you've had it in some life.`),
         TIER_ORDER.map(tier => { const list = TRAITS.filter(t => t.tier === tier); const tierBirth = TIERS[tier].birth / TRAITS.filter(t => t.tier === tier && t.birth !== 0).length;
           return h('div', {}, h('div', { class: 'tier-h', style: { color: TIERS[tier].color } }, `${TIERS[tier].name} (${list.length})`),
             h('div', { class: 'codex' }, list.map(t => { const found = META.unlockedTraits[t.id] || c.traits.includes(t.id);
               const how = t.birth === 0 ? '🔒 Earned: ' + (EARN_HINTS[t.earn] || 'through a special deed') : `🎲 Birth roll (~${(tierBirth / 100 * 1.6).toPrecision(2)}% per life)`;
-              const el = h('div', { class: 'codex-card' + (found ? ' found' : '') + (c.traits.includes(t.id) ? ' mine' : '') }, h('b', {}, t.name, c.traits.includes(t.id) ? ' ✓' : ''), h('div', { class: 'small' }, found ? t.desc : h('i', { class: 'muted' }, '??? — discover this trait to learn what it does')), h('div', { class: 'muted small' }, how));
+              const el = h('div', { class: 'codex-card' + (found ? ' found' : '') + (c.traits.includes(t.id) ? ' mine' : '') }, h('b', {}, found ? t.name : '??? ' + '▮'.repeat(Math.min(8, Math.ceil(t.name.length / 2))), c.traits.includes(t.id) ? ' ✓' : ''), h('div', { class: 'small' }, found ? t.desc : h('i', { class: 'muted' }, 'Undiscovered — its name and effect are hidden.')), h('div', { class: 'muted small' }, how));
               el.style.setProperty('--tc', TIERS[tier].color); return el; }))); }))];
   },
 
@@ -210,7 +213,7 @@ const TABS = {
       h('ul', { class: 'notes small' }, lines.filter(Boolean).map(l => h('li', {}, l))), extra || null,
       h('button', { class: 'btn', disabled: !can(a), onclick: () => runActivity(a) }, `${title || a.name} (⚡1)`)); };
     const cards = [
-      card('meditate', 'Meditate', [!q.manuals.length ? 'Without a manual you only calm your mind (-Stress).' : `Gathers about ${mLo}–${mHi} Qi using the ${M.name}.`, M.side ? 'Method effect: ' + M.desc : null, '-5 Stress.', q.realm === 0 && q.manuals.length ? 'Fill your Qi to enter Qi Condensation on your next birthday.' : null]),
+      card('meditate', 'Meditate', [!q.manuals.length ? 'Without a manual you only calm your mind (-Stress).' : `Gathers about ${mLo}–${mHi} Qi using the ${M.name}.`, M.side ? 'Method effect: ' + M.desc : null, `Sessions this year: ${q.medYear || 0}/3. Meridian fatigue ${Math.round((q.fatigue || 0) * 10) / 10} → gains ×${fatigueMult(c).toFixed(2)} (do other things to recover).`, '-5 Stress.', q.realm === 0 && q.manuals.length ? 'Fill your Qi to enter Qi Condensation on your next birthday.' : null]),
       q.realm >= 1 ? card('meridian', 'Open a meridian', [`Costs ${mi.cost} Qi and 2–8 Health.`, `Success chance: ${pc(mi.p)}.`, 'Each open meridian: +8% Qi gain and +1.5% breakthrough chance.', 'On failure: 20% risk of Blocked Meridians (halves Qi gain until healed).']) : null,
       q.realm >= 1 ? card('breakthrough', bi.major ? `Break into ${bi.next?.name || '—'}` : `Break to Stage ${q.stage + 1}`, [
         `Success chance: ${pc(bi.p)}.`, bi.trib ? `⚡ A Heavenly Tribulation (${bi.trib} bolts) must be survived first.` : null,
@@ -315,7 +318,7 @@ const TABS = {
     const c = G.char, cty = country(c);
     const news = c.log.flatMap(y => y.lines.filter(l => l.c === 'world').map(l => `Age ${y.age} — ${l.t}`)).slice(-12).reverse();
     return [h('h2', { class: 'display' }, 'World'), h('table', { class: 'kv', style: { marginTop: '10px' } },
-      [['Year', G.world.year], ['Era', G.world.era], ['Country', cty.name], ['City', c.city], ['Economy', cty.econ >= 1.2 ? 'Strong' : cty.econ >= 0.8 ? 'Average' : 'Developing'], ['Spiritual density (Qi)', cty.qi >= 1.3 ? 'Very high' : cty.qi >= 1 ? 'High' : 'Thin'], ['Danger', cty.danger > 0.45 ? 'High' : cty.danger > 0.25 ? 'Moderate' : 'Low']].map(([a, b]) => h('tr', {}, h('td', {}, a), h('td', {}, b)))),
+      [['Year', G.world.year], ['Era', G.world.era], ['Country', `${cty.flag || ''} ${cty.name}`], ['Development', `${TIERS_C[cty.tier]?.name} — ${TIERS_C[cty.tier]?.desc} (Legacy ×${TIERS_C[cty.tier]?.legacy})`], ['Climate', BIOMES_C[cty.biome]?.name || '—'], ['City', c.city], ['Economy', cty.econ >= 1.2 ? 'Strong' : cty.econ >= 0.8 ? 'Average' : 'Developing'], ['Spiritual density (Qi)', cty.qi >= 1.3 ? 'Very high' : cty.qi >= 1 ? 'High' : 'Thin'], ['Danger', cty.danger > 0.45 ? 'High' : cty.danger > 0.25 ? 'Moderate' : 'Low']].map(([a, b]) => h('tr', {}, h('td', {}, a), h('td', {}, b)))),
       h('h3', { class: 'display', style: { margin: '16px 0 8px' } }, 'Headlines'), h('div', { class: 'feed' }, news.length ? news.map(n => h('p', { class: 'world' }, n)) : h('p', { class: 'muted' }, 'Quiet years.'))];
   },
 
@@ -369,7 +372,8 @@ async function personModal(p) {
   const c = G.char;
   if (p.coop) return coopPersonModal(p);
   const opts = SOCIAL.filter(s => p.alive && c.alive && c.age >= (s.age || 0) && (!s.need || s.need(c, p)));
-  const v = await choice({ title: `${p.first} ${p.last}`, portrait: h('div', { class: 'pframe' }, portraitFor(p, 96)),
+  const { indexCard } = await import('./conversation.js');
+  const v = await choice({ title: `${p.first} ${p.last}`, portrait: indexCard(p),
     text: `${p.role}${bonds(c).best === p ? ' · ★ Best Friend' : ''} · Age ${p.age}${p.job ? ' · ' + p.job : ''}${p.realm ? ' · senses of Qi about them' : ''}\nRelationship: ${relLabel(p)} (${p.close}%)${p.close >= 75 ? '\nThey might gift you something or teach you what they know.' : ''}${p.alive ? '' : '\nDeceased.'}\nSocial actions left: ${c.social}`,
     options: [...opts.map(s => ({ label: `${s.emoji || '•'}  ${s.name}   · 1 social`, value: s.id, disabled: c.social <= 0 })), { label: 'Close', value: null, ghost: true }] });
   if (!v) return;

@@ -63,17 +63,17 @@ export const LOOT = [
 // Gate themes: each has its own enemies, final boss and loot table. Ranks decide which themes can appear.
 export const GATE_TYPES = [
   { id: 'temple', name: 'Haunted Temple', icon: 'ghost', ranks: 'EDCBAS', pool: ['hungry_ghost', 'corrupt_soul', 'fox_spirit'], boss: { E: 'hungry_ghost', D: 'corrupt_soul', C: 'fox_spirit', B: 'fox_spirit', A: 'ghost_king', S: 'ghost_king' },
-    loot: { spirit_stone: 30, calm_incense: 18, trib_talisman: 8, spirit_herb: 15, heart_pill: 6, manual: 8, gold: 15, foundation_pill: 6 }, desc: 'Incense smoke and whispering spirits.' },
+    loot: { recipe_scroll: 6, spirit_stone: 30, calm_incense: 18, trib_talisman: 8, spirit_herb: 15, heart_pill: 6, manual: 8, gold: 15, foundation_pill: 6 }, desc: 'Incense smoke and whispering spirits.' },
   { id: 'den', name: 'Spirit Beast Den', icon: 'claw', ranks: 'EDCBA', pool: ['spirit_wolf', 'tiger_beast'], boss: { E: 'spirit_wolf', D: 'spirit_wolf', C: 'tiger_beast', B: 'tiger_beast', A: 'yaoguai' },
-    loot: { beast_core: 40, spirit_herb: 20, cloth: 10, marrow_pill: 6, fang_necklace: 4, gold: 12, foundation_pill: 5, ginseng: 4 }, desc: 'Claw marks and bones. Beast cores everywhere.' },
+    loot: { recipe_scroll: 4, beast_core: 40, spirit_herb: 20, cloth: 10, marrow_pill: 6, fang_necklace: 4, gold: 12, foundation_pill: 5, ginseng: 4 }, desc: 'Claw marks and bones. Beast cores everywhere.' },
   { id: 'altar', name: 'Demonic Altar', icon: 'demon', ranks: 'DCBAS', pool: ['blood_cultist', 'demonic', 'corrupt_soul'], boss: { D: 'blood_cultist', C: 'demonic', B: 'demonic', A: 'demonic', S: 'ghost_king' },
-    loot: { demonic_core: 22, spirit_stone: 20, qi_pill: 20, purity_pill: 6, manual: 12, gold: 20, foundation_pill: 8 }, desc: 'Blood-soaked stones. Demonic cultivators guard their secrets.' },
+    loot: { recipe_scroll: 8, demonic_core: 22, spirit_stone: 20, qi_pill: 20, purity_pill: 6, manual: 12, gold: 20, foundation_pill: 8 }, desc: 'Blood-soaked stones. Demonic cultivators guard their secrets.' },
   { id: 'tomb', name: 'Flooded Tomb', icon: 'water', ranks: 'EDCB', pool: ['jiangshi', 'drowned_ghost'], boss: { E: 'drowned_ghost', D: 'jiangshi', C: 'jiangshi', B: 'jiangshi' },
-    loot: { ginseng: 8, spirit_herb: 25, cloth: 15, heal_pill: 20, mending_salve: 8, gold: 25 }, desc: 'Ancient burial chambers, half underwater.' },
+    loot: { recipe_scroll: 8, ginseng: 8, spirit_herb: 25, cloth: 15, heal_pill: 20, mending_salve: 8, gold: 25 }, desc: 'Ancient burial chambers, half underwater.' },
   { id: 'mine', name: 'Spirit Iron Mine', icon: 'pickaxe', ranks: 'DCBA', pool: ['stone_golem', 'thug', 'spirit_wolf'], boss: { D: 'stone_golem', C: 'stone_golem', B: 'stone_golem', A: 'stone_golem' },
-    loot: { iron_ore: 40, spirit_stone: 25, iron_sword: 6, iron_mail: 4, spirit_blade: 2, gold: 15 }, desc: 'Collapsed tunnels and animated stone.' },
+    loot: { recipe_scroll: 3, iron_ore: 40, spirit_stone: 25, iron_sword: 6, iron_mail: 4, spirit_blade: 2, gold: 15 }, desc: 'Collapsed tunnels and animated stone.' },
   { id: 'rift', name: 'Dragon Rift', icon: 'fire', ranks: 'AS', pool: ['tiger_beast', 'yaoguai'], boss: { A: 'young_dragon', S: 'young_dragon' },
-    loot: { dragon_scale: 25, foundation_pill: 15, core_pill: 6, soul_pill: 3, spirit_stone: 25, dragon_vest: 4, ginseng: 10, gold: 20 }, desc: 'Heat shimmer and scales the size of plates.' },
+    loot: { recipe_scroll: 6, dragon_scale: 25, foundation_pill: 15, core_pill: 6, soul_pill: 3, spirit_stone: 25, dragon_vest: 4, ginseng: 10, gold: 20 }, desc: 'Heat shimmer and scales the size of plates.' },
 ];
 export function makeGate(rank) {
   const types = GATE_TYPES.filter(t => t.ranks.includes(rank));

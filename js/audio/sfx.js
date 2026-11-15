@@ -48,6 +48,11 @@ const SOUNDS = {
   crit: t => { noise(t, 0.2, { freq: 800, gain: 0.4 }); tone(220, t, 0.2, { type: 'square', gain: 0.1, glide: 60 }); },
   miss: t => noise(t, 0.18, { freq: 2500, gain: 0.08, q: 3 }),
   qi: t => { tone(N(81), t, 0.5, { gain: 0.07, glide: N(93) }); noise(t, 0.4, { freq: 5000, gain: 0.04 }); },
+  birth: t => { [72, 76, 79, 84, 88].forEach((n, i) => tone(N(n), t + i * 0.09, 0.6, { type: 'sine', gain: 0.07 })); tone(N(96), t + 0.5, 0.9, { gain: 0.04 }); },
+  heavy: t => { noise(t, 0.3, { freq: 250, gain: 0.5, q: 0.7, type: 'lowpass' }); tone(70, t, 0.35, { gain: 0.35, glide: 35 }); tone(140, t + 0.02, 0.2, { type: 'square', gain: 0.05, glide: 60 }); },
+  limb: t => { noise(t, 0.12, { freq: 3500, gain: 0.3, q: 2 }); noise(t + 0.08, 0.4, { freq: 300, gain: 0.4, type: 'lowpass' }); tone(220, t + 0.1, 0.8, { type: 'sawtooth', gain: 0.06, glide: 55 }); },
+  cash: t => { [88, 91, 96, 100].forEach((n, i) => { tone(N(n), t + i * 0.06, 0.12, { type: 'square', gain: 0.04 }); noise(t + i * 0.06, 0.05, { freq: 7000, gain: 0.05, type: 'highpass' }); }); tone(N(103), t + 0.3, 0.6, { type: 'triangle', gain: 0.06 }); },
+  ascend: t => { tone(60, t, 2.5, { type: 'sawtooth', gain: 0.07, glide: 1200 }); noise(t, 2, { freq: 1800, gain: 0.06, q: 0.4 }); [48, 55, 60, 64, 67, 72, 76, 79].forEach((n, i) => tone(N(n + 12), t + 0.8 + i * 0.07, 2.2, { type: 'triangle', gain: 0.06 })); tone(N(96), t + 1.6, 2.4, { gain: 0.05 }); },
   win: t => [67, 72, 76, 79, 84].forEach((n, i) => tone(N(n), t + i * 0.08, 0.5, { type: 'square', gain: 0.05 })),
   lose: t => [67, 63, 60].forEach((n, i) => tone(N(n), t + i * 0.15, 0.5, { type: 'triangle', gain: 0.09 })),
 };

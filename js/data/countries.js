@@ -1,40 +1,40 @@
 // Countries: economy (salary/price multiplier), danger, qi density (how rich the land is in spiritual energy)
 // and culturally accurate name pools.
 export const COUNTRIES = [
-  { id: 'cn', name: 'China', city: ['Chongqing', 'Hangzhou', 'Xi\'an', 'Chengdu'], econ: 0.9, danger: 0.3, qi: 1.4, currency: '¥',
+  { id: 'cn', flag: '🇨🇳', tier: 'emerging', biome: 'monsoon', name: 'China', city: ['Chongqing', 'Hangzhou', 'Xi\'an', 'Chengdu'], econ: 0.9, danger: 0.3, qi: 1.4, currency: '¥',
     m: ['Wei', 'Hao', 'Jun', 'Lei', 'Feng', 'Long', 'Chen', 'Yu', 'Tian', 'Zhen'], f: ['Mei', 'Lan', 'Xiu', 'Ying', 'Hua', 'Lian', 'Yue', 'Ning', 'Xue', 'Ling'],
     last: ['Wang', 'Li', 'Zhang', 'Liu', 'Chen', 'Yang', 'Huang', 'Zhao', 'Wu', 'Zhou', 'Lin', 'Xu'] },
-  { id: 'kr', name: 'South Korea', city: ['Seoul', 'Busan', 'Incheon', 'Daegu'], econ: 1.15, danger: 0.25, qi: 1.25, currency: '₩',
+  { id: 'kr', flag: '🇰🇷', tier: 'developed', biome: 'continental', name: 'South Korea', city: ['Seoul', 'Busan', 'Incheon', 'Daegu'], econ: 1.15, danger: 0.25, qi: 1.25, currency: '₩',
     m: ['Min-jun', 'Ji-ho', 'Seo-jun', 'Do-yun', 'Jin-woo', 'Tae-yang', 'Hyun-woo'], f: ['Seo-yeon', 'Ji-woo', 'Ha-eun', 'Yuna', 'Soo-ah', 'Min-ji', 'Chae-won'],
     last: ['Kim', 'Lee', 'Park', 'Choi', 'Jung', 'Kang', 'Cho', 'Yoon', 'Jang', 'Han'] },
-  { id: 'jp', name: 'Japan', city: ['Tokyo', 'Osaka', 'Kyoto', 'Sapporo'], econ: 1.2, danger: 0.15, qi: 1.2, currency: '¥',
+  { id: 'jp', flag: '🇯🇵', tier: 'developed', biome: 'temperate', name: 'Japan', city: ['Tokyo', 'Osaka', 'Kyoto', 'Sapporo'], econ: 1.2, danger: 0.15, qi: 1.2, currency: '¥',
     m: ['Haruto', 'Ren', 'Sota', 'Yuto', 'Kaito', 'Riku', 'Daichi', 'Akira'], f: ['Yui', 'Hina', 'Sakura', 'Aoi', 'Rin', 'Mio', 'Hana', 'Akari'],
     last: ['Sato', 'Suzuki', 'Takahashi', 'Tanaka', 'Watanabe', 'Ito', 'Nakamura', 'Kobayashi', 'Yamamoto'] },
-  { id: 'us', name: 'United States', city: ['New York', 'Chicago', 'Los Angeles', 'Houston'], econ: 1.5, danger: 0.35, qi: 0.7, currency: '$',
+  { id: 'us', flag: '🇺🇸', tier: 'developed', biome: 'temperate', name: 'United States', city: ['New York', 'Chicago', 'Los Angeles', 'Houston'], econ: 1.5, danger: 0.35, qi: 0.7, currency: '$',
     m: ['James', 'Liam', 'Noah', 'Ethan', 'Mason', 'Logan', 'Caleb', 'Tyler'], f: ['Emma', 'Olivia', 'Ava', 'Madison', 'Harper', 'Chloe', 'Riley', 'Abigail'],
     last: ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Miller', 'Davis', 'Wilson', 'Moore'] },
-  { id: 'gb', name: 'United Kingdom', city: ['London', 'Manchester', 'Leeds', 'Bristol'], econ: 1.35, danger: 0.2, qi: 0.8, currency: '£',
+  { id: 'gb', flag: '🇬🇧', tier: 'developed', biome: 'oceanic', name: 'United Kingdom', city: ['London', 'Manchester', 'Leeds', 'Bristol'], econ: 1.35, danger: 0.2, qi: 0.8, currency: '£',
     m: ['Oliver', 'George', 'Harry', 'Jack', 'Alfie', 'Freddie', 'Arthur'], f: ['Amelia', 'Isla', 'Poppy', 'Florence', 'Evie', 'Ivy', 'Rosie'],
     last: ['Taylor', 'Evans', 'Thomas', 'Roberts', 'Walker', 'Wright', 'Hughes', 'Clarke'] },
-  { id: 'br', name: 'Brazil', city: ['São Paulo', 'Rio de Janeiro', 'Salvador', 'Recife'], econ: 0.65, danger: 0.55, qi: 1.0, currency: 'R$',
+  { id: 'br', flag: '🇧🇷', tier: 'emerging', biome: 'tropical', name: 'Brazil', city: ['São Paulo', 'Rio de Janeiro', 'Salvador', 'Recife'], econ: 0.65, danger: 0.55, qi: 1.0, currency: 'R$',
     m: ['Miguel', 'Arthur', 'Heitor', 'Davi', 'Gabriel', 'Bernardo', 'Rafael'], f: ['Helena', 'Alice', 'Laura', 'Valentina', 'Beatriz', 'Manuela'],
     last: ['Silva', 'Santos', 'Oliveira', 'Souza', 'Rodrigues', 'Ferreira', 'Almeida', 'Costa'] },
-  { id: 'ng', name: 'Nigeria', city: ['Lagos', 'Abuja', 'Kano', 'Ibadan'], econ: 0.4, danger: 0.5, qi: 1.1, currency: '₦',
+  { id: 'ng', flag: '🇳🇬', tier: 'developing', biome: 'tropical', name: 'Nigeria', city: ['Lagos', 'Abuja', 'Kano', 'Ibadan'], econ: 0.4, danger: 0.5, qi: 1.1, currency: '₦',
     m: ['Chinedu', 'Emeka', 'Tunde', 'Oluwaseun', 'Ifeanyi', 'Musa', 'Kelechi'], f: ['Chiamaka', 'Ngozi', 'Adaeze', 'Funmilayo', 'Amara', 'Zainab'],
     last: ['Okafor', 'Adeyemi', 'Okonkwo', 'Bello', 'Eze', 'Balogun', 'Nwosu', 'Abubakar'] },
-  { id: 'in', name: 'India', city: ['Mumbai', 'Delhi', 'Varanasi', 'Bengaluru'], econ: 0.5, danger: 0.35, qi: 1.35, currency: '₹',
+  { id: 'in', flag: '🇮🇳', tier: 'developing', biome: 'monsoon', name: 'India', city: ['Mumbai', 'Delhi', 'Varanasi', 'Bengaluru'], econ: 0.5, danger: 0.35, qi: 1.35, currency: '₹',
     m: ['Aarav', 'Vihaan', 'Arjun', 'Rohan', 'Kabir', 'Dev', 'Ishaan'], f: ['Aanya', 'Diya', 'Priya', 'Saanvi', 'Ananya', 'Kavya', 'Meera'],
     last: ['Sharma', 'Patel', 'Singh', 'Gupta', 'Iyer', 'Reddy', 'Nair', 'Das', 'Mehta'] },
-  { id: 'ru', name: 'Russia', city: ['Moscow', 'Saint Petersburg', 'Kazan', 'Novosibirsk'], econ: 0.75, danger: 0.45, qi: 0.9, currency: '₽',
+  { id: 'ru', flag: '🇷🇺', tier: 'emerging', biome: 'continental', name: 'Russia', city: ['Moscow', 'Saint Petersburg', 'Kazan', 'Novosibirsk'], econ: 0.75, danger: 0.45, qi: 0.9, currency: '₽',
     m: ['Alexei', 'Dmitri', 'Ivan', 'Mikhail', 'Nikolai', 'Sergei', 'Artyom'], f: ['Anastasia', 'Sofia', 'Daria', 'Polina', 'Yelena', 'Katya'],
     last: ['Ivanov', 'Smirnov', 'Kuznetsov', 'Popov', 'Volkov', 'Morozov', 'Sokolov'] , fem: s => s + 'a' },
-  { id: 'mx', name: 'Mexico', city: ['Mexico City', 'Guadalajara', 'Monterrey', 'Oaxaca'], econ: 0.6, danger: 0.5, qi: 1.05, currency: '$',
+  { id: 'mx', flag: '🇲🇽', tier: 'emerging', biome: 'arid', name: 'Mexico', city: ['Mexico City', 'Guadalajara', 'Monterrey', 'Oaxaca'], econ: 0.6, danger: 0.5, qi: 1.05, currency: '$',
     m: ['Santiago', 'Mateo', 'Diego', 'Emiliano', 'Leonardo', 'Alejandro'], f: ['Sofía', 'Valeria', 'Ximena', 'Camila', 'Regina', 'Lucía'],
     last: ['Hernández', 'García', 'Martínez', 'López', 'González', 'Pérez', 'Ramírez', 'Flores'] },
-  { id: 'fr', name: 'France', city: ['Paris', 'Lyon', 'Marseille', 'Bordeaux'], econ: 1.3, danger: 0.2, qi: 0.85, currency: '€',
+  { id: 'fr', flag: '🇫🇷', tier: 'developed', biome: 'temperate', name: 'France', city: ['Paris', 'Lyon', 'Marseille', 'Bordeaux'], econ: 1.3, danger: 0.2, qi: 0.85, currency: '€',
     m: ['Louis', 'Gabriel', 'Jules', 'Hugo', 'Lucas', 'Théo', 'Raphaël'], f: ['Jade', 'Louise', 'Emma', 'Chloé', 'Léa', 'Manon', 'Camille'],
     last: ['Martin', 'Bernard', 'Dubois', 'Durand', 'Lefebvre', 'Moreau', 'Laurent', 'Fontaine'] },
-  { id: 'eg', name: 'Egypt', city: ['Cairo', 'Alexandria', 'Luxor', 'Giza'], econ: 0.45, danger: 0.35, qi: 1.3, currency: 'E£',
+  { id: 'eg', flag: '🇪🇬', tier: 'developing', biome: 'arid', name: 'Egypt', city: ['Cairo', 'Alexandria', 'Luxor', 'Giza'], econ: 0.45, danger: 0.35, qi: 1.3, currency: 'E£',
     m: ['Omar', 'Youssef', 'Ahmed', 'Karim', 'Mostafa', 'Tarek', 'Hassan'], f: ['Nour', 'Mariam', 'Farida', 'Salma', 'Habiba', 'Layla', 'Yasmin'],
     last: ['Hassan', 'Mahmoud', 'Ibrahim', 'Mostafa', 'Abdelrahman', 'Farouk', 'Saleh'] },
 ];
@@ -51,3 +51,19 @@ export const WEALTH = [
 ];
 
 export const ERAS = ['The Peaceful Era', 'The Age of Gates', 'The Silent Sect War', 'The Neon Dynasty', 'The Fading'];
+
+// Development tiers: harsher starts are harder (schooling, tech, food & water) but pay more Legacy.
+export const TIERS = {
+  developing: { name: 'Developing', legacy: 1.35, school: 0.6, uni: 0.5, tech: 18, scarcity: 0.18, desc: 'Schools are scarce, technology arrives late, food and clean water are not guaranteed.' },
+  emerging: { name: 'Emerging', legacy: 1.15, school: 0.9, uni: 0.85, tech: 14, scarcity: 0.06, desc: 'Growing fast. Most people get schooling and phones, but hard years still happen.' },
+  developed: { name: 'Developed', legacy: 1, school: 1, uni: 1, tech: 12, scarcity: 0, desc: 'Reliable schools, technology and necessities.' },
+};
+// Weather biomes: yearly weather that strains your body unless you can afford to shelter from it.
+export const BIOMES = {
+  tropical: { name: 'Tropical', events: [['A brutal humid summer left everyone exhausted.', 'heat'], ['Floods swept through the low streets.', 'flood']] },
+  monsoon: { name: 'Monsoon', events: [['The monsoon flooded the city for weeks.', 'flood'], ['A scorching pre-monsoon heatwave hit.', 'heat']] },
+  arid: { name: 'Arid', events: [['A drought dried up the wells.', 'drought'], ['A sandstorm choked the city.', 'heat']] },
+  temperate: { name: 'Temperate', events: [['A rare cold snap froze the pipes.', 'cold'], ['A wet, grey year. Colds went around.', 'cold']] },
+  oceanic: { name: 'Oceanic', events: [['Storm after storm rolled in from the sea.', 'cold']] },
+  continental: { name: 'Continental', events: [['The winter was savage — weeks below -25°.', 'cold'], ['A sweltering summer heatwave.', 'heat']] },
+};

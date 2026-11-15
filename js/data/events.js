@@ -54,7 +54,7 @@ const E = [
       if (v && c.money >= price) { money(c, -price); if (chance(0.7)) learnManual(c, m); else ui.log('The manual was fake. Blank pages and a smiley face.', 'bad'); } } },
   // --- merchants: charisma gets you better deals, and you can try to haggle
   { id: 'merchant', cond: c => c.age >= 12, w: 6, run: async c => {
-      const pool = ['spirit_herb', 'spirit_stone', 'cloth', 'iron_ore', 'heal_pill', 'qi_pill', 'calm_incense', 'jade_charm', 'ginseng', 'mending_salve', 'iron_sword', 'padded_robe'];
+      const pool = ['spirit_herb', 'spirit_stone', 'cloth', 'iron_ore', 'heal_pill', 'qi_pill', 'calm_incense', 'jade_charm', 'ginseng', 'mending_salve', 'iron_sword', 'padded_robe', 'recipe_scroll', 'recipe_scroll'];
       const id = pick(pool), it = ITEMS[id]; const n = ri(1, 3); const base = Math.round((it.price || 600) * n * country(c).econ * (0.7 + Math.random() * 0.5));
       let price = priceFor(c, base); const off = Math.round(discount(c) * 100);
       const v = await ui.choice({ title: pick(['A travelling merchant', 'Night-market peddler', 'A sect trader in disguise']), icon: 'shop',

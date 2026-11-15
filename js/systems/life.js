@@ -2,7 +2,7 @@
 import { G, META, save } from '../core/state.js';
 import { ui } from '../core/bus.js';
 import { ri, pick, chance, clamp, uid, weighted, rand } from '../core/rng.js';
-import { COUNTRIES, WEALTH, ERAS } from '../data/countries.js';
+import { COUNTRIES, WEALTH, ERAS, TIERS, BIOMES } from '../data/countries.js';
 import { REALMS, ELEMENTS } from '../data/realms.js';
 import { CAREERS } from '../data/careers.js';
 import { rollBirthTraits, applyTraitMods, traitVal, traitMult, earnTrait, has } from './traits.js';
@@ -11,12 +11,14 @@ import { randomGenes, mixGenes } from '../ui/portrait.js';
 import { yearlyEvents } from '../data/events.js';
 import { cultivationYear } from './cultivation.js';
 import { healthYear, TRAINABLE, trauma, geneticCheck, suddenDeathChance } from './health.js';
+import { ensureBody, bodyYear, adultHeight } from './body.js';
 import { bonds, bondBonus } from './people.js';
 import { checkEarned } from './traits.js';
 
 export const ACTIONS_PER_YEAR = 4, SOCIAL_PER_YEAR = 4;
 export const STAT_KEYS = ['health', 'happiness', 'mood', 'stress', 'smarts', 'looks', 'strength', 'battle', 'agility', 'charisma', 'luck'];
 
+export const tierOf = c => TIERS[country(c).tier] || TIERS.developed;
 export const country = c => COUNTRIES.find(x => x.id === c.country) || COUNTRIES[0];
 export const realm = c => REALMS[c.qi.realm];
 export const fmtMoney = (c, n) => country(c).currency + Math.round(n).toLocaleString();
@@ -65,7 +67,10 @@ export function wealthLabel(c) {
   const tier = n < 0 ? 'In Debt' : n < 1000 ? 'Broke' : n < 10000 ? 'Poor' : n < 50000 ? 'Getting By' : n < 250000 ? 'Comfortable' : n < 1e6 ? 'Well-off' : n < 1e7 ? 'Rich' : n < 1e8 ? 'Very Rich' : 'Ultra Rich';
   return c.wealth === 'royal' ? `Royal · ${tier}` : tier;
 }
-export function money(c, d) { c.money = Math.round(c.money + d); return c.money; }
+export function money(c, d) {
+  if (d >= Math.max(10000 * country(c).econ, Math.abs(c.money) * 0.5) && d > 0) ui.fx('cash'); // big windfalls get a sound
+  c.money = Math.round(c.money + d); return c.money;
+}
 export function addItem(c, id, n = 1) { c.inv[id] = (c.inv[id] || 0) + n; if (c.inv[id] <= 0) delete c.inv[id]; }
 
 // ---- new life ----------------------------------------------------------------
@@ -100,6 +105,7 @@ export function newLife(opts = {}) {
   familyAtBirth(c, wealth, opts.parents);
   if (opts.inheritMoney) c.money += opts.inheritMoney;
   // birth log
+  ensureBody(c); if (opts.heights) c.body.adultHeight = adultHeight(c.country, c.gender, opts.heights);
   beginYear(c);
   geneticCheck(c, true);
   const parents = c.people.filter(p => p.role === 'Father' || p.role === 'Mother');
@@ -119,7 +125,7 @@ export function maxActions(c) { return Math.min(8, ACTIONS_PER_YEAR + [16, 25, 3
 export function maxSocial(c) { return Math.min(6, SOCIAL_PER_YEAR + [18, 30].filter(a => c.age >= a).length + traitVal(c, 'extraSocial')); }
 export function beginYear(c) {
   c.log.push({ age: c.age, year: G.world.year, lines: [] });
-  c.maxActions = maxActions(c); c.actions = c.maxActions; c.maxSocial = maxSocial(c); c.social = c.maxSocial; c.usedThisYear = 0;
+  c.maxActions = maxActions(c); c.qi.medYear = 0; c.qi.fatigue = Math.max(0, (c.qi.fatigue || 0) - 2); c.actions = c.maxActions; c.maxSocial = maxSocial(c); c.social = c.maxSocial; c.usedThisYear = 0;
 }
 
 // ---- yearly aging ----------------------------------------------------------
@@ -176,6 +182,17 @@ export async function ageUp() {
   // gates countdown
   c.gates = c.gates.filter(g => --g.years > 0 || (ui.log(`The ${g.rank}-rank Gate near ${c.city} closed on its own.`), false));
 
+  // necessities & weather
+  const T = tierOf(c), B = BIOMES[country(c).biome];
+  if (T.scarcity && chance(T.scarcity) && !['wealthy', 'rich', 'royal'].includes(c.wealth) && c.money < 5000 * country(c).econ) {
+    const what = pick(['Food ran short this year — I often went to bed hungry.', 'The water was unsafe for months. I got sick from it.', 'Power cuts and empty markets made it a hard year.']);
+    stat(c, 'health', -ri(3, 7)); stat(c, 'happiness', -4); ui.log(what, 'bad');
+  }
+  if (B && chance(0.22)) {
+    const [txt, kind] = pick(B.events); const shelter = c.assets.some(a => a.type === 'house') || c.money > 20000 * country(c).econ;
+    if (shelter) ui.log(`${txt} I rode it out safely at home.`, 'world');
+    else { stat(c, 'health', -ri(2, 6)); stat(c, 'mood', -4); ui.log(`${txt} ${kind === 'cold' ? 'I could barely afford heating.' : kind === 'heat' ? 'I had no way to keep cool.' : kind === 'drought' ? 'We rationed every drop.' : 'Our home was damaged.'}`, 'bad'); }
+  }
   // bonds
   const bd = bonds(c);
   if (bd.best) stat(c, 'happiness', 2);
@@ -187,6 +204,7 @@ export async function ageUp() {
     money(c, tithe); ui.log(`The ${o.name} grew to ${o.disciples} disciples. Tithes: ${fmtMoney(c, tithe)}.`, 'qi');
   }
   yearlyPeople(c);
+  bodyYear(c);
   healthYear(c);
   cultivationYear(c);
   await yearlyEvents(c);
@@ -199,7 +217,8 @@ function educationYear(c) {
   const e = c.edu;
   if (c.prison) return;
   if (c.age === 6) { e.school = 'Primary School'; ui.log(`I started primary school.`); }
-  if (c.age === 12) { e.school = 'Secondary School'; ui.log('I started secondary school.'); }
+  if (c.age === 12) { const T = tierOf(c); if (chance(T.school) || ['middle', 'wealthy', 'rich', 'royal'].includes(c.wealth)) { e.school = 'Secondary School'; ui.log('I started secondary school.'); } else { e.school = null; ui.log('There was no secondary school my family could reach or afford. I started working instead.', 'bad'); } }
+  if (c.age === 18 && !e.school && e.level === 0 && !c.flags.noSchoolNoted) { c.flags.noSchoolNoted = true; }
   if (c.age === 18 && e.school === 'Secondary School') {
     if (e.grades >= 35) { e.level = 1; ui.log('I graduated from secondary school.', 'good'); } else ui.log('I failed to graduate from secondary school.', 'bad');
     e.school = null;
@@ -233,7 +252,8 @@ export function die(c, cause) {
   ui.log(`I died at age ${c.age}: ${cause}.`, 'death');
   if (c.age >= 100 && !c.qi.realm) earnTrait(c, 'centenarian');
   // legacy points
-  const pts = Math.round(c.age / 5 + c.qi.realm * 15 + c.gatesCleared * 2 + c.wins / 2 + (c.edu.level * 3) + Math.log10(Math.max(1, c.money + c.stocks)) * 2 + c.traits.length);
+  let pts = Math.round(c.age / 5 + c.qi.realm * 15 + c.gatesCleared * 2 + c.wins / 2 + (c.edu.level * 3) + Math.log10(Math.max(1, c.money + c.stocks)) * 2 + c.traits.length);
+  pts = Math.round(pts * tierOf(c).legacy);
   c.legacyEarned = pts; META.legacy += pts; META.bestRealm = Math.max(META.bestRealm, c.qi.realm);
   c.traits.forEach(t => META.unlockedTraits[t] = true);
   ui.fx('death'); save();

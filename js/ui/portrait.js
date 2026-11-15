@@ -2,7 +2,7 @@
 // Portraits change with age stage, salon hair changes, and cultivation realm (eye glow, aura, forehead mark).
 import { seeded, ri, chance, pick, clamp } from '../core/rng.js';
 import { REALMS } from '../data/realms.js';
-const GENETIC_IDS = ['congenital_heart', 'cystic_fibrosis', 'hemophilia', 'sickle_cell', 'muscular_dystrophy', 'huntingtons', 'alzheimers', 'bipolar'];
+const GENETIC_IDS = ['congenital_heart', 'cystic_fibrosis', 'hemophilia', 'sickle_cell', 'muscular_dystrophy', 'huntingtons', 'alzheimers', 'bipolar', 'schizophrenia'];
 
 export const SKINS = ['#ffe6d8', '#fcd7bd', '#f3c79a', '#e0ac74', '#c68a52', '#94603a', '#6a4129'];
 export const HAIR_COLORS = {
@@ -215,15 +215,19 @@ function finish(g, realm, elemColor, R) {
 // ---- Full-body sprite (32x64) for the Status sheet: same head, plus outfit, gear and aura.
 const GEAR_COLORS = { iron_sword: ['#cfd6de', '#7a5a3a'], spirit_blade: ['#8fe0ff', '#3a4a7a'], demon_saber: ['#ff5a6a', '#2a0a10'] };
 export function buildFullBody(genes, opts = {}) {
-  const { age = 20, gender = 'F', realm = 0, elemColor = null, gear = {}, robeColor = null } = opts;
+  const { age = 20, gender = 'F', realm = 0, elemColor = null, gear = {}, robeColor = null, body = null, heightCm = 170 } = opts;
+  const gone = id => body?.parts?.[id]?.missing || (id.startsWith('hand') && body?.parts?.['arm' + id.slice(4)]?.missing) || (id.startsWith('foot') && body?.parts?.['leg' + id.slice(4)]?.missing);
+  const prost = id => body?.parts?.[id]?.prosthetic || (id.startsWith('hand') && body?.parts?.['arm' + id.slice(4)]?.prosthetic) || (id.startsWith('foot') && body?.parts?.['leg' + id.slice(4)]?.prosthetic);
+  const muscle = body?.muscle || 0; const METAL = '#8a929e';
   const R = seeded(genes.seed + 7);
   const head = buildPortrait(genes, { ...opts, headOnly: true, raw: true });
   const W = 32, H = 64; const g = Array.from({ length: H }, (_, y) => y < 32 ? head.g[y].slice() : Array(W).fill(null));
   const set = (x, y, c) => { x = Math.round(x); y = Math.round(y); if (x >= 0 && y >= 0 && x < W && y < H && c) g[y][x] = c; };
   const { st, skin, skinS, cloth, clothD, accent } = head; const cx = 16;
   const scale = { infant: 0.45, child: 0.7, teen: 0.9, adult: 1, middle: 1, elder: 0.95 }[st];
-  const top = head.bodyTop - 1, torsoH = Math.round(14 * scale), legH = Math.round(20 * scale);
-  const sw = st === 'infant' ? 5 : gender === 'M' ? 7 : 6;              // half shoulder width
+  const tall = age >= 16 ? Math.max(0.85, Math.min(1.15, heightCm / (gender === 'M' ? 175 : 162))) : 1;
+  const top = head.bodyTop - 1, torsoH = Math.round(14 * scale), legH = Math.min(30, Math.round(20 * scale * tall));
+  const sw = (st === 'infant' ? 5 : gender === 'M' ? 7 : 6) + (muscle >= 60 && st !== 'infant' ? 1 : 0); // half shoulder width
   const robe = realm >= 1 && st !== 'infant';
   const main = robe ? (robeColor || shade(REALMS[realm].color, -0.45)) : cloth, mainD = shade(main, -0.3);
   const skirt = !robe && gender === 'F' && (st === 'teen' || st === 'adult' || st === 'child') && R() < 0.6;
@@ -235,7 +239,11 @@ export function buildFullBody(genes, opts = {}) {
   set(cx - 1, top, skinS); set(cx, top, skinS); set(cx - 1, top + 1, skin); set(cx, top + 1, skin);
   // arms (3px) + hands
   const armLen = torsoH + Math.round(3 * scale);
-  for (let y = top + 1; y < top + armLen; y++) for (const ax of [cx - sw - 3, cx + sw]) for (let i = 0; i < 3; i++) set(ax + i, y, y >= top + armLen - 2 ? skin : (i === 0 ? mainD : main));
+  const aw = muscle >= 40 ? 4 : 3;
+  for (const [ax, side] of [[cx - sw - aw, 'l'], [cx + sw, 'r']]) for (let y = top + 1; y < top + armLen; y++) for (let i = 0; i < aw; i++) {
+    const isHand = y >= top + armLen - 2; const id = (isHand ? 'hand_' : 'arm_') + side;
+    if (gone(id)) { if (prost(id)) set(ax + i, y, (x => x)(METAL)); continue; }
+    set(ax + i, y, isHand ? skin : (i === 0 ? mainD : main)); }
   // belt / sash
   const beltY = top + Math.round(torsoH * 0.6);
   for (let x = cx - sw + 1; x < cx + sw - 1; x++) set(x, beltY, robe ? (elemColor || accent) : shade(main, -0.5));
@@ -244,8 +252,9 @@ export function buildFullBody(genes, opts = {}) {
   if (robe) { for (let y = hip; y < hip + Math.round(legH * 0.75); y++) { const w = sw + Math.floor((y - hip) / 4); for (let x = cx - w; x < cx + w; x++) set(x, y, x === cx - w || x === cx + w - 1 || x === cx ? mainD : main); } }
   else if (skirt) { for (let y = hip; y < hip + Math.round(legH * 0.45); y++) { const w = sw + Math.floor((y - hip) / 2); for (let x = cx - w; x < cx + w; x++) set(x, y, (x + y) % 5 === 0 ? clothD : pants === shoes ? cloth : shade(accent, -0.25)); } }
   // legs + shoes
-  for (let y = hip; y < hip + legH; y++) for (const lx of [cx - 4, cx + 1]) for (let i = 0; i < 3; i++) {
-    if (g[y]?.[lx + i]) continue; const shoe = y >= hip + legH - 2;
+  for (let y = hip; y < hip + legH; y++) for (const [lx, side] of [[cx - 4, 'l'], [cx + 1, 'r']]) for (let i = 0; i < 3; i++) {
+    if (g[y]?.[lx + i]) continue; const shoe = y >= hip + legH - 2; const id = (shoe ? 'foot_' : 'leg_') + side;
+    if (gone(id)) { if (prost(id)) set(lx + i, y, i === 1 ? METAL : null); continue; }
     set(lx + i, y, shoe ? shoes : skirt || st === 'infant' ? skinS : pants);
   }
   // armour overlays
@@ -255,7 +264,7 @@ export function buildFullBody(genes, opts = {}) {
   // charm pendant
   if (gear.charm) { set(cx - 1, top + 3, gear.charm === 'jade_charm' ? '#5fd38a' : '#f2efe6'); set(cx, top + 3, gear.charm === 'jade_charm' ? '#3fa36a' : '#d8d2c2'); }
   // weapon in right hand
-  if (gear.weapon) { const [blade, hilt] = GEAR_COLORS[gear.weapon] || GEAR_COLORS.iron_sword; const hx = cx + sw + 1, hy = top + armLen - 2;
+  if (gear.weapon && !gone('hand_r')) { const [blade, hilt] = GEAR_COLORS[gear.weapon] || GEAR_COLORS.iron_sword; const hx = cx + sw + 1, hy = top + armLen - 2;
     for (let y = hy - 12; y < hy - 1; y++) set(hx + 3, y, blade); set(hx + 3, hy - 13, shade(blade, 0.4));
     set(hx + 2, hy - 1, hilt); set(hx + 3, hy - 1, hilt); set(hx + 4, hy - 1, hilt); set(hx + 3, hy, hilt); set(hx + 3, hy + 1, hilt); }
   return finish(g, realm, elemColor, R);

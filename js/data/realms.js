@@ -4,13 +4,13 @@
 // cap = highest any trainable stat can go in this realm. Gains slow down past 70% of the cap (soft cap).
 export const REALMS = [
   { id: 'mortal', cap: 100, name: 'Mortal', stages: 1, maxQi: 40, life: 0, power: 1, color: '#9a8f80' },
-  { id: 'qi', cap: 120, name: 'Qi Condensation', stages: 5, maxQi: 100, life: 10, power: 1.6, color: '#7fd1ff', req: { age: 6 } },
-  { id: 'foundation', cap: 150, name: 'Foundation Establishment', stages: 5, maxQi: 400, life: 40, power: 3, color: '#7fffb0', req: { pill: 'foundation_pill' }, trib: 1 },
-  { id: 'core', cap: 200, name: 'Core Formation', stages: 5, maxQi: 1500, life: 100, power: 6, color: '#ffd36f', trib: 2 },
-  { id: 'nascent', cap: 260, name: 'Nascent Soul', stages: 5, maxQi: 6000, life: 250, power: 12, color: '#ff8fd0', trib: 3 },
-  { id: 'severing', cap: 340, name: 'Spirit Severing', stages: 5, maxQi: 20000, life: 500, power: 25, color: '#c39bff', trib: 4 },
-  { id: 'dao', cap: 450, name: 'Dao Seeking', stages: 5, maxQi: 80000, life: 1000, power: 50, color: '#ffffff', trib: 5 },
-  { id: 'immortal', cap: 600, name: 'Immortal Ascension', stages: 1, maxQi: Infinity, life: 5000, power: 120, color: '#fff4b0', trib: 7 },
+  { id: 'qi', cap: 120, name: 'Qi Condensation', stages: 5, maxQi: 100, life: 5, power: 1.6, color: '#7fd1ff', req: { age: 6 } },
+  { id: 'foundation', cap: 150, name: 'Foundation Establishment', stages: 5, maxQi: 400, life: 15, power: 3, color: '#7fffb0', req: { pill: 'foundation_pill' }, trib: 1 },
+  { id: 'core', cap: 200, name: 'Core Formation', stages: 5, maxQi: 1500, life: 35, power: 6, color: '#ffd36f', trib: 2 },
+  { id: 'nascent', cap: 260, name: 'Nascent Soul', stages: 5, maxQi: 6000, life: 80, power: 12, color: '#ff8fd0', trib: 3 },
+  { id: 'severing', cap: 340, name: 'Spirit Severing', stages: 5, maxQi: 20000, life: 160, power: 25, color: '#c39bff', trib: 4 },
+  { id: 'dao', cap: 450, name: 'Dao Seeking', stages: 5, maxQi: 80000, life: 350, power: 50, color: '#ffffff', trib: 5 },
+  { id: 'immortal', cap: 600, name: 'Immortal Ascension', stages: 1, maxQi: Infinity, life: 2500, power: 120, color: '#fff4b0', trib: 7 },
 ];
 
 export const ELEMENTS = [

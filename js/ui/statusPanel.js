@@ -12,6 +12,9 @@ import { bondBonus, bondList } from '../systems/people.js';
 import { gearStats } from '../systems/crafting.js';
 import { condQiMult, moodMult, moodFace, bleedMult } from '../systems/health.js';
 import { realmName, power, method, qiCap, sectName } from '../systems/cultivation.js';
+import { heightNow, fmtHeight, muscleLabel, ensureBody, allCaps } from '../systems/body.js';
+import { CAPACITIES } from '../data/body.js';
+import { bodySection } from './itemsPanel.js';
 import { country, fullName, lifeStage, lifespan, fmtMoney, netWorth, wealthLabel, statCap, softCap, discount, CAPPED } from '../systems/life.js';
 
 const pct = m => `${m >= 1 ? '+' : ''}${Math.round((m - 1) * 100)}%`;
@@ -19,9 +22,9 @@ const add = v => `${v >= 0 ? '+' : ''}${Math.round(v * 100)}%`;
 const row = (k, v, cls) => h('tr', {}, h('td', {}, k), h('td', { class: cls || '' }, v));
 
 export function statusTab() {
-  const c = G.char, cty = country(c), gs = gearStats(c), M = method(c);
+  const c = G.char, cty = country(c), gs = gearStats(c), M = method(c); ensureBody(c);
   const cv = document.createElement('canvas'); cv.className = 'portrait fullbody';
-  drawFullBody(cv, c.genes, { age: c.age, gender: c.gender, realm: c.qi.realm, hair: c.hair, gear: c.gear || {}, elemColor: c.qi.realm >= 2 ? ELEMENTS.find(e => e.id === c.qi.elem)?.color : null });
+  drawFullBody(cv, c.genes, { age: c.age, gender: c.gender, realm: c.qi.realm, hair: c.hair, gear: c.gear || {}, body: c.body, heightCm: heightNow(c), elemColor: c.qi.realm >= 2 ? ELEMENTS.find(e => e.id === c.qi.elem)?.color : null });
   const pPow = power(c);
   const maxHp = Math.round((40 + c.stats.health * 0.5 + c.stats.strength * 0.3) * (1 + (pPow - 1) * 0.5) + gs.hp);
   const bk = c.stats.battle || 0;
@@ -48,6 +51,7 @@ export function statusTab() {
         c.ownSect ? h('div', { class: 'clan' }, `👑 ${c.gender === 'F' ? 'Matriarch' : 'Patriarch'} of the ${c.ownSect.clan} Clan`) : null,
         h('table', { class: 'kv' },
           row('Age', `${c.age} · ${lifeStage(c.age)} · ~${lifespan(c)}y lifespan`), row('Gender', c.gender === 'F' ? 'Female' : 'Male'),
+          row('Height', fmtHeight(heightNow(c))), row('Build', `${muscleLabel(c.body.muscle)} (muscle ${c.body.muscle})`),
           row('Home', `${c.city}, ${cty.name}`), row('Born into', WEALTH.find(w => w.id === c.wealth).name), row('Wealth', `${wealthLabel(c)} · net worth ${fmtMoney(c, netWorth(c))}`),
           row('Generation', `${c.generation} · Life #${META.lives}`), row('Sect', sectName(c) || '—'), row('Job', c.job ? c.job.id.replace(/_/g, ' ') : '—'),
           row('Cultivation', c.qi.known ? `${realmName(c)} · ${ELEMENTS.find(e => e.id === c.qi.elem)?.name} affinity ${c.qi.affinity} · ${c.qi.meridians}/12 meridians · ${M.name}` : 'Unknown'),
@@ -67,5 +71,6 @@ export function statusTab() {
       h('div', { class: 'box' }, h('h3', {}, 'Bonds'), bondList(c).length ? bondList(c).map(b => h('div', { class: 'small', style: { margin: '4px 0' } }, h('b', {}, `${b.label}: ${b.who.first}`), h('div', { class: 'muted' }, b.perks.join(' · ')))) : h('span', { class: 'muted' }, 'No best friend or partner yet.')),
       h('div', { class: 'box' }, h('h3', {}, 'Conditions'), (c.conditions || []).length ? c.conditions.map(x => h('div', { class: 'small bad', style: { margin: '3px 0' } }, `${COND_BY_ID[x.id].name}${x.sev > 1 ? ` (severity ${x.sev})` : ''}`)) : h('span', { class: 'good' }, 'Healthy'))),
     h('div', { class: 'box', style: { marginTop: '14px' } }, h('h3', {}, 'Traits'), c.traits.map(id => traitChip(id))),
+    bodySection(c),
   ];
 }

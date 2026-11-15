@@ -63,6 +63,7 @@ export function useItem(c, id) {
     case 'heal': addItem(c, id, -1); { const g = Math.round(25 * pm); stat(c, 'health', g); return `I swallowed a Healing Pill. Health +${g}.`; }
     case 'marrow': addItem(c, id, -1); { const g = Math.round(8 * pm); c.qi.affinity = clamp(c.qi.affinity + g); return `My bones burned clean. Qi affinity +${g}.`; }
     case 'incense': addItem(c, id, -1); c.flags.incense = true; stat(c, 'stress', -15); return 'I burned calming incense. My mind is still as a lake (+12% on my next breakthrough).';
+    case 'recipe': { const unk = RECIPES.filter(r => !known(c).includes(r.id) && r.id !== 'r_ink'); addItem(c, id, -1); if (!unk.length) return 'I already knew every recipe on the scroll.'; const r = pick(unk); known(c).push(r.id); return `The scroll taught me how to make ${itemName(r.out)}.`; }
     case 'ink': addItem(c, id, -1); return earnTrait(c, 'ink_touched') ? 'I wrote my name with the ink. The page wrote back.' : 'The ink dried before I could use it.';
   }
   return null;

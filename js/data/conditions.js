@@ -18,6 +18,7 @@ export const CONDITIONS = [
   { id: 'insomnia', name: 'Insomnia', kind: 'mind', dur: 3, eff: { health: -3, mood: -6 }, onset: c => c.stats.stress > 55 ? 0.08 : 0.01, cure: { therapy: 0.5, doctor: 0.4, qi: 0.6, rest: 0.25 }, desc: 'Sleepless nights.' },
   { id: 'ptsd', name: 'PTSD', kind: 'mind', dur: null, eff: { mood: -10, stress: 6 }, onset: () => 0, cure: { therapy: 0.35, qi: 0.2 }, desc: 'Triggered by trauma: near-death, losing family, brutal fights.' },
   { id: 'burnout', name: 'Burnout', kind: 'mind', dur: 2, eff: { mood: -8, happiness: -5 }, onset: c => c.job && c.stats.stress > 70 ? 0.2 : 0, cure: { therapy: 0.5, rest: 0.4, qi: 0.4 }, desc: 'Running on empty. Rest, a vacation or therapy help.' },
+  { id: 'blindness', name: 'Blindness', kind: 'body', dur: null, eff: { mood: -3 }, qiMult: 1.3, attune: true, onset: () => 0, cure: { qi: 0.1 }, desc: 'You cannot see — but you feel Qi more keenly than ever (+30% Qi). Bionic eyes can restore some sight.' },
   // qi
   { id: 'qi_deviation', name: 'Qi Deviation Sickness', kind: 'qi', dur: 3, eff: { health: -8 }, qiMult: 0.7, onset: () => 0, cure: { qi: 0.55, doctor: 0 }, desc: 'Qi running backwards through your meridians. Mortal doctors are useless.' },
   { id: 'corruption', name: 'Demonic Qi Corruption', kind: 'qi', dur: null, eff: { mood: -8, health: -4 }, qiMult: 1.1, onset: c => c.qi.manuals.includes('blood_art') ? 0.08 : 0, cure: { qi: 0.3, doctor: 0 }, desc: 'Demonic Qi gnaws at your mind. Purification is needed.' },
@@ -30,6 +31,7 @@ export const CONDITIONS = [
   { id: 'muscular_dystrophy', name: 'Muscular Dystrophy', kind: 'body', genetic: [3, 14], dur: null, eff: { strength: -3, agility: -3 }, grows: true, onset: () => 0, cure: { qi: 0.2 }, desc: 'Muscles weaken over time. Mortal medicine cannot stop it.' },
   { id: 'huntingtons', name: "Huntington's Disease", kind: 'body', genetic: [30, 50], dur: null, eff: { health: -5, smarts: -3 }, grows: true, onset: () => 0, cure: { qi: 0.15 }, desc: 'A hidden inheritance that wakes in middle age.' },
   { id: 'alzheimers', name: "Early-Onset Alzheimer's", kind: 'mind', genetic: [45, 65], dur: null, eff: { smarts: -5, mood: -4 }, grows: true, onset: () => 0, cure: { qi: 0.2 }, desc: 'Memories fading like old ink.' },
+  { id: 'schizophrenia', name: 'Schizophrenia', kind: 'mind', genetic: [17, 30], dur: null, eff: { mood: -6, stress: 6 }, qiMult: 1.35, attune: true, onset: () => 0, cure: { therapy: 0.25, doctor: 0.3, qi: 0.15 }, desc: 'Hearing and seeing what others cannot. Treatment and support help a lot. Cultivators say such minds sense Qi others miss (+35% Qi).' },
   { id: 'bipolar', name: 'Bipolar Disorder', kind: 'mind', genetic: [15, 30], dur: null, eff: { mood: -6, stress: 4 }, onset: () => 0, cure: { therapy: 0.35, doctor: 0.3, qi: 0.25 }, desc: 'Mood swings between highs and lows. Treatment and support make a real difference.' },
 ];
 export const GENETIC = CONDITIONS.filter(x => x.genetic);

@@ -1,7 +1,28 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.4.4';
+export const VERSION = '0.5.1';
 export const CHANGELOG = [
+  { v: '0.5.1', date: '2026-11-15', title: 'Cloud saves are live', notes: [
+    'Google cloud saves are now switched on. Use "Connect with Google" on the main menu to back up and sync your save slots. Connecting merges with your local saves and never deletes anything.',
+  ] },
+  { v: '0.5.0', date: '2026-11-15', title: 'Bodies, save slots & a new main menu', notes: [
+    'NEW main menu: a rainy pixel city at night, the ink-cat logo and an ink-fade title, with a smooth ink transition into the game. Use "☰ Menu" in the top-right to come back.',
+    'NEW save slots: play several characters side by side. Your current life was moved into slot 1 automatically.',
+    'NEW Google cloud saves (once the site owner sets it up): connecting always MERGES with your local saves and never deletes anything.',
+    'NEW body system: 25 body parts and organs, including your Dantian (Qi Center). Every part has its own health, injuries and effect on capacities like moving, manipulation, sight, breathing and Qi flow. See it in the Health and Status tabs.',
+    'Combat targeting: aim at the head, torso, arms or legs. Cripple legs to slow enemies, arms to weaken them, or go for the head to stun.',
+    'Injuries: bruises, cuts, burns, internal damage and fractures. Much stronger or armed opponents can sever limbs; a destroyed heart, brain or liver can kill you.',
+    'Healing: wounds heal over the years and may scar. Qi-heal your body as a cultivator (weak Qi leaves scars). Lost limbs can be regrown with Qi within 2 years — after that, prosthetics (wooden to bionic).',
+    'Your full-body sprite now shows missing limbs, prosthetics, muscle and height.',
+    'Height (based on your country and parents) and muscle mass. Gym, sports and martial arts build muscle and slowly improve Looks. New "Play sports" activity.',
+    'Countries: flags next to your name, Developing / Emerging / Developed tiers (schooling, technology, food & water) and climate biomes with yearly weather. Harder starts give up to 1.35x Legacy.',
+    'Cultivation rebalance: lifespan bonuses cut sharply for early and mid realms. Meditation is capped at 3 per year and builds Meridian Fatigue — mix in other activities to recover.',
+    'Blindness and Schizophrenia (a new genetic condition) grant sharper Qi attunement (+30–35% Qi).',
+    'NEW A/B/C/D conversations: every NPC has hidden personality traits. Strangers are hard to win over; good answers reveal who they are on their index card.',
+    'Pill recipes now start locked for new lives — learn them from Recipe Scrolls (Gates, merchants), alchemy texts, and friends.',
+    'NEW sounds for births, heavy hits, losing a limb and big windfalls, and a full-screen ascension effect when you reach a new realm.',
+    'The Trait Codex now hides the names of undiscovered traits too.',
+  ] },
   { v: '0.4.4', date: '2026-11-15', title: 'Codex secrets', notes: [
     "The Trait Codex now hides what a trait does until you have discovered it (had it in any life). You can still see its name, tier and how to get it.",
   ] },

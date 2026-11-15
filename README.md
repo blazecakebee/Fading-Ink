@@ -34,3 +34,11 @@ One player opens the Co-op tab and clicks **Create room**; others type the 5-let
 1. Bump `VERSION` in `js/version.js` and add an entry at the top of `CHANGELOG`.
 2. Put the same number in `version.json`.
 3. Commit and push. Open games check `version.json` every minute, show a notice, save, and refresh themselves.
+
+## Cloud saves (Google)
+1. Go to https://console.cloud.google.com → create a project (e.g. "Fading Ink").
+2. APIs & Services → Library → enable **Google Drive API**.
+3. OAuth consent screen → External → add the scope `.../auth/drive.appdata` → add yourself and friends as test users.
+4. Credentials → Create credentials → OAuth client ID → **Web application** → Authorized JavaScript origins: `https://blazecakebee.github.io`.
+5. Copy the Client ID (ends in `.apps.googleusercontent.com`) into `js/cloud-config.js`. Never commit a client secret.
+Saves go to a hidden app folder in each player's own Drive. Connecting always merges with local saves.

@@ -8,6 +8,7 @@ import { METHODS } from './realms.js';
 import { traitMult, has, earnTrait } from '../systems/traits.js';
 import { makePerson, gainClose, bondBonus } from '../systems/people.js';
 import { moodMult, addCondition } from '../systems/health.js';
+import { addMuscle } from '../systems/body.js';
 import { known as knownRecipes } from '../systems/crafting.js';
 import { RECIPES, ITEMS } from './items.js';
 import { ENEMIES, GATE_RANKS, makeGate, GATE_TYPES } from './combat.js';
@@ -52,17 +53,18 @@ export const ACTIVITIES = [
       return pick(['I found a stray cat and named it Ink.', 'The old shrine smelled of incense and rain.', 'Someone was watching me from a rooftop.']); } },
 
   // ---- TRAINING
-  { id: 'gym', cat: 'training', name: 'Hit the gym', icon: 'gym', minAge: 12, run: c => { const gg = g(c, 2, 5); stat(c, 'strength', gg); stat(c, 'health', 2); stat(c, 'stress', -3); stat(c, 'mood', 3); return `I lifted until my arms shook. Strength +${gg}.`; } },
-  { id: 'run', cat: 'training', name: 'Go running', icon: 'kick', minAge: 8, run: c => { const gg = g(c, 2, 4); stat(c, 'agility', gg); stat(c, 'health', 3); stat(c, 'mood', 3); return `I ran along the river at dawn. Agility +${gg}.`; } },
+  { id: 'gym', cat: 'training', name: 'Hit the gym', icon: 'gym', minAge: 12, run: c => { const gg = g(c, 2, 5); stat(c, 'strength', gg); stat(c, 'health', 2); stat(c, 'stress', -3); stat(c, 'mood', 3); const lk = addMuscle(c, ri(2, 4)); return `I lifted until my arms shook. Strength +${gg}.${lk ? ' I look noticeably fitter (+1 Looks).' : ''}`; } },
+  { id: 'run', cat: 'training', name: 'Go running', icon: 'kick', minAge: 8, run: c => { const gg = g(c, 2, 4); stat(c, 'agility', gg); stat(c, 'health', 3); stat(c, 'mood', 3); addMuscle(c, 1); return `I ran along the river at dawn. Agility +${gg}.`; } },
+  { id: 'sports', cat: 'training', name: 'Play sports', icon: 'play', minAge: 6, run: c => { const gg = g(c, 1, 3); stat(c, 'agility', gg); stat(c, 'charisma', 1); stat(c, 'mood', 5); addMuscle(c, ri(1, 2)); return `I played ${pick(['football', 'basketball', 'badminton', 'volleyball'])} with friends. Agility +${gg}.`; } },
   { id: 'combat_drills', cat: 'training', name: 'Study fight footage & drills', icon: 'combat', minAge: 10, run: c => { const gg = g(c, 2, 4); stat(c, 'battle', gg); return `I broke down fights move by move. Battle Knowledge +${gg}.`; } },
-  { id: 'martial', cat: 'training', name: 'Martial arts class', icon: 'fist', minAge: 6, cost: 'a', price: 300, run: c => { if (c.money < 300 * country(c).econ && c.age >= 18) return null; if (c.age >= 18) money(c, -300 * country(c).econ); stat(c, 'strength', g(c, 1, 3)); stat(c, 'agility', g(c, 2, 4)); stat(c, 'battle', g(c, 2, 4)); return 'Kata after kata. My stance is steadier.'; } },
+  { id: 'martial', cat: 'training', name: 'Martial arts class', icon: 'fist', minAge: 6, cost: 'a', price: 300, run: c => { if (c.money < 300 * country(c).econ && c.age >= 18) return null; if (c.age >= 18) money(c, -300 * country(c).econ); stat(c, 'strength', g(c, 1, 3)); stat(c, 'agility', g(c, 2, 4)); stat(c, 'battle', g(c, 2, 4)); addMuscle(c, ri(1, 3)); return 'Kata after kata. My stance is steadier.'; } },
   { id: 'spar', cat: 'training', name: 'Practice bout', icon: 'combat', minAge: 8, run: async c => {
       const opp = c.people.find(p => p.alive && p.role !== 'Enemy' && Math.abs(p.age - c.age) < 6) || makePerson(c);
       const r = await fight(c, c.qi.realm ? 'gangster' : 'bully', { name: `${opp.first} (sparring)`, hp: 30 + c.age, sparring: true, realm: Math.max(0, c.qi.realm - 1) });
       stat(c, 'agility', 1); return { text: `Practice Bout vs ${opp.first}: ${r === 'win' ? 'VICTORY' : r === 'flee' ? 'I yielded' : 'DEFEAT'}.`, cls: r === 'win' ? 'good' : '' }; } },
 
   // ---- CULTIVATION (hidden until you know Qi exists)
-  { id: 'meditate', cat: 'cultivation', name: 'Meditate / Gather Qi', icon: 'meditate', minAge: 4, run: c => ({ text: meditate(c), cls: c.qi.known ? 'qi' : '' }) },
+  { id: 'meditate', cat: 'cultivation', name: 'Meditate / Gather Qi', icon: 'meditate', minAge: 4, need: c => (c.qi.medYear || 0) < 3, run: c => ({ text: meditate(c), cls: c.qi.known ? 'qi' : '' }) },
   { id: 'meridian', cat: 'cultivation', name: 'Open a meridian', icon: 'lightning', minAge: 10, need: c => c.qi.realm >= 1, run: c => ({ text: openMeridian(c), cls: 'qi' }) },
   { id: 'breakthrough', cat: 'cultivation', name: 'Attempt breakthrough', icon: 'star', minAge: 6, need: c => c.qi.realm >= 1 && c.qi.qi >= qiCap(c), run: async c => ({ text: await breakthrough(c), cls: 'qi', big: true }) },
   { id: 'pill', cat: 'cultivation', name: 'Consume Qi Pill', icon: 'pill', minAge: 6, need: c => c.inv.qi_pill > 0 && c.qi.realm >= 1, run: c => { addItem(c, 'qi_pill', -1); const q = Math.round(qiCap(c) * 0.4 * traitMult(c, 'pill')); c.qi.qi = Math.min(qiCap(c), c.qi.qi + q); return { text: `The pill dissolved into warmth. +${q} Qi.`, cls: 'qi' }; } },
@@ -94,6 +96,7 @@ export const ACTIVITIES = [
   { id: 'skip', cat: 'school', name: 'Skip class', icon: 'beer', minAge: 10, need: c => !!c.edu.school, run: c => { c.edu.grades = clamp(c.edu.grades - 6); stat(c, 'happiness', 6); return chance(0.3) ? { text: 'I skipped class and got caught. Detention.', cls: 'bad' } : 'I skipped class and spent the day at the arcade.'; } },
   { id: 'university', cat: 'school', name: 'Apply to university', icon: 'education', minAge: 18, maxAge: 60, need: c => c.edu.level === 1 && c.edu.school !== 'University', run: async c => {
       if (c.edu.grades < 55 && c.stats.smarts < 60) return { text: 'My university application was rejected.', cls: 'bad' };
+      if (!chance({ developing: 0.5, emerging: 0.85 }[country(c).tier] ?? 1)) return { text: 'There were far too few university places for everyone who applied. I didn\'t get one this year.', cls: 'bad' };
       const major = await ui.choice({ title: 'Accepted!', text: 'Choose your major.', icon: 'education', options: MAJORS.map(m => ({ label: m, value: m })) });
       if (!major) return null;
       const fee = Math.round(8000 * country(c).econ); c.edu.school = 'University'; c.edu.major = major; c.edu.uniYears = 0; money(c, -fee * 4);
@@ -115,7 +118,7 @@ export const ACTIVITIES = [
   // ---- LEISURE
   { id: 'party', cat: 'leisure', name: 'Go to a party', icon: 'beer', minAge: 15, run: c => { stat(c, 'happiness', 8); stat(c, 'stress', -6); stat(c, 'mood', 10); if (chance(0.5)) { const p = makePerson(c, { role: 'Friend', close: ri(30, 55) }); c.people.push(p); return `I met ${p.first} at a party and we hit it off.`; } return 'I danced until the lights came on.'; } },
   { id: 'vacation', cat: 'leisure', name: 'Go on vacation', icon: 'travel', minAge: 18, run: c => { const cost = priceFor(c, 1500 * country(c).econ); if (c.money < cost) return null; money(c, -cost); stat(c, 'happiness', 15); stat(c, 'stress', -20); stat(c, 'mood', 18); return `I took a trip to ${pick(['the mountains of Wudang', 'a beach in Bali', 'Kyoto in autumn', 'Paris', 'a desert monastery'])}. (${fmtMoney(c, cost)})`; } },
-  { id: 'social_media', cat: 'leisure', name: 'Post on social media', icon: 'phone', minAge: 13, run: c => { const g = Math.max(0, Math.round(ri(-2, 6) + (c.stats.looks + c.stats.charisma - 100) / 20)); c.fame = clamp((c.fame || 0) + g); return g > 3 ? { text: `My post went viral! Fame +${g}.`, cls: 'good' } : 'Nobody liked my post.'; } },
+  { id: 'social_media', cat: 'leisure', name: 'Post on social media', icon: 'phone', minAge: 13, need: c => c.age >= ({ developing: 18, emerging: 14, developed: 12 }[country(c).tier] || 12) || ['wealthy', 'rich', 'royal'].includes(c.wealth), run: c => { const g = Math.max(0, Math.round(ri(-2, 6) + (c.stats.looks + c.stats.charisma - 100) / 20)); c.fame = clamp((c.fame || 0) + g); return g > 3 ? { text: `My post went viral! Fame +${g}.`, cls: 'good' } : 'Nobody liked my post.'; } },
   { id: 'adopt_pet', cat: 'leisure', name: 'Adopt a pet', icon: 'pet', minAge: 10, need: c => !c.assets.some(a => a.type === 'pet'), run: c => { const kind = pick(['cat', 'dog', 'rabbit', 'crow', 'koi fish']); c.assets.push({ type: 'pet', name: `${pick(['Mochi', 'Ink', 'Bao', 'Pepper', 'Luna', 'Ghost'])} the ${kind}`, value: 0 }); stat(c, 'happiness', 10); return `I adopted a ${kind}.`; } },
 
   // ---- CRIME
@@ -153,7 +156,7 @@ async function crime(c, risk, loot, text, years) {
 
 // Social actions (cost a Social point) — used from the People tab.
 export const SOCIAL = [
-  { id: 'talk', emoji: '💬', name: 'Conversation', icon: 'letter', run: (c, p) => { gainClose(c, p, ri(3, 10)); stat(c, 'happiness', 2); return `I had a long conversation with ${p.first}.`; } },
+  { id: 'talk', emoji: '💬', name: 'Conversation (A/B/C/D)', icon: 'letter', run: async (c, p) => (await import('../ui/conversation.js')).converse(c, p) },
   { id: 'time', emoji: '🍵', name: 'Spend time', icon: 'tea', run: (c, p) => { gainClose(c, p, ri(5, 14)); stat(c, 'stress', -4); return `I spent the afternoon with ${p.first} ${pick(['at the tea house', 'at the arcade', 'by the river', 'watching a movie'])}.`; } },
   { id: 'compliment', emoji: '✨', name: 'Compliment', icon: 'star', run: (c, p) => { const ok = chance(0.75); gainClose(c, p, (ok ? 6 : -4)); return ok ? `${p.first} blushed at my compliment.` : `${p.first} thought my compliment was weird.`; } },
   { id: 'gift', emoji: '🎁', name: 'Give a gift', icon: 'gift', age: 6, run: (c, p) => { const cost = Math.round(40 * country(c).econ); if (c.money < cost) return null; money(c, -cost); gainClose(c, p, 15); return `I gave ${p.first} a gift.`; } },
@@ -182,6 +185,6 @@ export function haveChild(c, p) {
   const kid = makePerson(c, { gender, age: 0, last: c.ownSect || c.gender === 'M' ? c.last : (p.gender === 'M' ? p.last : c.last), role: gender === 'F' ? 'Daughter' : 'Son', close: 90,
     genes: mixGenes(c.genes, p.genes, gender), extra: { otherParent: p.id } });
   kid.stats = Object.fromEntries(Object.keys(kid.stats).map(k => [k, clamp(Math.round(((c.stats[k] ?? 50) + (p.stats?.[k] ?? 50)) / 2 + ri(-15, 15)))]));
-  c.people.push(kid); stat(c, 'happiness', 15);
+  c.people.push(kid); stat(c, 'happiness', 15); ui.fx('birth');
   return `${kid.first} was born! ${gender === 'F' ? 'A baby girl' : 'A baby boy'}.`;
 }

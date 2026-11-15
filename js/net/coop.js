@@ -261,7 +261,7 @@ function applyAccepted(c, p, kind, data, resData, iAmSender) {
       return logRet(c, iAmSender, `${p.first} and I got married!`, 'good', true);
     case 'baby': {
       const kid = { ...data.kid, otherParent: p.id, last: data.kid.last };
-      if (!c.people.some(x => x.id === kid.id)) c.people.push(kid);
+      if (!c.people.some(x => x.id === kid.id)) c.people.push(kid); ui.fx('birth');
       stat(c, 'happiness', 15);
       return logRet(c, iAmSender, `${kid.first} was born — ${p.first}'s and my ${kid.gender === 'F' ? 'daughter' : 'son'}!`, 'good', true);
     }
