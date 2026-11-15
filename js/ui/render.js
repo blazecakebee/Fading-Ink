@@ -26,6 +26,7 @@ import { renderSettings } from './settingsPanel.js';
 import { renderLegacy } from './legacyPanel.js';
 import { VERSION, CHANGELOG } from '../version.js';
 import { ACHIEVEMENTS } from '../data/achievements.js';
+import { flagEl } from './flags.js';
 import { net, hostRoom, joinRoom, leave, sendChat, doCoopAction, COOP_ACTIONS, coopTick } from '../net/coop.js';
 
 export const NAV = [
@@ -73,7 +74,7 @@ function topbar() {
   const c = G.char, cty = country(c);
   $('#topbar').replaceChildren(
     h('div', { class: 'who' }, h('div', { class: 'mini' }, portraitFor(c, 64)),
-      h('div', {}, h('div', { class: 'name display' }, h('span', { class: 'flag', title: country(c).name }, country(c).flag || ''), ' ', fullName(c)), h('div', { class: 'sub' }, `${c.qi.realm ? realmName(c) : 'Human'} · ${c.gender === 'F' ? 'Female' : 'Male'} · Age ${c.age} · ${lifeStage(c.age)}`), c.ownSect ? h('div', { class: 'clan' }, `👑 ${c.gender === 'F' ? 'Matriarch' : 'Patriarch'} of the ${c.ownSect.clan} Clan · ${c.ownSect.name}`) : null)),
+      h('div', {}, h('div', { class: 'name display' }, flagEl(c.country, country(c).name), ' ', fullName(c)), h('div', { class: 'sub' }, `${c.qi.realm ? realmName(c) : 'Human'} · ${c.gender === 'F' ? 'Female' : 'Male'} · Age ${c.age} · ${lifeStage(c.age)}`), c.ownSect ? h('div', { class: 'clan' }, `👑 ${c.gender === 'F' ? 'Matriarch' : 'Patriarch'} of the ${c.ownSect.clan} Clan · ${c.ownSect.name}`) : null)),
     h('div', { class: 'center' }, h('div', {}, h('b', {}, `Year ${G.world.year}`), ' · ', h('span', { class: 'era' }, G.world.era)),
       h('div', { class: 'where' }, '📍 ', `${c.city}, ${cty.name}`)),
     h('div', { class: 'right' }, h('div', {}, icon('market', 'sm'), ' ', h('span', { class: 'money' }, fmtMoney(c, c.money)), ' ', h('span', { class: 'muted', title: `Born into a ${WEALTH.find(w => w.id === c.wealth).name.toLowerCase()} family` }, wealthLabel(c))),
@@ -319,7 +320,7 @@ const TABS = {
     const c = G.char, cty = country(c);
     const news = c.log.flatMap(y => y.lines.filter(l => l.c === 'world').map(l => `Age ${y.age} — ${l.t}`)).slice(-12).reverse();
     return [h('h2', { class: 'display' }, 'World'), h('table', { class: 'kv', style: { marginTop: '10px' } },
-      [['Year', G.world.year], ['Era', G.world.era], ['Country', `${cty.flag || ''} ${cty.name}`], ['Development', `${TIERS_C[cty.tier]?.name} — ${TIERS_C[cty.tier]?.desc} (Legacy ×${TIERS_C[cty.tier]?.legacy})`], ['Climate', BIOMES_C[cty.biome]?.name || '—'], ['City', c.city], ['Economy', cty.econ >= 1.2 ? 'Strong' : cty.econ >= 0.8 ? 'Average' : 'Developing'], ['Spiritual density (Qi)', cty.qi >= 1.3 ? 'Very high' : cty.qi >= 1 ? 'High' : 'Thin'], ['Danger', cty.danger > 0.45 ? 'High' : cty.danger > 0.25 ? 'Moderate' : 'Low']].map(([a, b]) => h('tr', {}, h('td', {}, a), h('td', {}, b)))),
+      [['Year', G.world.year], ['Era', G.world.era], ['Country', h('span', {}, flagEl(cty.id), ' ', cty.name)], ['Development', `${TIERS_C[cty.tier]?.name} — ${TIERS_C[cty.tier]?.desc} (Legacy ×${TIERS_C[cty.tier]?.legacy})`], ['Climate', BIOMES_C[cty.biome]?.name || '—'], ['City', c.city], ['Economy', cty.econ >= 1.2 ? 'Strong' : cty.econ >= 0.8 ? 'Average' : 'Developing'], ['Spiritual density (Qi)', cty.qi >= 1.3 ? 'Very high' : cty.qi >= 1 ? 'High' : 'Thin'], ['Danger', cty.danger > 0.45 ? 'High' : cty.danger > 0.25 ? 'Moderate' : 'Low']].map(([a, b]) => h('tr', {}, h('td', {}, a), h('td', {}, b)))),
       h('h3', { class: 'display', style: { margin: '16px 0 8px' } }, 'Headlines'), h('div', { class: 'feed' }, news.length ? news.map(n => h('p', { class: 'world' }, n)) : h('p', { class: 'muted' }, 'Quiet years.'))];
   },
 

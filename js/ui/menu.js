@@ -4,6 +4,7 @@ import { SLOTS, META, deleteSlot } from '../core/state.js';
 import { portraitFor } from './portrait.js';
 import { REALMS } from '../data/realms.js';
 import { COUNTRIES } from '../data/countries.js';
+import { flagEl } from './flags.js';
 import { choice, toast } from './modal.js';
 import { fx } from './fx.js';
 import { VERSION } from '../version.js';
@@ -62,7 +63,7 @@ export function showMenu(onPlay) {
   drawCloud();
   const slotCard = s => h('div', { class: 'slot' + (s.id === active?.id ? ' current' : '') + (s.alive === false ? ' dead' : '') },
     h('div', { class: 'pframe' }, portraitFor({ genes: s.genes, age: s.age, gender: s.gender, realm: s.realm, hair: s.hair }, 56)),
-    h('div', { class: 'slot-info' }, h('b', {}, `${COUNTRIES.find(c => c.id === s.country)?.flag || ''} ${s.name}`),
+    h('div', { class: 'slot-info' }, h('b', {}, flagEl(s.country), ' ', s.name),
       h('div', { class: 'muted small' }, `Age ${s.age} · ${s.realm ? REALMS[s.realm].name + ' ' + s.stage : 'Mortal'}${s.gen > 1 ? ` · Gen ${s.gen}` : ''}${s.alive === false ? ' · ✝ deceased' : ''}`),
       h('div', { class: 'muted small' }, ago(s.updated || 0))),
     h('div', { class: 'slot-btns' }, h('button', { class: 'btn', onclick: () => go(s.id) }, s.alive === false ? 'Legacy' : 'Play'),

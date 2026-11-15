@@ -1,7 +1,12 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.5.2';
+export const VERSION = '0.5.3';
 export const CHANGELOG = [
+  { v: '0.5.3', date: '2026-11-15', title: 'Sleeker settings', notes: [
+    'Settings redesigned into tidy cards (Theme, Display, Layout, Gameplay, Accessibility & effects, Audio, Music stations, Save data) with round sliders that fill as you drag, pill toggle switches and a segmented font picker.',
+    'Main menu: the logo and the "Fading Ink" title now finish their ink animation in pure white and stay that way.',
+    'Fixed: country flags are now real little flag pictures everywhere (Windows was showing letters like "KR" instead of flag emoji).',
+  ] },
   { v: '0.5.2', date: '2026-11-15', title: 'Legacy tree, achievements & surgery', notes: [
     'The Legacy shop is now a skill tree with 4 branches (Fortune, Cultivation, Body, Mind & Spirit) and 20 upgrades — including being born knowing Qi, starting with recipes or a cultivation method, longer lifespans, cleaner genes, merchant discounts and +1 Action a year. Perks you already bought carry over.',
     'NEW 49 achievements for doing things for the first time. Each pays a little Legacy and pops up in the top-right. See them all in the new Achievements tab.',
