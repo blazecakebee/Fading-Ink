@@ -31,8 +31,8 @@ export function statusTab() {
   const qiTotal = traitMult(c, 'qi') * bondBonus(c, 'qi') * condQiMult(c) * (1 + gs.qi) * (c.ownSect ? 1.1 : 1) * M.qi;
   const bonuses = [
     ['Qi gain', pct(qiTotal), `traits ${pct(traitMult(c, 'qi'))} · bonds ${pct(bondBonus(c, 'qi'))} · method ${pct(M.qi)} · gear ${add(gs.qi)}${c.ownSect ? ' · own sect +10%' : ''}${condQiMult(c) !== 1 ? ` · conditions ${pct(condQiMult(c))}` : ''}`],
-    ['Training gains', pct(traitMult(c, 'train') * bondBonus(c, 'train') * moodMult(c)), `traits ${pct(traitMult(c, 'train'))} · bonds ${pct(bondBonus(c, 'train'))} · mood ${pct(moodMult(c))}`],
-    ['Study gains', pct(traitMult(c, 'study') * bondBonus(c, 'study') * moodMult(c)), `traits ${pct(traitMult(c, 'study'))} · bonds ${pct(bondBonus(c, 'study'))} · mood ${pct(moodMult(c))}`],
+    ['Training gains', pct(traitMult(c, 'train') * bondBonus(c, 'train') * moodMult(c)), `traits ${pct(traitMult(c, 'train'))} · bonds ${pct(bondBonus(c, 'train'))} · happiness ${pct(moodMult(c))}`],
+    ['Study gains', pct(traitMult(c, 'study') * bondBonus(c, 'study') * moodMult(c)), `traits ${pct(traitMult(c, 'study'))} · bonds ${pct(bondBonus(c, 'study'))} · happiness ${pct(moodMult(c))}`],
     ['Salary', pct(traitMult(c, 'pay') * bondBonus(c, 'work')), `traits ${pct(traitMult(c, 'pay'))} · bonds ${pct(bondBonus(c, 'work'))}`],
     ['Relationship growth', pct(1.3 * traitMult(c, 'social')), 'base +30% · traits ' + pct(traitMult(c, 'social'))],
     ['Merchant discount', `${Math.round(discount(c) * 100)}%`, 'from Charisma'],
@@ -58,7 +58,7 @@ export function statusTab() {
           row('Qi', c.qi.known ? `${c.qi.qi}/${qiCap(c)}` : '—')))),
     h('div', { class: 'grid3', style: { marginTop: '14px' } },
       h('div', { class: 'box' }, h('h3', {}, 'Core'), h('table', { class: 'kv' },
-        row('Health', c.stats.health), row('Happiness', c.stats.happiness), row(`Mood ${moodFace(c.stats.mood)}`, c.stats.mood), row('Stress', c.stats.stress))),
+        row('Health', c.stats.health), row(`Happiness ${moodFace(c.stats.happiness)}`, c.stats.happiness), row('Stress', c.stats.stress))),
       h('div', { class: 'box' }, h('h3', {}, `Stats (cap ${statCap(c)}, soft ${softCap(c)})`), h('table', { class: 'kv' },
         CAPPED.map(k => row(k === 'battle' ? 'Battle Knowledge' : k[0].toUpperCase() + k.slice(1), `${c.stats[k] ?? 0}`, (c.stats[k] ?? 0) >= softCap(c) ? 'legend' : '')))),
       h('div', { class: 'box' }, h('h3', {}, 'Combat'), h('table', { class: 'kv' },

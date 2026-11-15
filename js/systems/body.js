@@ -108,7 +108,7 @@ export function bodyYear(c) {
   }
   // muscle fades slowly without training
   if ((c.age - (c.lastTrained?.strength ?? c.age)) >= 3) c.body.muscle = Math.max(0, c.body.muscle - 1);
-  const pn = pain(c); if (pn > 3) c.stats.mood = clamp((c.stats.mood ?? 60) - Math.round(pn));
+  const pn = pain(c); if (pn > 3) c.stats.happiness = clamp(c.stats.happiness - Math.round(pn));
 }
 
 // Qi healing: mends injuries; regrows limbs lost within 2 years (needs Foundation Establishment or higher)

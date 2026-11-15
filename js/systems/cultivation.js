@@ -67,7 +67,7 @@ export function breakthroughInfo(c) {
   add('Traits', traitVal(c, 'breakthrough'));
   if (perkC('c4')) add('Legacy: Tribulation Scars', 0.05);
   add(`Stress ${c.stats.stress}`, -c.stats.stress / 300);
-  add('Mood', ((c.stats.mood ?? 60) - 60) / 600);
+  add('Happiness', (c.stats.happiness - 60) / 600);
   add('Partner (dual cultivation)', bondBonus(c, 'breakthrough') - 1);
   if (method(c).bt) add(method(c).name, method(c).bt);
   if (c.flags.incense) add('Calming Incense burned', 0.12);

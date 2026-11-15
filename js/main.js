@@ -58,7 +58,8 @@ function play(id) {
   if (id && loadSlot(id)) { /* loaded */ }
   else { startSlot(newSlotId()); G.world = { year: ri(820, 900), era: pick(ERAS) }; newLife(); }
   const c = G.char; migrateStages(c);
-  c.stats.mood ??= 60; c.stats.battle ??= 5; c.conditions ||= []; c.lastTrained ||= {}; c.qi.methods ||= ['basic']; c.gear ||= {}; c.maxActions ||= 4; ensureBody(c);
+  if (c.stats.mood != null) { c.stats.happiness = Math.round((c.stats.happiness + c.stats.mood) / 2); delete c.stats.mood; } // Mood merged into Happiness (v0.5.4)
+  c.stats.battle ??= 5; c.conditions ||= []; c.lastTrained ||= {}; c.qi.methods ||= ['basic']; c.gear ||= {}; c.maxActions ||= 4; ensureBody(c);
   G.ui = { tab: 'life', openCats: {} };
   sessionStorage.setItem('fi-in-game', '1');
   save(); render();

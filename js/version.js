@@ -1,7 +1,13 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.5.3';
+export const VERSION = '0.5.4';
 export const CHANGELOG = [
+  { v: '0.5.4', date: '2026-11-15', title: 'Happiness & Mood merged', notes: [
+    'Mood and Happiness are now one stat: Happiness (with a face that shows how you feel). Existing characters get the average of their two old values.',
+    'Achievements you haven\'t earned yet now hide their name and description, like the Trait Codex.',
+    'Balance: your body fights back harder when Health is very low, so lives no longer slowly bleed out in childhood from minor illnesses.',
+    'Happiness now does everything Mood did: it boosts or weakens how well your actions go, drifts toward a baseline set by your stress, best friend and partner, and very low Happiness can lead to depression.',
+  ] },
   { v: '0.5.3', date: '2026-11-15', title: 'Sleeker settings', notes: [
     'Settings redesigned into tidy cards (Theme, Display, Layout, Gameplay, Accessibility & effects, Audio, Music stations, Save data) with round sliders that fill as you drag, pill toggle switches and a segmented font picker.',
     'Main menu: the logo and the "Fading Ink" title now finish their ink animation in pure white and stay that way.',

@@ -19,7 +19,7 @@ import { bonds, bondBonus } from './people.js';
 import { checkEarned } from './traits.js';
 
 export const ACTIONS_PER_YEAR = 4, SOCIAL_PER_YEAR = 4;
-export const STAT_KEYS = ['health', 'happiness', 'mood', 'stress', 'smarts', 'looks', 'strength', 'battle', 'agility', 'charisma', 'luck'];
+export const STAT_KEYS = ['health', 'happiness', 'stress', 'smarts', 'looks', 'strength', 'battle', 'agility', 'charisma', 'luck'];
 
 export const tierOf = c => TIERS[country(c).tier] || TIERS.developed;
 export const country = c => COUNTRIES.find(x => x.id === c.country) || COUNTRIES[0];
@@ -88,7 +88,7 @@ export function newLife(opts = {}) {
     id: uid(), first: nm.first, last: nm.last, gender, country: cty.id, city: pick(cty.city), wealth: wealth.id,
     age: 0, alive: true, birthYear: G.world.year, generation: opts.generation || 1,
     money: 0, fame: 0, genes, hair: null,
-    stats: { health: ri(60, 100), happiness: ri(60, 100), mood: ri(55, 85), stress: ri(0, 15), smarts: base(), looks: genes.looks, battle: ri(0, 8),
+    stats: { health: ri(60, 100), happiness: ri(60, 95), stress: ri(0, 15), smarts: base(), looks: genes.looks, battle: ri(0, 8),
              strength: ri(10, 40), agility: ri(10, 40), charisma: base(), luck: base() },
     traits: [], qi: { known: false, realm: 0, stage: 1, qi: 0, elem: pick(ELEMENTS).id, affinity: ri(5, 60), meridians: 0, manuals: [], techs: [] },
     inv: {}, edu: { level: 0, school: null, uniYears: 0, major: null, grades: ri(40, 80) },
@@ -167,9 +167,7 @@ export async function ageUp() {
   // passive stat drift
   // bodies recover toward a baseline that drops with age; old age wears you down
   const target = c.age < 40 ? 88 : c.age < 60 ? 72 : 58;
-  if (c.stats.health < target) stat(c, 'health', c.age < 18 ? ri(2, 6) : ri(1, 4)); else if (c.age > 30) stat(c, 'health', -ri(0, c.age > 65 ? 4 : 2));
-  // happiness slowly settles back toward normal
-  stat(c, 'happiness', c.stats.happiness < 60 ? ri(1, 4) : c.stats.happiness > 80 ? -ri(0, 2) : 0);
+  if (c.stats.health < target) stat(c, 'health', c.stats.health < 40 ? ri(5, 10) : c.age < 18 ? ri(3, 7) : ri(2, 5)); // the lower you are, the harder your body fights back else if (c.age > 30) stat(c, 'health', -ri(0, c.age > 65 ? 4 : 2));
   if (c.qi.realm) stat(c, 'health', c.qi.realm * 2);
   if (traitVal(c, 'heal')) stat(c, 'health', traitVal(c, 'heal'));
   stat(c, 'stress', -ri(2, 6));
@@ -205,7 +203,7 @@ export async function ageUp() {
   if (B && chance(0.22)) {
     const [txt, kind] = pick(B.events); const shelter = c.assets.some(a => a.type === 'house') || c.money > 20000 * country(c).econ;
     if (shelter) ui.log(`${txt} I rode it out safely at home.`, 'world');
-    else { stat(c, 'health', -ri(2, 6)); stat(c, 'mood', -4); ui.log(`${txt} ${kind === 'cold' ? 'I could barely afford heating.' : kind === 'heat' ? 'I had no way to keep cool.' : kind === 'drought' ? 'We rationed every drop.' : 'Our home was damaged.'}`, 'bad'); }
+    else { stat(c, 'health', -ri(2, 6)); stat(c, 'happiness', -4); ui.log(`${txt} ${kind === 'cold' ? 'I could barely afford heating.' : kind === 'heat' ? 'I had no way to keep cool.' : kind === 'drought' ? 'We rationed every drop.' : 'Our home was damaged.'}`, 'bad'); }
   }
   // bonds
   const bd = bonds(c);

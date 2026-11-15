@@ -86,7 +86,7 @@ export function converse(c, p) {
         const hidden = [...p.persona.filter(t => !p.known.includes(t)), ...(p.known.includes('likes') ? [] : ['likes'])];
         if (hidden.length) { const r = pick(hidden); p.known.push(r); reveal = r === 'likes' ? ` You learn they love ${p.likes}.` : ` You realise they're ${PERSONAS[r].name.toLowerCase()}.`; }
       }
-      if (s > 0) stat(c, 'mood', 3);
+      if (s > 0) stat(c, 'happiness', 3);
       const tone = s > 0 ? `${p.first} lights up.` : s < 0 ? `${p.first} looks put off.` : `${p.first} gives a polite nod.`;
       opts.querySelectorAll('button').forEach(b => b.disabled = true);
       result.replaceChildren(h('p', { class: s > 0 ? 'good' : s < 0 ? 'bad' : '' }, `${tone} (${d >= 0 ? '+' : ''}${d} relationship)${reveal}`),

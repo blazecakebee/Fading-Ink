@@ -118,7 +118,7 @@ function bar(label, val, color, ic, max = 100, text) {
 function rightCol() {
   const c = G.char, s = c.stats;
   const out = [
-    h('div', {}, bar('Health', s.health, '#ff5a6a', 'heart'), bar('Happiness', s.happiness, '#ffd84a', 'sun'), bar(`Mood ${moodFace(s.mood ?? 60)}`, s.mood ?? 60, '#7fd1ff', 'flower'), bar('Stress', s.stress, '#ff8a3a', 'brokenheart'),
+    h('div', {}, bar('Health', s.health, '#ff5a6a', 'heart'), bar(`Happiness ${moodFace(s.happiness)}`, s.happiness, '#ffd84a', 'sun'), bar('Stress', s.stress, '#ff8a3a', 'brokenheart'),
       bar('Smarts', s.smarts, '#6ab0ff', 'mind'), bar('Looks', s.looks, '#ff8ad0', 'flower'),
       c.qi.known ? bar('Qi', c.qi.qi, 'var(--qi)', 'cultivation', qiCap(c), `${c.qi.qi}/${qiCap(c)}`) : null),
     h('div', { class: 'box' }, h('h3', {}, 'Your Stats'), h('div', { class: 'realm-line' }, icon('cultivation', 'sm'), ' ', h('b', {}, c.qi.known ? realmName(c) : 'Realm: ???')), h('div', { class: 'stats' },
@@ -364,8 +364,8 @@ const TABS = {
   health: () => healthTab(),
   achievements() {
     const done = META.achievements || {}; const n = ACHIEVEMENTS.filter(a => done[a.id]).length;
-    return [h('h2', { class: 'display' }, 'Achievements'), h('p', { class: 'muted' }, `${n} / ${ACHIEVEMENTS.length} unlocked across all your lives · each one pays Legacy Points the first time.`),
-      h('div', { class: 'ach-grid' }, ACHIEVEMENTS.map(a => h('div', { class: 'ach' + (done[a.id] ? ' done' : '') }, h('b', {}, (done[a.id] ? '🏆 ' : '🔒 ') + a.name), h('div', { class: 'small muted' }, a.desc), h('div', { class: 'small', style: { color: 'var(--legend)' } }, `+${a.pts} Legacy`))))];
+    return [h('h2', { class: 'display' }, 'Achievements'), h('p', { class: 'muted' }, `${n} / ${ACHIEVEMENTS.length} unlocked across all your lives · each one pays Legacy Points the first time. Locked achievements stay a mystery until you earn them.`),
+      h('div', { class: 'ach-grid' }, ACHIEVEMENTS.map(a => h('div', { class: 'ach' + (done[a.id] ? ' done' : '') }, h('b', {}, done[a.id] ? '🏆 ' + a.name : '🔒 ??? ' + '▮'.repeat(Math.min(7, Math.ceil(a.name.length / 2)))), h('div', { class: 'small muted' }, done[a.id] ? a.desc : h('i', {}, 'Undiscovered — do something new to find out.')), h('div', { class: 'small', style: { color: 'var(--legend)' } }, `+${a.pts} Legacy`))))];
   },
   updates() {
     return [h('h2', { class: 'display' }, 'Update Log'), h('p', { class: 'muted' }, `You're playing version ${VERSION}. When a new version goes live, the game lets you know and refreshes itself.`), changelogBody(CHANGELOG)];
@@ -444,7 +444,7 @@ export async function openSurgery() {
   await runActivity({ id: 'surgery', cat: 'mind', run: cc => {
     money(cc, -x.cost); cc.flags.surgery = true; stat(cc, 'stress', 6);
     if (chance(x.ok)) { const g = ri(...x.gain); stat(cc, 'looks', g); stat(cc, 'happiness', 10); return { text: `The surgery went well. Looks +${g}. I barely recognise myself in the mirror — in a good way.`, cls: 'good', big: true }; }
-    if (chance(x.botch / (1 - x.ok))) { const l = ri(3, 10); stat(cc, 'looks', -l); stat(cc, 'mood', -15); return { text: `The surgery was botched. Looks -${l}. I can't stop staring at the scars.`, cls: 'bad', big: true }; }
+    if (chance(x.botch / (1 - x.ok))) { const l = ri(3, 10); stat(cc, 'looks', -l); stat(cc, 'happiness', -15); return { text: `The surgery was botched. Looks -${l}. I can't stop staring at the scars.`, cls: 'bad', big: true }; }
     return { text: 'The surgery healed fine, but nobody can tell the difference.', cls: '' }; } });
 }
 

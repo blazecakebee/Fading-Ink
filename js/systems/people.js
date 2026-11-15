@@ -55,7 +55,7 @@ export function yearlyPeople(c) {
       p.alive = false;
       const fam = ['Father', 'Mother', 'Brother', 'Sister', 'Spouse', 'Son', 'Daughter'].includes(p.role);
       ui.log(`My ${p.role.toLowerCase()} ${p.first} died at age ${p.age}.`, fam ? 'death' : 'bad');
-      if (fam) { c.stats.happiness = clamp(c.stats.happiness - 20); c.stats.mood = clamp((c.stats.mood ?? 60) - 25); if (['Father', 'Mother', 'Spouse', 'Son', 'Daughter'].includes(p.role)) import('./health.js').then(m => m.trauma(c, 0.15)); }
+      if (fam) { c.stats.happiness = clamp(c.stats.happiness - 30); if (['Father', 'Mother', 'Spouse', 'Son', 'Daughter'].includes(p.role)) import('./health.js').then(m => m.trauma(c, 0.15)); }
       if (p.id === c.partnerId) c.partnerId = null;
       if (['Father', 'Mother'].includes(p.role) && c.age < 18 && !c.people.some(q => ['Father', 'Mother'].includes(q.role) && q.alive)) c.flags.orphan = true;
     }

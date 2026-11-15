@@ -24,8 +24,8 @@ function cure(c, id, how) {
 }
 // Qi gain multiplier from conditions
 export const condQiMult = c => (c.conditions || []).reduce((m, x) => m * (COND_BY_ID[x.id].qiMult || 1), 1);
-// Mood multiplies how well actions go: 0.85x at 0 mood, 1.05x at 100
-export const moodMult = c => 0.85 + (c.stats.mood ?? 60) / 500;
+// Happiness multiplies how well actions go: 0.85x at 0, 1.05x at 100
+export const moodMult = c => 0.85 + (c.stats.happiness ?? 60) / 500;
 export const moodFace = m => m >= 80 ? '😄' : m >= 60 ? '🙂' : m >= 40 ? '😐' : m >= 20 ? '😟' : '😢';
 
 // Years since you last trained a skill → how much it fades this year (0 for the first 2 years, then 1, 2, 3… up to 5)
@@ -37,10 +37,10 @@ export function decayRate(c, k) {
 }
 
 export function healthYear(c) {
-  // ---- mood drifts toward a baseline set by happiness, stress and bonds
+  // ---- happiness drifts toward a baseline set by stress and your bonds
   const { best, partner } = bonds(c);
-  const base = c.stats.happiness * 0.6 + 35 - c.stats.stress * 0.35 + (best ? 6 : 0) + (partner ? 6 : 0);
-  c.stats.mood = clamp(Math.round((c.stats.mood ?? 60) * 0.5 + base * 0.5 + ri(-8, 8)));
+  const base = 62 - c.stats.stress * 0.35 + (best ? 6 : 0) + (partner ? 6 : 0);
+  c.stats.happiness = clamp(Math.round(c.stats.happiness * 0.7 + base * 0.3 + ri(-4, 4)));
 
   // ---- skill decay: the longer since you last trained a skill, the faster it fades
   c.lastTrained ||= {};
@@ -104,8 +104,8 @@ export function treat(c, id, how) {
   if (opt.cost && c.age >= 18) { if (c.money < opt.cost) return null; money(c, -opt.cost); }
   if (opt.qi) { if (c.qi.qi < opt.qi) return null; c.qi.qi -= opt.qi; }
   if (how.startsWith('med:')) addItem(c, how.slice(4), -1);
-  if (how === 'rest') { stat(c, 'stress', -12); stat(c, 'mood', 5); }
-  if (how === 'therapy') { stat(c, 'mood', 6); stat(c, 'stress', -6); }
+  if (how === 'rest') { stat(c, 'stress', -12); stat(c, 'happiness', 5); }
+  if (how === 'therapy') { stat(c, 'happiness', 6); stat(c, 'stress', -6); }
   if (chance(opt.chance)) { c.flags.cured = true; return { text: cure(c, id, opt.label.toLowerCase()), cls: 'good', big: true }; }
   if (how === 'qi' && chance(0.15)) { addCondition(c, 'qi_deviation', true); return { text: `My Qi turned on me while healing my ${C.name}. Qi Deviation Sickness!`, cls: 'bad' }; }
   if (x.sev > 1) x.sev = Math.max(1, x.sev - 0.5);

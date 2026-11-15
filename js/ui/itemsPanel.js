@@ -79,13 +79,13 @@ export function craftingTab() {
   ];
 }
 
-// ---------- HEALTH: mood, conditions, treatment
+// ---------- HEALTH: happiness, conditions, treatment
 export function healthTab() {
   const c = G.char; const conds = c.conditions || [];
   const kindLabel = { body: '🩺 Body', mind: '🧠 Mind', qi: '🌀 Qi' };
   return [h('h2', { class: 'display' }, 'Health'),
     h('div', { class: 'grid3', style: { marginTop: '10px' } },
-      h('div', { class: 'box' }, h('h3', {}, `Mood ${moodFace(c.stats.mood)}`), h('div', { class: 'muted small' }, `${c.stats.mood}/100. Mood rises with happiness, friends and a partner, and falls with stress. It changes how well your actions go (×${(0.85 + c.stats.mood / 500).toFixed(2)}). Long periods of very low mood can lead to depression.`)),
+      h('div', { class: 'box' }, h('h3', {}, `Happiness ${moodFace(c.stats.happiness)}`), h('div', { class: 'muted small' }, `${c.stats.happiness}/100. Happiness rises with fun, friends and a partner, and falls with stress, pain and loss. It changes how well your actions go (×${(0.85 + c.stats.happiness / 500).toFixed(2)}). Very low happiness for a long time can lead to depression.`)),
       h('div', { class: 'box' }, h('h3', {}, 'Body'), h('div', { class: 'muted small' }, `Health ${c.stats.health}/100 · Stress ${c.stats.stress}/100`)),
       h('div', { class: 'box' }, h('h3', {}, 'Qi medicine'), h('div', { class: 'muted small' }, c.qi.realm >= 1 ? 'You can try to heal yourself with Qi. It costs half your Qi capacity and can backfire into Qi Deviation.' : 'Reach Qi Condensation to heal with Qi. Qi medicines (Mending Salve, Heart-Calming Pill, Purification Pill) can be crafted by anyone.'))),
     bodySection(c),
