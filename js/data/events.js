@@ -7,7 +7,7 @@ import { ITEMS } from './items.js';
 import { learnManual } from '../systems/cultivation.js';
 import { has, earnTrait, traitMult } from '../systems/traits.js';
 import { makePerson } from '../systems/people.js';
-import { ENEMIES, GATE_RANKS } from './combat.js';
+import { ENEMIES, GATE_RANKS, makeGate, GATE_TYPES } from './combat.js';
 
 const E = [
   // --- childhood
@@ -28,7 +28,7 @@ const E = [
       if (v) { money(c, -10 * country(c).econ); c.qi.known = true; learnManual(c, 'breathing'); ui.log('He taught me to breathe in a way that made the world hum. Qi. It is real.', 'qi'); }
       else ui.log('I pulled away. He laughed like he knew we\'d meet again.'); } },
   { id: 'recruiter', cond: c => c.qi.realm >= 1 && !c.sect && c.age >= 12, w: 4, run: c => ui.log('A woman in a grey coat left a card: an ink lotus and an address. Someone noticed my Qi. (Try "Seek a hidden sect")', 'qi') },
-  { id: 'gate_spawn', cond: c => c.age >= 10, w: 5, run: c => { const g = GATE_RANKS[Math.min(5, weighted([0, 1, 2, 3, 4, 5].map(i => ({ i, weight: [40, 28, 16, 9, 5, 2][i] }))).i)]; c.gates.push({ rank: g.rank, years: ri(1, 4) }); ui.log(`News: A ${g.rank}-rank Gate opened in ${c.city}. The Hunter Association sealed off three blocks.`, 'qi'); } },
+  { id: 'gate_spawn', cond: c => c.age >= 10, w: 5, run: c => { const g = GATE_RANKS[Math.min(5, weighted([0, 1, 2, 3, 4, 5].map(i => ({ i, weight: [40, 28, 16, 9, 5, 2][i] }))).i)]; const ng = makeGate(g.rank); c.gates.push(ng); ui.log(`News: A ${g.rank}-rank Gate (${GATE_TYPES.find(t => t.id === ng.type).name}) opened in ${c.city}. The Hunter Association sealed off three blocks.`, 'qi'); } },
   { id: 'gang_threat', cond: c => c.age >= 16 && c.qi.realm >= 1, w: 3 * 1, run: async c => {
       const v = await ui.choice({ title: 'Crimson Lotus collectors', text: 'Two gang cultivators smell Qi on you. "Unregistered cultivator. Pay tribute or bleed."', icon: 'demon',
         options: [{ label: 'Fight', value: 'fight' }, { label: `Pay ${fmtMoney(c, 500 * country(c).econ)}`, value: 'pay' }, { label: 'Run', value: 'run' }] });
@@ -65,6 +65,19 @@ const E = [
         else return ui.log('I tried to haggle with a merchant. They packed up and left in a huff.', 'bad');
       } else if (v !== 'buy') return;
       if (c.money < price) return; money(c, -price); addItem(c, id, n); ui.log(`I bought ${n}× ${it.name} from a merchant for ${fmtMoney(c, price)}.`, 'good'); } },
+  // --- exotic merchants: rare, stock pills (incl. breakthrough pills) at steep prices — Charisma helps
+  { id: 'exotic_merchant', cond: c => c.age >= 14, w: 2.5, run: async c => {
+      const pills = ['qi_pill', 'heal_pill', 'marrow_pill', 'foundation_pill', 'purity_pill', 'heart_pill', 'mending_salve', 'calm_incense', 'trib_talisman', 'ginseng'];
+      const k = country(c).econ; const stock = [];
+      while (stock.length < 3) { const id = pick(pills); if (!stock.some(x => x.id === id)) stock.push({ id, price: priceFor(c, ({ foundation_pill: 9000, trib_talisman: 4500, marrow_pill: 3500, purity_pill: 3000, ginseng: 3000 }[id] || 1200) * k * (0.8 + Math.random() * 0.6)) }); }
+      const who = pick(['A veiled alchemist from the western deserts', 'A one-eyed pill sage on a talking donkey', 'A merchant from a sect that "does not exist"', 'A fox-eared trader who smells of plum blossom']);
+      let open = true;
+      while (open) {
+        const v = await ui.choice({ title: 'Exotic Merchant', icon: 'cauldron', text: `${who} unrolls a silk cloth of pills.${discount(c) ? `\n(Your charisma gets you ${Math.round(discount(c) * 100)}% off.)` : ''}\nCash: ${fmtMoney(c, c.money)}`,
+          options: [...stock.map((x, i) => ({ label: `${ITEMS[x.id].name} — ${fmtMoney(c, x.price)}`, value: i, disabled: x.sold || c.money < x.price })), { label: 'Done', value: -1, ghost: true }] });
+        if (v == null || v === -1) open = false;
+        else { const x = stock[v]; money(c, -x.price); addItem(c, x.id); x.sold = true; ui.fx('coin'); ui.log(`I bought a ${ITEMS[x.id].name} from an exotic merchant for ${fmtMoney(c, x.price)}.`, 'good'); }
+      } } },
   // --- adult life
   { id: 'lottery', cond: c => c.age >= 18, w: 1, run: c => { if (chance(0.02 * (1 + c.stats.luck / 50))) { const g = Math.round(ri(10000, 200000) * country(c).econ); money(c, g); ui.log(`I won the lottery: ${fmtMoney(c, g)}!`, 'big'); ui.fx('milestone'); } } },
   { id: 'promotion', cond: c => c.job && c.job.perf > 70, w: 6, run: c => { const g = Math.round(3000 * country(c).econ); money(c, g); c.job.perf = 50; ui.log(`I was promoted! Raise and bonus: ${fmtMoney(c, g)}.`, 'good'); } },

@@ -56,6 +56,15 @@ export function stat(c, k, d) {
 // Charisma (and a few traits) get you better prices from merchants: up to 25% off.
 export function discount(c) { return clamp(Math.max(0, (c.stats.charisma - 40) / 240) + (traitMult(c, 'social') > 1 ? 0.03 : 0), 0, 0.25); }
 export function priceFor(c, base) { return Math.round(base * (1 - discount(c))); }
+// Current wealth status from net worth (adjusted for the country's economy). Kids show their family's class.
+export function netWorth(c) { return c.money + (c.stocks || 0) + c.assets.reduce((s, a) => s + (a.value || 0), 0); }
+export function wealthLabel(c) {
+  const born = WEALTH.find(w => w.id === c.wealth)?.name || '';
+  if (c.age < 18) return `${born} family`;
+  const n = netWorth(c) / country(c).econ;
+  const tier = n < 0 ? 'In Debt' : n < 1000 ? 'Broke' : n < 10000 ? 'Poor' : n < 50000 ? 'Getting By' : n < 250000 ? 'Comfortable' : n < 1e6 ? 'Well-off' : n < 1e7 ? 'Rich' : n < 1e8 ? 'Very Rich' : 'Ultra Rich';
+  return c.wealth === 'royal' ? `Royal · ${tier}` : tier;
+}
 export function money(c, d) { c.money = Math.round(c.money + d); return c.money; }
 export function addItem(c, id, n = 1) { c.inv[id] = (c.inv[id] || 0) + n; if (c.inv[id] <= 0) delete c.inv[id]; }
 

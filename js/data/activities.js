@@ -10,7 +10,7 @@ import { makePerson, gainClose, bondBonus } from '../systems/people.js';
 import { moodMult, addCondition } from '../systems/health.js';
 import { known as knownRecipes } from '../systems/crafting.js';
 import { RECIPES, ITEMS } from './items.js';
-import { ENEMIES, GATE_RANKS } from './combat.js';
+import { ENEMIES, GATE_RANKS, makeGate, GATE_TYPES } from './combat.js';
 import { MAJORS } from './careers.js';
 import { SECTS } from './realms.js';
 import { G } from '../core/state.js';
@@ -128,7 +128,7 @@ export const ACTIVITIES = [
 
   // ---- ADVENTURE / GATES
   { id: 'hike', cat: 'adventure', name: 'Hike the mountains', icon: 'tent', minAge: 10, run: c => { stat(c, 'health', 4); stat(c, 'stress', -8);
-      if (chance(0.1)) { const g = GATE_RANKS[Math.min(5, ri(0, 1) + Math.floor(c.qi.realm / 2))]; c.gates.push({ rank: g.rank, years: ri(2, 5) }); return { text: `A ${g.rank}-rank Gate tore open in the mountainside! It will stay open a few years.`, cls: 'qi', big: true }; }
+      if (chance(0.1)) { const g = GATE_RANKS[Math.min(5, ri(0, 1) + Math.floor(c.qi.realm / 2))]; const ng = makeGate(g.rank); c.gates.push(ng); return { text: `A ${g.rank}-rank ${GATE_TYPES.find(t => t.id === ng.type).name} Gate tore open in the mountainside!`, cls: 'qi', big: true }; }
       if (c.qi.known && chance(0.12)) { addItem(c, 'qi_pill'); return { text: 'I found a spirit herb under a waterfall and refined it into a Qi pill.', cls: 'qi' }; }
       return 'Mist rolled over the peaks.'; } },
   { id: 'gather', cat: 'adventure', name: 'Gather materials', icon: 'herb', minAge: 10, run: c => {

@@ -15,6 +15,7 @@ import { playStation, currentStation } from '../audio/music.js';
 import { S } from '../settings.js';
 import { gearStats } from '../systems/crafting.js';
 import { bleedMult } from '../systems/health.js';
+import { MINIS, playMini } from './minigames.js';
 
 const bkLabel = v => v >= 80 ? 'Master' : v >= 60 ? 'Veteran' : v >= 40 ? 'Seasoned' : v >= 20 ? 'Trained' : 'Novice';
 const realmLabel = r => r === 0 ? 'Mortal' : REALMS[r].name;
@@ -30,7 +31,7 @@ export function fight(enemyDef, opts = {}) {
     me.hp = me.maxHp;
     const ePow = REALMS[enemyDef.realm || 0].power * (enemyDef.kind === 'spirit' ? traitMult(c, 'spiritBane') ** -1 : 1);
     const diff = enemyDef.sparring ? 1 : DIFFICULTY;
-    const en = { ...enemyDef, maxHp: Math.round(enemyDef.hp * (1 + (ePow - 1) * 0.5) * diff), str: Math.round(enemyDef.str * diff), agi: enemyDef.agi, pow: ePow, stam: 100, qi: 999, mom: 0, guard: false, armor: 0, evade: false, burn: 0, stun: false };
+    const en = { ...enemyDef, maxHp: Math.round(enemyDef.hp * (1 + (ePow - 1) * 0.5) * diff), str: Math.round(enemyDef.str * diff), agi: enemyDef.agi, pow: ePow, stam: 100, qi: 999, mom: 0, guard: false, armor: 0, evade: false, burn: 0, stun: 0, weak: false };
     en.hp = en.maxHp;
     const prevStation = currentStation(); if (S().musicOn && !opts.quietMusic) playStation('battle');
 
@@ -63,7 +64,10 @@ export function fight(enemyDef, opts = {}) {
 
     const myMoves = [...BASE_MOVES, ...(c.qi.realm >= 1 ? ['qi_palm'] : []), ...c.qi.techs];
     infoBox.append(...myMoves.map(k => h('div', {}, icon(MOVES[k].icon, 'sm'), ' ', h('b', {}, MOVES[k].name + ': '), MOVES[k].info, MOVES[k].qi ? ` (${MOVES[k].qi} Qi)` : '')));
+    const mini = enemyDef.mini && MINIS[enemyDef.mini] ? enemyDef.mini : null; let miniUsed = false;
+    if (mini) myMoves.push('special');
     if (!opts.noFlee) myMoves.push('flee');
+    if (mini) infoBox.append(h('div', {}, icon(MINIS[mini].icon, 'sm'), ' ', h('b', {}, MINIS[mini].name + ' (special, once per fight): '), `${MINIS[mini].how} ${MINIS[mini].win}`));
 
     function draw() {
       ui.meHp.style.width = (me.hp / me.maxHp * 100) + '%'; ui.enHp.style.width = (en.hp / en.maxHp * 100) + '%';
@@ -72,6 +76,7 @@ export function fight(enemyDef, opts = {}) {
       ui.meMom.classList.toggle('off', me.mom === 0); ui.enMom.classList.toggle('off', en.mom === 0);
       stamBar.style.width = me.stam + '%'; qiBar.style.width = (me.qi / me.maxQi * 100) + '%';
       movesBox.replaceChildren(...myMoves.map(k => {
+        if (k === 'special') return h('button', { class: 'btn special', disabled: miniUsed, onclick: () => special() }, icon(MINIS[mini].icon, 'sm'), MINIS[mini].name, h('small', {}, miniUsed ? 'used' : 'special'));
         if (k === 'flee') return h('button', { class: 'btn', style: { background: '#6a6a72' }, onclick: () => turn('flee') }, icon('travel', 'sm'), 'Flee');
         const mv = MOVES[k]; const can = me.stam >= Math.max(0, mv.cost) && (!mv.qi || me.qi >= mv.qi);
         return h('button', { class: 'btn', disabled: !can, onclick: () => turn(k) }, icon(mv.icon, 'sm'), mv.name, mv.qi ? h('small', {}, `${mv.qi} Qi`) : mv.cost > 0 ? h('small', {}, `${mv.cost} sta`) : null);
@@ -87,13 +92,13 @@ export function fight(enemyDef, opts = {}) {
       attPf.classList.add(attIsMe ? 'lunge-r' : 'lunge-l'); setTimeout(() => attPf.classList.remove('lunge-r', 'lunge-l'), 140);
       if (!chance(clamp(acc, 0.1, 0.98) * 100 / 100)) { att.mom = 0; fx('miss'); return `${attIsMe ? 'You' : en.name} used ${mv.name}... and missed.`; }
       const statV = mv.stat === 'qi' ? 60 + (attIsMe ? c.qi.affinity : 40) : mv.stat === 'agility' ? att.agi : att.str;
-      let dmg = ri(...mv.dmg) * (0.6 + statV / 100) * (mv.stat === 'qi' ? att.pow : Math.sqrt(att.pow)) * (1 + att.mom * 0.1) * (1 + (att.gear?.dmg || 0)) * (1 + (att.bk || 0) / 250);
+      let dmg = ri(...mv.dmg) * (0.6 + statV / 100) * (mv.stat === 'qi' ? att.pow : Math.sqrt(att.pow)) * (1 + att.mom * 0.1) * (1 + (att.gear?.dmg || 0)) * (1 + (att.bk || 0) / 250) * (!attIsMe || !en.weak ? 1 : 1.5);
       if (def.guard) { dmg *= 0.5; def.guard = false; } if (def.armor) { dmg *= 0.5; def.armor--; }
       const crit = chance(0.08 + (attIsMe ? (c.stats.luck + gs.luck) / 1000 + (c.stats.battle || 0) / 2000 : 0)); if (crit) dmg *= 1.7;
       if (enemyDef.sparring && attIsMe === false) dmg *= 0.7;
       dmg = Math.max(1, Math.round(dmg)); def.hp -= dmg; att.mom = Math.min(3, att.mom + (mv.mom || 1)); def.mom = 0;
       if (mv.drain) att.hp = Math.min(att.maxHp, att.hp + dmg * mv.drain);
-      if (mv.burn) def.burn = 2; if (mv.evade) att.evade = true; if (mv.stun && chance(mv.stun)) def.stun = true;
+      if (mv.burn) def.burn = 2; if (mv.evade) att.evade = true; if (mv.stun && chance(mv.stun)) def.stun = 1;
       fx(crit ? 'crit' : 'hit'); shake(defPf);
       const r = defPf.getBoundingClientRect(); floatText((crit ? 'CRIT ' : '-') + dmg, r.left + r.width / 2 - 20, r.top + 10, crit ? '#ffd84a' : '#ff6b6b');
       return `${attIsMe ? 'You' : en.name} used ${mv.name} for ${dmg}${crit ? ' (critical!)' : ''}.${def.stun ? ' Stunned!' : ''}`;
@@ -104,6 +109,24 @@ export function fight(enemyDef, opts = {}) {
       return opts2.length ? opts2[ri(0, opts2.length - 1)] : 'guard';
     }
     let busy = false;
+    // Mini-game special: plays inside the fight, then the enemy takes its turn
+    async function special() {
+      if (busy || miniUsed) return; busy = true; miniUsed = true; fx('click');
+      const holder = h('div', { class: 'mg-holder' }); movesBox.replaceChildren(holder);
+      const ok = await playMini(mini, holder, Math.max(1, Math.min(3, (enemyDef.realm || 0))));
+      let line;
+      if (mini === 'seal') line = ok ? (en.hp -= Math.round(en.maxHp * 0.3), en.stun = 1, `You slap a talisman on ${en.name}! It burns and freezes.`) : 'The talisman fizzles.';
+      if (mini === 'dodge') line = ok ? (me.mom = 3, me.evade = true, 'You read every move. Full momentum!') : 'You misjudge the rhythm.';
+      if (mini === 'qi_clash') line = ok ? (en.hp -= Math.round(en.maxHp * 0.25), `Your Qi crashes through! ${en.name} reels.`) : (me.hp -= Math.round(me.maxHp * 0.15), 'Your Qi buckles — the backlash hurts.');
+      if (mini === 'breath') line = ok ? (en.stun = 2, `${en.name} loses track of you.`) : `${en.name} hears you breathe.`;
+      if (mini === 'weakpoint') line = ok ? (en.weak = true, 'You found the weak point! Your hits deal +50% from now on.') : 'You strike solid stone.';
+      if (ok) shake(ui.enPf);
+      log.textContent = line; draw();
+      if (en.hp <= 0) return end('win', `${en.name} is defeated!`);
+      await wait(500); log.textContent = line + ' ' + await enemyTurn(true); draw();
+      if (me.hp <= 0) return end('lose', 'You collapse.');
+      busy = false;
+    }
     async function turn(k) {
       if (busy) return; busy = true; fx('click');
       if (k === 'flee') {
@@ -123,7 +146,7 @@ export function fight(enemyDef, opts = {}) {
       busy = false;
     }
     async function enemyTurn(silent) {
-      if (en.stun) { en.stun = false; return `${en.name} is stunned.`; }
+      if (en.stun > 0) { en.stun--; return `${en.name} is stunned.`; }
       const line = attack(en, me, enemyMove(), false); if (!silent) log.textContent = line; return line;
     }
     function end(result, text) {

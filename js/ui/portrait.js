@@ -49,7 +49,7 @@ function shade(hex, f) {
 function ageStage(age) { return age < 3 ? 'infant' : age < 13 ? 'child' : age < 18 ? 'teen' : age < 35 ? 'adult' : age < 58 ? 'middle' : 'elder'; }
 
 // Build a 32x32 grid of colors
-export function buildPortrait(genes, { age = 20, gender = 'F', realm = 0, hair = null, elemColor = null }) {
+export function buildPortrait(genes, { age = 20, gender = 'F', realm = 0, hair = null, elemColor = null, headOnly = false, raw = false }) {
   const R = seeded(genes.seed); const W = 32, H = 32;
   const g = Array.from({ length: H }, () => Array(W).fill(null));
   const set = (x, y, c) => { x = Math.round(x); y = Math.round(y); if (x >= 0 && y >= 0 && x < W && y < H && c) g[y][x] = c; };
@@ -97,12 +97,12 @@ export function buildPortrait(genes, { age = 20, gender = 'F', realm = 0, hair =
   // 2. body + neck
   const bodyTop = st === 'infant' ? 26 : st === 'child' ? 26 : 25;
   for (let y = bottomHead - 1; y < bodyTop + 1; y++) for (let x = cx - 2; x <= cx + 1; x++) set(x, y, y <= bottomHead ? skinD : skinS);
-  for (let y = bodyTop; y < H; y++) {
+  if (!headOnly) for (let y = bodyTop; y < H; y++) {
     const half = Math.min(st === 'infant' ? 7 : st === 'child' ? 9 : gender === 'M' ? 13 : 11, 4 + (y - bodyTop) * 2.2);
     for (let x = Math.round(cx - half); x < Math.round(cx + half); x++) set(x, y, (x === Math.round(cx - half) || x === Math.round(cx + half) - 1) ? clothD : cloth);
   }
   // collar / ribbon
-  if (st !== 'infant') {
+  if (st !== 'infant' && !headOnly) {
     set(cx - 1, bodyTop, skinS); set(cx, bodyTop, skinS); set(cx - 1, bodyTop + 1, skinS); set(cx, bodyTop + 1, skin);
     if (gender === 'F') { set(cx - 2, bodyTop + 2, accent); set(cx - 1, bodyTop + 2, shade(accent, -0.2)); set(cx, bodyTop + 2, shade(accent, -0.2)); set(cx + 1, bodyTop + 2, accent); set(cx - 1, bodyTop + 3, accent); set(cx, bodyTop + 3, accent); }
     else { set(cx - 3, bodyTop, '#f2f2f2'); set(cx + 2, bodyTop, '#f2f2f2'); set(cx - 2, bodyTop + 1, '#f2f2f2'); set(cx + 1, bodyTop + 1, '#f2f2f2'); }
@@ -189,7 +189,13 @@ export function buildPortrait(genes, { age = 20, gender = 'F', realm = 0, hair =
   // cultivation forehead mark
   if (realm >= 3) { const mc = elemColor || REALMS[realm].color; set(cx, top + 4, mc); set(cx - 1, top + 5, mc); set(cx, top + 5, '#ffffff'); set(cx, top + 6, mc); }
 
-  // 6. outline + aura
+  if (raw) return { g, st, skin, skinS, skinD, cloth, clothD, accent, hc, bodyTop, bottomHead };
+  return finish(g, realm, elemColor, R);
+}
+
+// Outline + cultivation aura, shared by portraits and full-body sprites
+function finish(g, realm, elemColor, R) {
+  const H = g.length, W = g[0].length;
   const out = g.map(r => r.slice());
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     if (g[y][x]) continue;
@@ -204,6 +210,61 @@ export function buildPortrait(genes, { age = 20, gender = 'F', realm = 0, hair =
     for (let i = 0; i < 4 + realm * 2; i++) { const x = Math.floor(R() * W), y = Math.floor(R() * 22); if (!out[y][x]) out[y][x] = '#ffffffaa'; }
   }
   return out;
+}
+
+// ---- Full-body sprite (32x64) for the Status sheet: same head, plus outfit, gear and aura.
+const GEAR_COLORS = { iron_sword: ['#cfd6de', '#7a5a3a'], spirit_blade: ['#8fe0ff', '#3a4a7a'], demon_saber: ['#ff5a6a', '#2a0a10'] };
+export function buildFullBody(genes, opts = {}) {
+  const { age = 20, gender = 'F', realm = 0, elemColor = null, gear = {}, robeColor = null } = opts;
+  const R = seeded(genes.seed + 7);
+  const head = buildPortrait(genes, { ...opts, headOnly: true, raw: true });
+  const W = 32, H = 64; const g = Array.from({ length: H }, (_, y) => y < 32 ? head.g[y].slice() : Array(W).fill(null));
+  const set = (x, y, c) => { x = Math.round(x); y = Math.round(y); if (x >= 0 && y >= 0 && x < W && y < H && c) g[y][x] = c; };
+  const { st, skin, skinS, cloth, clothD, accent } = head; const cx = 16;
+  const scale = { infant: 0.45, child: 0.7, teen: 0.9, adult: 1, middle: 1, elder: 0.95 }[st];
+  const top = head.bodyTop - 1, torsoH = Math.round(14 * scale), legH = Math.round(20 * scale);
+  const sw = st === 'infant' ? 5 : gender === 'M' ? 7 : 6;              // half shoulder width
+  const robe = realm >= 1 && st !== 'infant';
+  const main = robe ? (robeColor || shade(REALMS[realm].color, -0.45)) : cloth, mainD = shade(main, -0.3);
+  const skirt = !robe && gender === 'F' && (st === 'teen' || st === 'adult' || st === 'child') && R() < 0.6;
+  const pants = shade(CLOTHES[Math.floor(R() * CLOTHES.length)], -0.35), shoes = '#2a2230';
+  // torso
+  for (let y = top; y < top + torsoH; y++) { const w = sw - (y > top + torsoH * 0.55 && gender === 'F' ? 1 : 0);
+    for (let x = cx - w; x < cx + w; x++) set(x, y, x === cx - w || x === cx + w - 1 ? mainD : main); }
+  // collar
+  set(cx - 1, top, skinS); set(cx, top, skinS); set(cx - 1, top + 1, skin); set(cx, top + 1, skin);
+  // arms (3px) + hands
+  const armLen = torsoH + Math.round(3 * scale);
+  for (let y = top + 1; y < top + armLen; y++) for (const ax of [cx - sw - 3, cx + sw]) for (let i = 0; i < 3; i++) set(ax + i, y, y >= top + armLen - 2 ? skin : (i === 0 ? mainD : main));
+  // belt / sash
+  const beltY = top + Math.round(torsoH * 0.6);
+  for (let x = cx - sw + 1; x < cx + sw - 1; x++) set(x, beltY, robe ? (elemColor || accent) : shade(main, -0.5));
+  // lower body
+  const hip = top + torsoH;
+  if (robe) { for (let y = hip; y < hip + Math.round(legH * 0.75); y++) { const w = sw + Math.floor((y - hip) / 4); for (let x = cx - w; x < cx + w; x++) set(x, y, x === cx - w || x === cx + w - 1 || x === cx ? mainD : main); } }
+  else if (skirt) { for (let y = hip; y < hip + Math.round(legH * 0.45); y++) { const w = sw + Math.floor((y - hip) / 2); for (let x = cx - w; x < cx + w; x++) set(x, y, (x + y) % 5 === 0 ? clothD : pants === shoes ? cloth : shade(accent, -0.25)); } }
+  // legs + shoes
+  for (let y = hip; y < hip + legH; y++) for (const lx of [cx - 4, cx + 1]) for (let i = 0; i < 3; i++) {
+    if (g[y]?.[lx + i]) continue; const shoe = y >= hip + legH - 2;
+    set(lx + i, y, shoe ? shoes : skirt || st === 'infant' ? skinS : pants);
+  }
+  // armour overlays
+  if (gear.armor === 'iron_mail') for (let y = top + 2; y < hip; y++) for (let x = cx - sw + 1; x < cx + sw - 1; x++) if ((x + y) % 2 === 0) set(x, y, '#9aa3ad');
+  if (gear.armor === 'dragon_vest') for (let y = top + 2; y < hip; y++) for (let x = cx - sw + 1; x < cx + sw - 1; x++) set(x, y, (x + y * 2) % 3 === 0 ? '#ffb347' : '#d9622b');
+  if (gear.armor === 'padded_robe') for (let y = top + 2; y < hip; y += 3) for (let x = cx - sw + 1; x < cx + sw - 1; x++) set(x, y, shade(main, 0.2));
+  // charm pendant
+  if (gear.charm) { set(cx - 1, top + 3, gear.charm === 'jade_charm' ? '#5fd38a' : '#f2efe6'); set(cx, top + 3, gear.charm === 'jade_charm' ? '#3fa36a' : '#d8d2c2'); }
+  // weapon in right hand
+  if (gear.weapon) { const [blade, hilt] = GEAR_COLORS[gear.weapon] || GEAR_COLORS.iron_sword; const hx = cx + sw + 1, hy = top + armLen - 2;
+    for (let y = hy - 12; y < hy - 1; y++) set(hx + 3, y, blade); set(hx + 3, hy - 13, shade(blade, 0.4));
+    set(hx + 2, hy - 1, hilt); set(hx + 3, hy - 1, hilt); set(hx + 4, hy - 1, hilt); set(hx + 3, hy, hilt); set(hx + 3, hy + 1, hilt); }
+  return finish(g, realm, elemColor, R);
+}
+export function drawFullBody(canvas, genes, opts) {
+  const grid = buildFullBody(genes, opts); canvas.width = 32; canvas.height = 64;
+  const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, 32, 64);
+  grid.forEach((row, y) => row.forEach((c, x) => { if (c) { ctx.fillStyle = c; ctx.fillRect(x, y, 1, 1); } }));
+  return canvas;
 }
 
 export function drawPortrait(canvas, genes, opts) {

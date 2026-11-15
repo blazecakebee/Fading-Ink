@@ -1,7 +1,19 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.3.2';
+export const VERSION = '0.4.0';
 export const CHANGELOG = [
+  { v: '0.4.0', date: '2026-11-15', title: 'Gates, mini-games & the Status sheet', notes: [
+    'NEW Status tab: a full character sheet with a full-body pixel sprite (shows your outfit, cultivation robes, equipped weapon, armour and charm, plus your aura), every stat with its cap, combat numbers, a breakdown of every bonus and where it comes from, bonds, conditions and traits.',
+    'Gates now come in 6 themes — Haunted Temple, Spirit Beast Den, Demonic Altar, Flooded Tomb, Spirit Iron Mine and Dragon Rift — each with its own enemies, a final BOSS and its own loot table. 6 new enemies.',
+    'NEW combat mini-games: each enemy type has a once-per-fight special. Seal spirits with a talisman memory game, dodge beasts in a reaction game, win Qi Clashes with a timing bar, hold your breath to slip past jiangshi, and find the weak point of golems and dragons.',
+    'NEW exotic merchants: rare travellers who sell pills, including Foundation Establishment Pills and Lightning Ward Talismans.',
+    'The Trait Codex now lists every trait with its description and how to get it (birth odds or the deed that unlocks it), with the ones you have found highlighted.',
+    'Mobile: the tab bar is now a "☰" menu that opens a grid of every tab, and layouts across the game were tightened for phones.',
+    'Fixed: popups no longer wiggle with flickering scrollbars when they open.',
+  ] },
+  { v: '0.3.3', date: '2026-11-15', title: 'Wealth fix', notes: [
+    'Fixed: the wealth label in the top-right now reflects how much you actually have (Broke → Poor → Comfortable → Rich → Ultra Rich), based on cash, investments and property. Children still show the class of the family they were born into; hover the label to see it.',
+  ] },
   { v: '0.3.2', date: '2026-11-15', title: 'Persistent parties & stat caps', notes: [
     'Co-op rooms now survive refreshes. Reload the page (or let the auto-updater do it) and you rejoin your room automatically; if the host refreshes, everyone reconnects on their own. Chat history is kept too. Use "Leave room" to really leave.',
     'Stat caps: mortals top out at 100. Every cultivation realm raises the cap (120, 150, 200 … up to 600 at Immortal Ascension).',
