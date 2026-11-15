@@ -31,8 +31,9 @@ export const moodFace = m => m >= 80 ? '😄' : m >= 60 ? '🙂' : m >= 40 ? '�
 // Years since you last trained a skill → how much it fades this year (0 for the first 2 years, then 1, 2, 3… up to 5)
 export function decayRate(c, k) {
   const idle = c.age - ((c.lastTrained || {})[k] ?? Math.min(c.age, 6));
-  if (idle < 3 || c.age < 8) return 0;
-  return Math.min(5, 1 + Math.floor((idle - 3) / 3)) * (c.age < 18 ? 0.5 : 1) | 0 || 1;
+  // very slow: nothing for 5 years, then about 1 point every 2 years, rising to 2 a year only after 20 idle years
+  if (idle < 5 || c.age < 12) return 0;
+  return idle < 12 ? 0.5 : idle < 20 ? 1 : 2;
 }
 
 export function healthYear(c) {
@@ -46,7 +47,7 @@ export function healthYear(c) {
   for (const k of TRAINABLE) {
     const last = c.lastTrained[k] ?? Math.min(c.age, 6);
     const idle = c.age - last;
-    const loss = decayRate(c, k);
+    const r = decayRate(c, k); const loss = Math.floor(r) + (chance(r % 1) ? 1 : 0);
     if (loss >= 1 && c.stats[k] > 15) c.stats[k] = Math.max(15, c.stats[k] - loss); // skills never fade below 15
     c.stats[k] = Math.min(c.stats[k], (REALMS[c.qi.realm].cap || 100));
   }

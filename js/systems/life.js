@@ -84,7 +84,7 @@ export function newLife(opts = {}) {
              strength: ri(10, 40), agility: ri(10, 40), charisma: base(), luck: base() },
     traits: [], qi: { known: false, realm: 0, stage: 1, qi: 0, elem: pick(ELEMENTS).id, affinity: ri(5, 60), meridians: 0, manuals: [], techs: [] },
     inv: {}, edu: { level: 0, school: null, uniYears: 0, major: null, grades: ri(40, 80) },
-    job: null, people: [], partnerId: null, log: [], counts: {}, flags: {}, prison: 0,
+    job: null, people: [], partnerId: null, log: [], counts: {}, flags: { stageSystem: 5 }, prison: 0,
     assets: [], stocks: 0, wins: 0, kills: 0, gatesCleared: 0, gates: [], sect: null,
     lifespan: ri(68, 92), actions: ACTIONS_PER_YEAR, social: SOCIAL_PER_YEAR, idleYears: 0, heirlooms: opts.heirlooms || [],
   };
@@ -113,9 +113,13 @@ export function newLife(opts = {}) {
   return c;
 }
 
+// Action points grow as you grow up: 4 as a child → 5 at 16 → 6 at 25 → 7 at 35 → 8 at 50. Traits get you there sooner. Cap 8.
+export function maxActions(c) { return Math.min(8, ACTIONS_PER_YEAR + [16, 25, 35, 50].filter(a => c.age >= a).length + traitVal(c, 'extraAction')); }
+// Social actions: 4 → 5 at 18 → 6 at 30. Cap 6.
+export function maxSocial(c) { return Math.min(6, SOCIAL_PER_YEAR + [18, 30].filter(a => c.age >= a).length + traitVal(c, 'extraSocial')); }
 export function beginYear(c) {
   c.log.push({ age: c.age, year: G.world.year, lines: [] });
-  c.maxActions = ACTIONS_PER_YEAR + traitVal(c, 'extraAction'); c.actions = c.maxActions; c.social = SOCIAL_PER_YEAR; c.usedThisYear = 0;
+  c.maxActions = maxActions(c); c.actions = c.maxActions; c.maxSocial = maxSocial(c); c.social = c.maxSocial; c.usedThisYear = 0;
 }
 
 // ---- yearly aging ----------------------------------------------------------
@@ -125,6 +129,7 @@ export async function ageUp() {
   // GLITCHED: spam detection
   const now = performance.now(); lastAgeClicks = lastAgeClicks.filter(t => now - t < 1000); lastAgeClicks.push(now);
   if (lastAgeClicks.length >= 5) earnTrait(c, 'duplicate');
+  c.flags.busyYears = c.actions <= 0 ? (c.flags.busyYears || 0) + 1 : 0;
   if (!c.usedThisYear) { c.idleYears++; if (c.idleYears >= 30) earnTrait(c, 'nobody'); } else c.idleYears = 0;
 
   c.age++; G.world.year++;

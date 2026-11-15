@@ -66,6 +66,8 @@ export function breakthroughInfo(c) {
   if (method(c).bt) add(method(c).name, method(c).bt);
   if (c.flags.incense) add('Calming Incense burned', 0.12);
   if (major && c.inv.trib_talisman) add('Lightning Ward Talisman', 0.15);
+  const bp = major && next && Object.entries(ITEMS).find(([id, it]) => it.bt?.realm === next.id && c.inv[id]);
+  if (bp) add(bp[1].name, bp[1].bt.bonus);
   if (c.conditions?.some(x => x.id === 'qi_deviation')) add('Qi Deviation Sickness', -0.2);
   const p = clamp(parts.reduce((s, [, v]) => s + v, 0), 0.05, 0.97);
   const blockers = [];
@@ -74,7 +76,7 @@ export function breakthroughInfo(c) {
   if (major && next?.req?.pill && !c.inv[next.req.pill]) blockers.push(`Needs a ${ITEMS[next.req.pill].name}.`);
   return { p, parts, major, next, trib: major && next?.trib, blockers, ready: !blockers.length };
 }
-export const HELPFUL_ITEMS = ['calm_incense', 'trib_talisman', 'qi_pill', 'marrow_pill', 'foundation_pill', 'purity_pill'];
+export const HELPFUL_ITEMS = ['calm_incense', 'trib_talisman', 'qi_pill', 'marrow_pill', 'foundation_pill', 'core_pill', 'soul_pill', 'sever_pill', 'dao_pill', 'ascend_pill', 'purity_pill'];
 
 export async function breakthrough(c) {
   const R = REALMS[c.qi.realm]; const cap = qiCap(c);
@@ -84,6 +86,7 @@ export async function breakthrough(c) {
   if (major && next.req?.pill && !c.inv[next.req.pill]) return `Breaking into ${next.name} needs a Foundation Establishment Pill. Gates and sects have them.`;
   const info = breakthroughInfo(c); let p = info.p;
   const ward = major && c.inv.trib_talisman; if (ward) addItem(c, 'trib_talisman', -1);
+  if (major) { const bp = Object.entries(ITEMS).find(([id, it]) => it.bt?.realm === next.id && c.inv[id]); if (bp) addItem(c, bp[0], -1); }
   c.flags.incense = false;
   if (major && next.req?.pill) addItem(c, next.req.pill, -1);
   if (major && next.trib) {
@@ -109,6 +112,10 @@ export async function breakthrough(c) {
 
 // Passive yearly cultivation bits
 export function cultivationYear(c) {
+  // sects look after disciples who are ready for Foundation Establishment
+  if (c.sect && c.qi.realm === 1 && c.qi.stage >= 5 && !c.inv.foundation_pill && chance(0.35)) {
+    addItem(c, 'foundation_pill'); ui.log(`An elder of the ${sectName(c)} handed me a Foundation Establishment Pill. "You are ready."`, 'qi');
+  }
   if (c.qi.known && c.qi.manuals.length && c.qi.realm === 0 && c.qi.qi >= qiCap(c)) {
     // mortals auto-condense into Qi realm when they first fill up
     c.qi.realm = 1; c.qi.stage = 1; c.qi.qi = 0; ui.log('A warm thread of Qi settled in my dantian. I have entered Qi Condensation.', 'qi'); ui.fx('breakthrough', { major: true });

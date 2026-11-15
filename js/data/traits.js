@@ -95,6 +95,13 @@ export const TRAITS = [
   { id: 'heartless', tier: 'secret', name: 'Heartless', desc: 'Divorced 3 times. Stress barely touches you; relationships grow slower.', stressMult: 0.3, social: 0.6, birth: 0, earn: 'divorce3' },
   // GLITCHED
   { id: 'stack_overflow', tier: 'glitched', name: 'STACK_OVERFLOW', desc: '+1 Action every year. The year has a 13th month nobody remembers.', extraAction: 1 },
+  // extra action points
+  { id: 'tireless', tier: 'uncommon', name: 'Tireless', desc: '+1 Action every year.', extraAction: 1 },
+  { id: 'social_butterfly', tier: 'rare', name: 'Social Butterfly', desc: '+1 Social action every year, relationships +10%.', extraSocial: 1, social: 1.1 },
+  { id: 'early_riser', tier: 'rare', name: 'Up Before the Sun', desc: '+1 Action every year, +3 Health.', extraAction: 1, mods: { health: 3 } },
+  { id: 'time_thief', tier: 'legendary', name: 'Time Thief', desc: '+2 Actions every year. You steal hours from the day.', extraAction: 2 },
+  { id: 'hundred_hands', tier: 'mythical', name: 'Hundred Hands', desc: '+2 Actions and +1 crafting tier of luck (+10% crafting).', extraAction: 2, craft: 0.1 },
+  { id: 'unbound', tier: 'secret', name: 'Unbound by Days', desc: 'Earned by using every Action for 20 years straight. +1 Action every year.', extraAction: 1, birth: 0, earn: 'busy20' },
   // GOD
   { id: 'primordial_forge', tier: 'god', name: 'Primordial Forge', desc: 'Everything you craft succeeds. Pills x2.', craft: 1, pill: 2 },
 ];

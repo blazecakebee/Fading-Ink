@@ -7,7 +7,7 @@ import { bondBonus } from './people.js';
 import { addItem, stat } from './life.js';
 
 export const itemName = id => ITEMS[id]?.name || id;
-export function known(c) { c.recipes ||= RECIPES.filter(r => r.known).map(r => r.id); return c.recipes; }
+export function known(c) { c.recipes ||= []; for (const r of RECIPES) if (r.known && !c.recipes.includes(r.id)) c.recipes.push(r.id); return c.recipes; }
 export const hasInputs = (c, r) => Object.entries(r.inputs).every(([id, n]) => (c.inv[id] || 0) >= n);
 export function craftChance(c, r) {
   if (has(c, 'primordial_forge')) return 1;

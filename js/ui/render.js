@@ -82,7 +82,7 @@ function agebar() {
   $('#agebar').replaceChildren(
     h('span', { class: 'age-title display' }, `AGE ${c.age}`), h('span', { class: 'muted' }, '· ' + lifeStage(c.age)),
     h('span', { class: 'hint' }, c.alive ? 'Use your actions, then age up when you\'re ready.' : 'This life has ended.'),
-    h('span', { class: 'budget' }, 'Actions ', h('b', {}, `${c.actions}/${c.maxActions || ACTIONS_PER_YEAR}`), pips(c.actions, c.maxActions || ACTIONS_PER_YEAR, ''), '  Social ', h('b', {}, `${c.social}/${SOCIAL_PER_YEAR}`), pips(c.social, SOCIAL_PER_YEAR, 'social')),
+    h('span', { class: 'budget' }, 'Actions ', h('b', {}, `${c.actions}/${c.maxActions || ACTIONS_PER_YEAR}`), pips(c.actions, c.maxActions || ACTIONS_PER_YEAR, ''), '  Social ', h('b', {}, `${c.social}/${c.maxSocial || SOCIAL_PER_YEAR}`), pips(c.social, c.maxSocial || SOCIAL_PER_YEAR, 'social')),
     h('button', { id: 'ageup', disabled: !c.alive, onclick: onAgeUp }, 'AGE UP ▶ ', c.age + 1));
 }
 let aging = false;
@@ -116,9 +116,9 @@ function rightCol() {
     h('div', {}, bar('Health', s.health, '#ff5a6a', 'heart'), bar('Happiness', s.happiness, '#ffd84a', 'sun'), bar(`Mood ${moodFace(s.mood ?? 60)}`, s.mood ?? 60, '#7fd1ff', 'flower'), bar('Stress', s.stress, '#ff8a3a', 'brokenheart'),
       bar('Smarts', s.smarts, '#6ab0ff', 'mind'), bar('Looks', s.looks, '#ff8ad0', 'flower'),
       c.qi.known ? bar('Qi', c.qi.qi, 'var(--qi)', 'cultivation', qiCap(c), `${c.qi.qi}/${qiCap(c)}`) : null),
-    h('div', { class: 'box' }, h('h3', {}, 'Your Stats'), h('div', { class: 'stats' },
+    h('div', { class: 'box' }, h('h3', {}, 'Your Stats'), h('div', { class: 'realm-line' }, icon('cultivation', 'sm'), ' ', h('b', {}, c.qi.known ? realmName(c) : 'Realm: ???')), h('div', { class: 'stats' },
       ...[['fist', 'Strength', s.strength], ['combat', 'Battle IQ', s.battle ?? 0], ['kick', 'Agility', s.agility], ['people', 'Charisma', s.charisma], ['star', 'Luck', s.luck],
-        ['cultivation', 'Realm', c.qi.known ? realmName(c) : '???'], ['combat', 'Power', power(c).toFixed(1)], ['trophy', 'Fights won', c.wins], ['gates', 'Gates', c.gatesCleared],
+        ['combat', 'Power', power(c).toFixed(1)], ['trophy', 'Fights won', c.wins], ['gates', 'Gates', c.gatesCleared],
         ['market', 'Gold', fmtMoney(c, c.money)], ['star', 'Fame', c.fame || 0]].map(([ic, k, v]) => h('div', {}, icon(ic, 'sm'), k, h('b', {}, v))))),
     (c.conditions || []).length ? h('div', { class: 'box' }, h('h3', {}, 'Conditions'), c.conditions.map(x => h('span', { class: 'chip', style: { '--tc': 'var(--bad)', cursor: 'pointer' }, onclick: () => { G.ui.tab = 'health'; render(); } }, COND_BY_ID[x.id].name))) : null,
     h('div', { class: 'box' }, h('h3', {}, 'Your Traits ', h('small', { class: 'muted', style: { fontSize: '.8rem' } }, 'hover for details')),
@@ -134,7 +134,7 @@ const EARN_HINTS = {
   orphaned: 'lose both parents as a child', wins5: 'win 5 fights', wins25: 'win 25 fights', kill: 'take a life', prison: 'survive prison',
   gates10: 'clear 10 Gates', tribulation_close: 'survive a Heavenly Tribulation on very low HP', devour_core: 'devour a Demonic Core',
   mortal100: 'live to 100 without cultivating', idle30: 'live 30 years in a row without using an action', spam_age: 'press Age Up 5 times in one second',
-  ascend: 'reach Immortal Ascension', spar50: 'spar 50 times', found_sect: 'found your own sect', ghost_king: 'defeat a Ghost King in a Gate',
+  ascend: 'reach Immortal Ascension', busy20: 'use every Action for 20 years in a row', spar50: 'spar 50 times', found_sect: 'found your own sect', ghost_king: 'defeat a Ghost King in a Gate',
   recipes8: 'discover 8 crafting recipes', coop_marry: 'marry another player in co-op', divorce3: 'divorce 3 times',
 };
 export function traitChip(id) {
@@ -180,11 +180,11 @@ const TABS = {
   skills() {
     const c = G.char;
     return [h('h2', { class: 'display' }, 'Skills & Traits'),
-      h('p', { class: 'muted' }, `Stat cap: ${statCap(c)} in ${c.qi.realm ? REALMS[c.qi.realm].name : 'the mortal realm'} (soft cap ${softCap(c)} — gains shrink past it). Each new cultivation realm raises the cap. ` + 'Trainable skills fade if you stop training them for 3+ years — slowly at first, then faster the longer you neglect them (never below 15). School keeps Smarts in use. Looks only fade with age.'),
+      h('p', { class: 'muted' }, `Stat cap: ${statCap(c)} in ${c.qi.realm ? REALMS[c.qi.realm].name : 'the mortal realm'} (soft cap ${softCap(c)} — gains shrink past it). Each new cultivation realm raises the cap. ` + 'Trainable skills fade very slowly if you neglect them for 5+ years — about 1 point every 2 years, and 2 a year only after 20 idle years (never below 15). School keeps Smarts in use. Looks only fade with age.'),
       h('div', { class: 'grid2', style: { marginTop: '12px' } }, Object.entries(c.stats).map(([k, v]) => { const label = k === 'battle' ? 'Battle Knowledge' : k[0].toUpperCase() + k.slice(1); const tr = TRAINABLE.includes(k); const idle = tr ? c.age - ((c.lastTrained || {})[k] ?? Math.min(c.age, 6)) : 0;
         const loss = tr && v > 15 ? decayRate(c, k) : 0;
         const capped = CAPPED.includes(k), cap = capped ? statCap(c) : 100;
-        return h('div', { class: 'card' }, bar(label, v, v >= softCap(c) && capped ? 'var(--legend)' : 'var(--accent2)', null, cap, capped ? `${v} / ${cap}` : undefined), capped && v >= softCap(c) ? h('div', { class: 'small', style: { color: 'var(--legend)' } }, `Soft cap: gains ×${gainMult(c, k).toFixed(2)} — break through to raise the cap`) : null, k === 'battle' ? h('div', { class: 'muted small' }, `+${Math.round(v / 4)}% hit chance, +${Math.round(v / 2.5)}% damage, +${(v / 20).toFixed(1)}% crit in fights`) : null, tr ? h('div', { class: 'muted small' }, idle <= 0 ? 'Trained this year ✓' : `Last trained ${idle}y ago${loss ? ` · fading −${loss}/yr` : ''}`) : k === 'looks' ? h('div', { class: 'muted small' }, 'Fades with age only') : null); })),
+        return h('div', { class: 'card' }, bar(label, v, v >= softCap(c) && capped ? 'var(--legend)' : 'var(--accent2)', null, cap, capped ? `${v} / ${cap}` : undefined), capped && v >= softCap(c) ? h('div', { class: 'small', style: { color: 'var(--legend)' } }, `Soft cap: gains ×${gainMult(c, k).toFixed(2)} — break through to raise the cap`) : null, k === 'battle' ? h('div', { class: 'muted small' }, `+${Math.round(v / 4)}% hit chance, +${Math.round(v / 2.5)}% damage, +${(v / 20).toFixed(1)}% crit in fights`) : null, tr ? h('div', { class: 'muted small' }, idle <= 0 ? 'Trained this year ✓' : `Last trained ${idle}y ago${loss ? ` · fading ~${loss}/yr` : idle < 5 ? ' · safe for now' : ''}`) : k === 'looks' ? h('div', { class: 'muted small' }, 'Fades with age only') : null); })),
       h('div', { class: 'box', style: { marginTop: '14px' } }, h('h3', {}, 'Records'), h('table', { class: 'kv' },
         [['Fights won', c.wins], ['Lives taken', c.kills], ['Gates cleared', c.gatesCleared], ['Combat power', power(c).toFixed(2)], ['Most repeated activity', Object.entries(c.counts).sort((a, b) => b[1] - a[1])[0]?.join(' × ') || '—']].map(([k, v]) => h('tr', {}, h('td', {}, k), h('td', {}, v))))),
       h('div', { class: 'box', style: { marginTop: '14px' } }, h('h3', {}, 'Trait Codex'), h('p', { class: 'muted' }, 'Traits come in 8 tiers. Some can only be earned by doing specific things.'),
@@ -266,7 +266,7 @@ const TABS = {
     const c = G.char;
     const groups = [['Family', p => isFamily(p) && p.role !== 'Spouse'], ['Love', p => ['Spouse', 'Partner', 'Crush', 'Ex'].includes(p.role)], ['Friends & Players', p => p.role === 'Friend' || p.role === 'Co-op Friend'], ['School & Work', p => ['Classmate', 'Coworker', 'Acquaintance'].includes(p.role)], ['Enemies', p => p.role === 'Enemy']];
     const bl = bondList(c), best = bonds(c).best;
-    return [h('h2', { class: 'display' }, 'People'), h('p', { class: 'muted' }, `Social actions left: ${c.social}/${SOCIAL_PER_YEAR}. Click someone to interact. Socialising trains Charisma; people at 75%+ may gift you things or teach you skills, recipes and cultivation methods.`),
+    return [h('h2', { class: 'display' }, 'People'), h('p', { class: 'muted' }, `Social actions left: ${c.social}/${c.maxSocial || SOCIAL_PER_YEAR}. Click someone to interact. Socialising trains Charisma; people at 75%+ may gift you things or teach you skills, recipes and cultivation methods.`),
       h('div', { class: 'box' }, h('h3', {}, 'Bonds'), bl.length ? bl.map(b => h('div', { style: { margin: '4px 0' } }, h('b', {}, `${b.label}: ${b.who.first}`), h('span', { class: 'muted' }, ' — ' + b.perks.join(' · ')))) : h('div', { class: 'muted' }, 'Get a friend to 80% closeness to make them your Best Friend, or a partner to 50%+, to unlock training, study, Qi and salary bonuses.')),
       ...groups.map(([g, f]) => { const ps = c.people.filter(f); if (!ps.length) return null;
         return [h('h3', { class: 'display', style: { margin: '16px 0 8px' } }, g), h('div', { class: 'grid2' }, ps.map(p => h('div', { class: 'card person' + (p.alive ? '' : ' dead'), onclick: () => personModal(p) },

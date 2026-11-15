@@ -1,7 +1,19 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.4.0';
+export const VERSION = '0.4.2';
 export const CHANGELOG = [
+  { v: '0.4.2', date: '2026-11-15', title: 'More actions, breakthrough pills', notes: [
+    'Actions now grow with age: 4 as a child, 5 at 16, 6 at 25, 7 at 35, up to 8 at 50. Social actions grow from 4 to 5 at 18 and 6 at 30.',
+    '6 new traits give extra Actions or Social actions (Tireless, Up Before the Sun, Time Thief, Hundred Hands, Social Butterfly, and the secret Unbound by Days — earned by using every Action for 20 years straight).',
+    'Skill decay is now very slow: nothing for 5 years, then about 1 point every 2 years, and 2 a year only after 20 years of neglect.',
+    'Foundation Establishment Pills are much easier to get: a cheaper recipe (2 Qi Pills + 1 Spirit Stone, 60%), a second herbal recipe, more Gate drops, cheaper and more frequent exotic merchants, and sects now hand one to disciples who reach Qi Condensation Stage 5.',
+    'NEW breakthrough pills for every major realm (Core Condensing Pill, Nascent Soul Fruit, Spirit Severing Elixir, Dao Insight Incense, Ascension Lotus Pill), each +20–25% on that breakthrough.',
+    'Every breakthrough item now has a recipe you know from the start.',
+    'Fixed: a long realm name no longer breaks the spacing of the Your Stats box — it now has its own line.',
+  ] },
+  { v: '0.4.1', date: '2026-11-15', title: 'Cultivation stage fix', notes: [
+    'Fixed: characters who were cultivating before realms changed from 9 stages to 5 are rescaled to the new system (Stage 9 → 5, 7–8 → 4/5, 5–6 → 3/4…), so nobody is stuck showing "Stage 9" or has broken Qi caps. A line in your chronicle tells you what changed.',
+  ] },
   { v: '0.4.0', date: '2026-11-15', title: 'Gates, mini-games & the Status sheet', notes: [
     'NEW Status tab: a full character sheet with a full-body pixel sprite (shows your outfit, cultivation robes, equipped weapon, armour and charm, plus your aura), every stat with its cap, combat numbers, a breakdown of every bonus and where it comes from, bonds, conditions and traits.',
     'Gates now come in 6 themes — Haunted Temple, Spirit Beast Den, Demonic Altar, Flooded Tomb, Spirit Iron Mine and Dragon Rift — each with its own enemies, a final BOSS and its own loot table. 6 new enemies.',

@@ -43,6 +43,7 @@ export function checkEarned(c) {
   if (c.flags.coopMarried) earnTrait(c, 'soulbound');
   if (c.ownSect) earnTrait(c, 'clan_founder');
   if (c.flags.ghostKing) earnTrait(c, 'gate_breaker_king');
+  if ((c.flags.busyYears || 0) >= 20) earnTrait(c, 'unbound');
   if (c.gatesCleared >= 10) earnTrait(c, 'gatebreaker');
 }
 export function earnTrait(c, id) {
