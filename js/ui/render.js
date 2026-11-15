@@ -11,7 +11,7 @@ import { moodFace, TRAINABLE, decayRate } from '../systems/health.js';
 import { COND_BY_ID } from '../data/conditions.js';
 import { ITEMS } from '../data/items.js';
 import { METHODS } from '../data/realms.js';
-import { wealthLabel, statCap, softCap, gainMult, CAPPED, discount, priceFor, country, lifeStage, fullName, fmtMoney, realm as realmOf, lifespan, ageUp, money, stat, addItem, ACTIONS_PER_YEAR, SOCIAL_PER_YEAR } from '../systems/life.js';
+import { comfort, willInfo, giftToChild, wealthLabel, statCap, softCap, gainMult, CAPPED, discount, priceFor, country, lifeStage, fullName, fmtMoney, realm as realmOf, lifespan, ageUp, money, stat, addItem, ACTIONS_PER_YEAR, SOCIAL_PER_YEAR } from '../systems/life.js';
 import { fatigueMult, realmName, qiCap, power, learnManual, breakthroughInfo, meridianInfo, meditateRange, HELPFUL_ITEMS, sectName, foundReq, foundSect, method, learnMethod } from '../systems/cultivation.js';
 import { relLabel, isFamily, bonds, bondList, favor } from '../systems/people.js';
 import { traitVal, earnTrait, checkEarned } from '../systems/traits.js';
@@ -27,6 +27,7 @@ import { renderLegacy } from './legacyPanel.js';
 import { VERSION, CHANGELOG } from '../version.js';
 import { ACHIEVEMENTS } from '../data/achievements.js';
 import { flagEl } from './flags.js';
+import { mapUrl, osmLink } from './worldMap.js';
 import { net, hostRoom, joinRoom, leave, sendChat, doCoopAction, COOP_ACTIONS, coopTick } from '../net/coop.js';
 
 export const NAV = [
@@ -144,7 +145,7 @@ const EARN_HINTS = {
 };
 export function traitChip(id) {
   const t = TRAIT_BY_ID[id]; if (!t) return null; const tier = TIERS[t.tier];
-  const el = h('span', { class: 'chip ' + t.tier, title: `${t.name} [${tier.name}]\n${t.desc}` }, t.name); el.style.setProperty('--tc', tier.color); return el;
+  const el = h('span', { class: 'chip ' + t.tier, tabindex: 0, 'data-tip-title': t.name, 'data-tip-sub': `${tier.name} trait`, 'data-tip': t.desc, 'data-tip-color': tier.color }, t.name); el.style.setProperty('--tc', tier.color); return el;
 }
 
 // ---------- center tabs
@@ -305,10 +306,20 @@ const TABS = {
     const c = G.char, k = country(c).econ;
     const SHOP = [['Studio apartment', 'house', 'house', 60000], ['Family house', 'house', 'house', 250000], ['Mountain villa', 'house', 'house', 900000], ['Used car', 'car', 'car', 4000], ['Sedan', 'car', 'car', 25000], ['Sports car', 'car', 'car', 120000]];
     return [h('h2', { class: 'display' }, 'Assets & Market'), h('table', { class: 'kv', style: { marginTop: '10px' } }, [['Cash', fmtMoney(c, c.money)], ['Investments', fmtMoney(c, c.stocks)], ['Net worth', fmtMoney(c, c.money + c.stocks + c.assets.reduce((s, a) => s + a.value, 0))]].map(([a, b]) => h('tr', {}, h('td', {}, a), h('td', {}, b)))),
+      (() => { const cf = comfort(c); return h('div', { class: 'box', style: { marginTop: '12px' } }, h('h3', {}, 'Comfort'),
+        cf.lines.length ? cf.lines.map(([ic, name, eff]) => h('div', { class: 'row small', style: { margin: '4px 0' } }, h('span', {}, ic), h('b', {}, name), h('span', { class: 'muted' }, eff)))
+          : h('div', { class: 'muted small' }, 'You own nothing that makes life cosier yet. A home, a car or a pet each give yearly Happiness and less Stress.')); })(),
+      (() => { const w = willInfo(c); const kids = w.kids;
+        return h('div', { class: 'box', style: { marginTop: '12px' } }, h('h3', {}, 'Inheritance'),
+          h('div', { class: 'small' }, w.heir === 'spouse' ? `If you die, ${w.spouse.first} (your spouse) inherits everything — you have no prenup.` : w.heir === 'children' ? `If you die, your ${kids.length > 1 ? kids.length + ' children split' : 'child inherits'} everything: your money, investments, homes, cars and pets.${w.spouse ? ' Your prenup keeps it in the bloodline.' : ''}` : 'With no spouse or children, your estate would go to the state.'),
+          kids.length ? h('div', { class: 'row', style: { marginTop: '8px' } }, h('span', { class: 'muted small' }, 'Give money now:'), ...kids.map(k => h('button', { class: 'pill', disabled: c.money < 1000 * country(c).econ, onclick: async () => {
+            const amt = await choice({ title: `Gift money to ${k.first}`, text: `Cash: ${fmtMoney(c, c.money)}. Gifts wait for them — if you continue as ${k.first}, it's theirs.`, icon: 'gift', options: [0.1, 0.25, 0.5].map(f => ({ label: `${Math.round(f * 100)}% (${fmtMoney(c, c.money * f)})`, value: Math.floor(c.money * f) })).concat([{ label: 'Cancel', value: null, ghost: true }]) });
+            if (amt) { const t = giftToChild(c, k, { money: amt }); if (t) { logLine(t, 'good'); fx('coin'); render(); } } } }, `🎁 ${k.first}`))) : null); })(),
       h('h3', { class: 'display', style: { margin: '16px 0 8px' } }, 'Owned'),
       c.assets.length ? h('div', { class: 'grid2' }, c.assets.map((a, i) => h('div', { class: 'card row' }, icon(a.type === 'pet' ? 'pet' : a.type), h('div', { style: { flex: 1 } }, h('b', {}, a.name), h('div', { class: 'muted' }, a.type === 'pet' ? 'Pet' : `${fmtMoney(c, a.value)}${a.tenant ? ` · rented ${fmtMoney(c, a.rent)}/yr` : ''}`)),
         a.type === 'house' ? h('button', { class: 'btn ghost', onclick: () => { a.tenant = !a.tenant; a.rent = Math.round(a.value * 0.05); logLine(a.tenant ? `I rented out my ${a.name}.` : `I evicted my tenant.`); render(); } }, a.tenant ? 'Evict' : 'Rent out') : null,
-        a.type !== 'pet' ? h('button', { class: 'btn ghost', onclick: () => { money(c, a.value); c.assets.splice(i, 1); fx('coin'); logLine(`I sold my ${a.name} for ${fmtMoney(c, a.value)}.`); render(); } }, 'Sell') : null))) : h('div', { class: 'muted' }, 'Nothing yet.'),
+        a.type !== 'pet' ? h('button', { class: 'btn ghost', onclick: () => { money(c, a.value); c.assets.splice(i, 1); fx('coin'); logLine(`I sold my ${a.name} for ${fmtMoney(c, a.value)}.`); render(); } }, 'Sell') : null,
+        willInfo(c).kids.length ? h('button', { class: 'btn ghost', title: 'Hand this to one of your children now', onclick: async () => { const kids = willInfo(c).kids; const k = kids.length === 1 ? kids[0] : await choice({ title: `Give ${a.name} to…`, options: kids.map(x => ({ label: `${x.first} (${x.role.toLowerCase()}, ${x.age})`, value: x })).concat([{ label: 'Cancel', value: null, ghost: true }]) }); if (!k) return; const t = giftToChild(c, k, { asset: a }); if (t) { logLine(t, 'good'); fx('action'); render(); } } }, 'Give') : null))) : h('div', { class: 'muted' }, 'Nothing yet.'),
       h('h3', { class: 'display', style: { margin: '16px 0 8px' } }, 'Market'),
       h('p', { class: 'muted small' }, discount(c) ? `Your charisma gets you ${Math.round(discount(c) * 100)}% off everything here.` : 'Raise your Charisma to get better deals from merchants.'),
       h('div', { class: 'grid2' }, SHOP.map(([name, type, ic, price]) => { const p = priceFor(c, price * k); return h('div', { class: 'card row' }, icon(ic), h('div', { style: { flex: 1 } }, h('b', {}, name), h('div', { class: 'muted' }, fmtMoney(c, p))),
@@ -319,7 +330,13 @@ const TABS = {
   world() {
     const c = G.char, cty = country(c);
     const news = c.log.flatMap(y => y.lines.filter(l => l.c === 'world').map(l => `Age ${y.age} — ${l.t}`)).slice(-12).reverse();
-    return [h('h2', { class: 'display' }, 'World'), h('table', { class: 'kv', style: { marginTop: '10px' } },
+    const zoom = !!G.ui.mapZoom;
+    const map = h('div', { class: 'map-card' },
+      h('div', { class: 'map-head' }, flagEl(cty.id), h('b', {}, ` ${cty.name}`), h('span', { class: 'muted small' }, ` · 📍 ${c.city}`),
+        h('div', { class: 'seg mini-seg' }, h('button', { class: zoom ? '' : 'on', onclick: () => { G.ui.mapZoom = false; render(); } }, 'Country'), h('button', { class: zoom ? 'on' : '', onclick: () => { G.ui.mapZoom = true; render(); } }, 'City'))),
+      h('iframe', { class: 'map-frame', src: mapUrl(cty.id, c.city, zoom), title: `Map of ${cty.name}`, loading: 'lazy', referrerpolicy: 'no-referrer' }),
+      h('div', { class: 'muted small map-credit' }, 'Map © ', h('a', { href: osmLink(cty.id, c.city), target: '_blank', rel: 'noopener' }, 'OpenStreetMap'), ' contributors'));
+    return [h('h2', { class: 'display' }, 'World'), map, h('table', { class: 'kv', style: { marginTop: '10px' } },
       [['Year', G.world.year], ['Era', G.world.era], ['Country', h('span', {}, flagEl(cty.id), ' ', cty.name)], ['Development', `${TIERS_C[cty.tier]?.name} — ${TIERS_C[cty.tier]?.desc} (Legacy ×${TIERS_C[cty.tier]?.legacy})`], ['Climate', BIOMES_C[cty.biome]?.name || '—'], ['City', c.city], ['Economy', cty.econ >= 1.2 ? 'Strong' : cty.econ >= 0.8 ? 'Average' : 'Developing'], ['Spiritual density (Qi)', cty.qi >= 1.3 ? 'Very high' : cty.qi >= 1 ? 'High' : 'Thin'], ['Danger', cty.danger > 0.45 ? 'High' : cty.danger > 0.25 ? 'Moderate' : 'Low']].map(([a, b]) => h('tr', {}, h('td', {}, a), h('td', {}, b)))),
       h('h3', { class: 'display', style: { margin: '16px 0 8px' } }, 'Headlines'), h('div', { class: 'feed' }, news.length ? news.map(n => h('p', { class: 'world' }, n)) : h('p', { class: 'muted' }, 'Quiet years.'))];
   },

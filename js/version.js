@@ -1,7 +1,15 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.5.4';
+export const VERSION = '0.5.5';
 export const CHANGELOG = [
+  { v: '0.5.5', date: '2026-11-15', title: 'Comfort, inheritance, maps & body diagram', notes: [
+    'Owning things now makes life better: a home (+2 to +6 Happiness and -2 to -6 Stress a year, depending on how nice), a car and pets all give yearly comfort. See the Comfort box in Assets & Market.',
+    'Inheritance: when you die, your spouse inherits everything if you married without a prenup; otherwise your children inherit it all — money, investments, homes, cars and pets. Continuing as your child brings their share with them.',
+    'Hand things down any time: give homes, cars, pets or money to your children from Assets & Market. Gifts wait for them until you continue as that child.',
+    'The World tab now shows a real map of your country with a pin on your city (switch between Country and City view).',
+    'Fixed: hovering a trait now shows a proper tooltip with its name, tier and what it does (tap it on phones).',
+    'NEW Body diagram in the Health and Status tabs: a figure coloured by how hurt each limb is, organ dots (your Dantian glows), wounds and scars drawn on, and a list of every injury beside it. Click a part to focus it, or switch back to List view.',
+  ] },
   { v: '0.5.4', date: '2026-11-15', title: 'Happiness & Mood merged', notes: [
     'Mood and Happiness are now one stat: Happiness (with a face that shows how you feel). Existing characters get the average of their two old values.',
     'Achievements you haven\'t earned yet now hide their name and description, like the Trait Codex.',

@@ -187,6 +187,8 @@ export async function ageUp() {
     const r = (rand() * 0.4 - 0.12); const d = Math.round(c.stocks * r); c.stocks += d;
     ui.log(`My investments ${d >= 0 ? 'grew' : 'fell'} by ${fmtMoney(c, Math.abs(d))} (${(r * 100).toFixed(1)}%).`, d >= 0 ? 'good' : 'bad');
   }
+  // comfort: a home, a car and pets make life easier
+  const cf = comfort(c); if (cf.happy) stat(c, 'happiness', cf.happy); if (cf.stress) stat(c, 'stress', -cf.stress); if (cf.health) stat(c, 'health', cf.health);
   c.assets.forEach(a => { if (a.rent && a.tenant) { money(c, a.rent); } a.value = Math.round(a.value * (a.type === 'car' ? 0.88 : 1 + (rand() * 0.1 - 0.02))); });
   if (c.age >= 18 && c.money < 0) { stat(c, 'stress', 10); ui.log('Debt collectors keep calling.', 'bad'); }
   if (c.age === 18 && !c.flags.leftHome) { c.flags.leftHome = true; const p = c.people.find(p => p.role === 'Mother' || p.role === 'Father'); if (p && chance(0.5) && c.wealth !== 'destitute') { const g = ri(200, 3000); money(c, g); ui.log(`${p.first} gave me ${fmtMoney(c, g)} to start my adult life.`, 'good'); } }
@@ -273,6 +275,33 @@ export function die(c, cause) {
 }
 
 // Continue as a child: genes mixed from both parents, stats averaged with RNG variance, money & heirlooms inherited.
+// ---- estate & inheritance: no prenup + living spouse → the spouse inherits everything; otherwise the children do
+// Comfort bonuses from what you own (rented-out homes don't count as your home)
+export function comfort(c) {
+  const homes = c.assets.filter(a => a.type === 'house' && !a.tenant), cars = c.assets.filter(a => a.type === 'car'), pets = c.assets.filter(a => a.type === 'pet');
+  const best = homes.reduce((m, a) => Math.max(m, a.value), 0) / country(c).econ;
+  const home = best >= 800000 ? 3 : best >= 200000 ? 2 : best > 0 ? 1 : 0;
+  const lines = [];
+  if (home) lines.push(['🏠', ['A roof of your own', 'A comfortable family home', 'A luxurious villa'][home - 1], `+${home * 2} Happiness, -${home * 2} Stress a year, safe from bad weather`]);
+  if (cars.length) lines.push(['🚗', 'Your own wheels', '+2 Happiness, -2 Stress a year']);
+  if (pets.length) lines.push(['🐾', pets.length > 1 ? 'Your pets' : pets[0].name, `+${Math.min(3, pets.length) * 2} Happiness, -2 Stress a year`]);
+  return { happy: home * 2 + (cars.length ? 2 : 0) + Math.min(3, pets.length) * 2, stress: home * 2 + (cars.length ? 2 : 0) + (pets.length ? 2 : 0), health: home >= 2 ? 1 : 0, lines };
+}
+export const estateValue = c => c.money + (c.stocks || 0) + c.assets.reduce((s, a) => s + (a.value || 0), 0);
+export function willInfo(c) {
+  const spouse = c.people.find(p => p.role === 'Spouse' && p.alive);
+  const kids = c.people.filter(p => ['Son', 'Daughter'].includes(p.role) && p.alive);
+  const heir = spouse && !c.flags.prenup ? 'spouse' : kids.length ? 'children' : spouse ? 'spouse' : 'state';
+  return { heir, spouse, kids, value: estateValue(c) };
+}
+// Give an asset or money to a child while you're alive; it waits for them if you ever continue as that child.
+export function giftToChild(c, kid, what) {
+  kid.gifts ||= { money: 0, assets: [] };
+  if (what.asset) { const i = c.assets.indexOf(what.asset); if (i < 0) return null; c.assets.splice(i, 1); what.asset.tenant = what.asset.tenant || false; kid.gifts.assets.push(what.asset); kid.close = clamp(kid.close + 12); return `I gave my ${what.asset.name.toLowerCase()} to ${kid.first}.`; }
+  if (what.money) { if (c.money < what.money) return null; c.money -= what.money; kid.gifts.money += what.money; kid.close = clamp(kid.close + 8); return `I gave ${kid.first} ${fmtMoney(c, what.money)}.`; }
+  return null;
+}
+
 export function continueAs(childId) {
   const old = G.char; const ch = old.people.find(p => p.id === childId); if (!ch) return null;
   const partner = old.people.find(p => p.id === old.partnerId) || old.people.find(p => p.id === ch.otherParent);
@@ -283,7 +312,11 @@ export function continueAs(childId) {
   });
   // traits: each parent trait has a chance to pass down (rarer = less likely), plus a fresh roll
   const passed = old.traits.filter(t => !['bloodstained', 'jailbird', 'nobody', 'duplicate', 'centenarian', 'author'].includes(t) && chance(0.35));
-  const heir = (old.money + old.stocks + old.assets.reduce((s, a) => s + a.value, 0)) * 0.8;
+  const will = willInfo(old); const gifts = ch.gifts || { money: 0, assets: [] };
+  let heirMoney = 0, heirAssets = [], willNote = '';
+  if (will.heir === 'children') { const n = Math.max(1, will.kids.length); heirMoney = Math.round(((old.money + (old.stocks || 0)) * 0.9) / n); heirAssets = old.assets.slice(); willNote = `I inherited ${n > 1 ? `my share (1/${n}) of ` : ''}${fullName(old)}'s estate${heirAssets.length ? `, including ${heirAssets.map(a => a.name.toLowerCase()).join(', ')}` : ''}.`; }
+  else if (will.heir === 'spouse') { heirMoney = Math.round(will.value * 0.1); willNote = `${will.spouse.first} inherited ${fullName(old)}'s estate (no prenup). They gave me ${fmtMoney(old, heirMoney)} to help me along.`; }
+  const heir = heirMoney + gifts.money;
   G.world.year = old.birthYear + old.age - ch.age;
   const c = newLife({
     country: COUNTRIES.find(x => x.id === old.country), gender: ch.gender, name: { first: ch.first, last: ch.last },
@@ -293,6 +326,9 @@ export function continueAs(childId) {
     inheritMoney: Math.max(0, Math.round(heir)),
   });
   c.age = ch.age; c.log = []; beginYear(c);
+  c.assets.push(...heirAssets.map(a => ({ ...a })), ...gifts.assets);
+  if (willNote) ui.log(willNote, 'good');
+  if (gifts.money || gifts.assets.length) ui.log(`Gifts from my parent waited for me: ${[gifts.money ? fmtMoney(c, gifts.money) : null, ...gifts.assets.map(a => a.name)].filter(Boolean).join(', ')}.`, 'good');
   ui.log(`I am ${fullName(c)}, child of ${fullName(old)}. My parent's story has ended; mine continues.`, 'big');
   if (old.qi.realm >= 1) { c.qi.known = true; c.qi.manuals.push('breathing'); ui.log('I inherited my parent\'s breathing scroll. I know Qi is real.', 'qi'); }
   if (old.traits.includes('centenarian')) stat(c, 'health', 5);

@@ -25,3 +25,20 @@ export function icon(name, cls = '') {
   return el;
 }
 export const $ = s => document.querySelector(s);
+
+// ---- custom tooltips: any element with data-tip shows a styled popover on hover, focus or tap
+let tipEl = null, tipFor = null;
+function showTip(t, x, y) {
+  if (!tipEl) { tipEl = document.createElement('div'); tipEl.className = 'tip'; document.body.append(tipEl); }
+  tipFor = t; tipEl.replaceChildren(
+    t.dataset.tipTitle ? h('b', { style: { color: t.dataset.tipColor || '' } }, t.dataset.tipTitle) : null,
+    t.dataset.tipSub ? h('small', {}, t.dataset.tipSub) : null, h('div', {}, t.dataset.tip));
+  tipEl.style.display = 'block'; place(x, y);
+}
+function place(x, y) { if (!tipEl) return; const r = tipEl.getBoundingClientRect(); let L = x + 14, T = y + 16; if (L + r.width > innerWidth - 8) L = x - r.width - 14; if (T + r.height > innerHeight - 8) T = y - r.height - 12; tipEl.style.left = Math.max(8, L) + 'px'; tipEl.style.top = Math.max(8, T) + 'px'; }
+function hideTip() { if (tipEl) tipEl.style.display = 'none'; tipFor = null; }
+addEventListener('pointerover', e => { const t = e.target.closest?.('[data-tip]'); if (t && e.pointerType !== 'touch') showTip(t, e.clientX, e.clientY); else if (!t) hideTip(); });
+addEventListener('pointermove', e => { if (tipFor && e.pointerType !== 'touch') place(e.clientX, e.clientY); });
+addEventListener('pointerdown', e => { const t = e.target.closest?.('[data-tip]'); if (t && e.pointerType === 'touch') { if (tipFor === t) hideTip(); else { const r = t.getBoundingClientRect(); showTip(t, r.left, r.bottom); } } else if (!t) hideTip(); });
+addEventListener('focusin', e => { const t = e.target.closest?.('[data-tip]'); if (t) { const r = t.getBoundingClientRect(); showTip(t, r.left, r.bottom); } });
+addEventListener('focusout', hideTip); addEventListener('scroll', hideTip, true);

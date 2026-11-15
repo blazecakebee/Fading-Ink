@@ -4,7 +4,7 @@ import { G, META, save } from '../core/state.js';
 import { portraitFor } from './portrait.js';
 import { openModal } from './modal.js';
 import { fx } from './fx.js';
-import { fullName, continueAs, newLife } from '../systems/life.js';
+import { fullName, continueAs, newLife, willInfo, fmtMoney } from '../systems/life.js';
 import { realmName } from '../systems/cultivation.js';
 import { render, traitChip } from './render.js';
 import { TREE, BRANCHES, NODE, perk, nodeCost, canBuy } from '../data/legacyTree.js';
@@ -40,7 +40,7 @@ export function deathScreen() {
   const m = openModal([
     h('h2', {}, icon('grave', 'lg'), `${fullName(c)}`),
     h('div', { class: 'row' }, h('div', { class: 'pframe', style: { filter: 'grayscale(.7)' } }, portraitFor(c, 96)),
-      h('div', { class: 'text' }, `Died at ${c.age}: ${c.cause}.\n${realmName(c)} · ${c.gatesCleared} Gates · ${c.wins} fights won\n+${c.legacyEarned} Legacy Points (total ${META.legacy})`)),
+      h('div', { class: 'text' }, `Died at ${c.age}: ${c.cause}.\n${realmName(c)} · ${c.gatesCleared} Gates · ${c.wins} fights won\n+${c.legacyEarned} Legacy Points (total ${META.legacy})\n${(w => w.heir === 'spouse' ? `Estate (${fmtMoney(c, w.value)}) → ${w.spouse.first}, your spouse (no prenup).` : w.heir === 'children' ? `Estate (${fmtMoney(c, w.value)}) → your ${w.kids.length > 1 ? w.kids.length + ' children' : 'child'}.` : `Estate (${fmtMoney(c, w.value)}) → the state.`)(willInfo(c))}`)),
     h('div', { style: { margin: '8px 0' } }, c.traits.map(traitChip)),
     h('div', { class: 'opts' },
       ...kids.map(k => h('button', { class: 'btn', onclick: () => { m.close(); continueAs(k.id); G.ui.tab = 'life'; render(); } }, 'Continue as ', h('b', {}, k.first), ` (${k.role.toLowerCase()}, age ${k.age})`)),

@@ -11,6 +11,8 @@ import { known, hasInputs, craftChance, craft, experiment, gearStats, equip, une
 import { treatOptions, treat, moodFace } from '../systems/health.js';
 import { country, fmtMoney, money, addItem, priceFor, discount } from '../systems/life.js';
 import { PARTS, INJURIES, CAPACITIES, PROSTHETICS } from '../data/body.js';
+import { bodyDiagram } from './bodyDiagram.js';
+import { META } from '../core/state.js';
 import { ensureBody, partEff, maxHp, isMissing, allCaps, qiHealInfo, qiHeal, prostheticOptions, fitProsthetic } from '../systems/body.js';
 
 const pct = p => Math.round(p * 100) + '%';
@@ -117,11 +119,13 @@ export function bodySection(c) {
       prOpts.length && !s.prosthetic ? h('div', { class: 'row', style: { marginTop: '4px' } }, prOpts.map(o => { const price = priceFor(c, o.price * country(c).econ);
         return h('button', { class: 'btn ghost mini', disabled: c.money < price || c.actions <= 0, onclick: () => runActivity({ id: 'prosthetic', cat: 'mind', run: cc => fitProsthetic(cc, p.id, o.id, price) }) }, `${o.name} ${fmtMoney(c, price)}`); })) : null); };
   return h('div', {},
-    h('h3', { class: 'display', style: { margin: '18px 0 8px' } }, 'Body'),
+    h('div', { class: 'row', style: { margin: '18px 0 8px' } }, h('h3', { class: 'display' }, 'Body'),
+      h('div', { class: 'seg mini-seg', style: { marginLeft: 'auto', width: '220px' } }, [['diagram', '🧍 Diagram'], ['list', '☰ List']].map(([v, l]) => h('button', { class: (META.settings.bodyView || 'diagram') === v ? 'on' : '', onclick: () => { META.settings.bodyView = v; render(); } }, l)))),
     h('div', { class: 'box' }, h('div', { class: 'caps' }, Object.entries(CAPACITIES).map(([k, name]) => h('div', { class: 'cap' }, h('span', {}, name), h('b', { class: caps[k] < 0.5 ? 'bad' : caps[k] < 0.9 ? '' : 'good' }, Math.round(caps[k] * 100) + '%')))),
       c.qi.realm >= 1 ? h('div', { class: 'row', style: { marginTop: '10px' } },
         h('button', { class: 'btn', disabled: c.actions <= 0 || c.qi.qi < qh.cost, onclick: () => runActivity({ id: 'qi_body_heal', cat: 'cultivation', run: cc => qiHeal(cc) }) }, `🌀 Qi-heal my body (${qh.cost} Qi, ⚡1)`),
         h('span', { class: 'muted small' }, `${qh.weak ? '⚠ Your Qi is weak — ' + Math.round(qh.scarChance * 100) + '% chance each wound scars.' : 'Strong Qi: wounds close cleanly.'}${qh.regrow.length ? ` Can try to regrow: ${qh.regrow.map(p => p.name.toLowerCase()).join(', ')}${c.qi.realm < 2 ? ' (needs Foundation Establishment)' : ''}.` : ''}`))
         : h('div', { class: 'muted small', style: { marginTop: '8px' } }, 'Cultivators can mend wounds and even regrow lost limbs (within 2 years) with Qi. Without it, deep wounds may scar.')),
-    h('div', { class: 'grid2', style: { marginTop: '10px' } }, groups.map(([label, g]) => h('div', { class: 'card' }, h('h4', {}, label), PARTS.filter(p => p.group === g).map(partRow)))));
+    (META.settings.bodyView || 'diagram') === 'diagram' ? h('div', { style: { marginTop: '10px' } }, bodyDiagram(c, render), h('div', { class: 'muted small', style: { marginTop: '6px' } }, 'Tip: click a body part or organ dot to focus it. Prosthetics and regrowth are in List view.'))
+      : h('div', { class: 'grid2', style: { marginTop: '10px' } }, groups.map(([label, g]) => h('div', { class: 'card' }, h('h4', {}, label), PARTS.filter(p => p.group === g).map(partRow)))));
 }
