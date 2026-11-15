@@ -1,7 +1,10 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.4.3';
+export const VERSION = '0.4.4';
 export const CHANGELOG = [
+  { v: '0.4.4', date: '2026-11-15', title: 'Codex secrets', notes: [
+    "The Trait Codex now hides what a trait does until you have discovered it (had it in any life). You can still see its name, tier and how to get it.",
+  ] },
   { v: '0.4.3', date: '2026-11-15', title: 'Qi Clash tuning', notes: [
     'Qi Clash mini-game slowed down a lot (the marker now crosses the bar in about 2.5–3 seconds) and the target zone is wider.',
     'Its speed is now the same on every screen — it used to run twice as fast on 120/144Hz monitors and phones.',

@@ -188,12 +188,12 @@ const TABS = {
       h('div', { class: 'box', style: { marginTop: '14px' } }, h('h3', {}, 'Records'), h('table', { class: 'kv' },
         [['Fights won', c.wins], ['Lives taken', c.kills], ['Gates cleared', c.gatesCleared], ['Combat power', power(c).toFixed(2)], ['Most repeated activity', Object.entries(c.counts).sort((a, b) => b[1] - a[1])[0]?.join(' × ') || '—']].map(([k, v]) => h('tr', {}, h('td', {}, k), h('td', {}, v))))),
       h('div', { class: 'box', style: { marginTop: '14px' } }, h('h3', {}, 'Trait Codex'), h('p', { class: 'muted' }, 'Traits come in 8 tiers. Some can only be earned by doing specific things.'),
-        h('p', { class: 'muted small' }, `Discovered ${TRAITS.filter(t => META.unlockedTraits[t.id] || c.traits.includes(t.id)).length} / ${TRAITS.length}. Bright = you have found it in some life.`),
+        h('p', { class: 'muted small' }, `Discovered ${TRAITS.filter(t => META.unlockedTraits[t.id] || c.traits.includes(t.id)).length} / ${TRAITS.length}. A trait's effect stays hidden until you've had it in some life.`),
         TIER_ORDER.map(tier => { const list = TRAITS.filter(t => t.tier === tier); const tierBirth = TIERS[tier].birth / TRAITS.filter(t => t.tier === tier && t.birth !== 0).length;
           return h('div', {}, h('div', { class: 'tier-h', style: { color: TIERS[tier].color } }, `${TIERS[tier].name} (${list.length})`),
             h('div', { class: 'codex' }, list.map(t => { const found = META.unlockedTraits[t.id] || c.traits.includes(t.id);
               const how = t.birth === 0 ? '🔒 Earned: ' + (EARN_HINTS[t.earn] || 'through a special deed') : `🎲 Birth roll (~${(tierBirth / 100 * 1.6).toPrecision(2)}% per life)`;
-              const el = h('div', { class: 'codex-card' + (found ? ' found' : '') + (c.traits.includes(t.id) ? ' mine' : '') }, h('b', {}, t.name, c.traits.includes(t.id) ? ' ✓' : ''), h('div', { class: 'small' }, t.desc), h('div', { class: 'muted small' }, how));
+              const el = h('div', { class: 'codex-card' + (found ? ' found' : '') + (c.traits.includes(t.id) ? ' mine' : '') }, h('b', {}, t.name, c.traits.includes(t.id) ? ' ✓' : ''), h('div', { class: 'small' }, found ? t.desc : h('i', { class: 'muted' }, '??? — discover this trait to learn what it does')), h('div', { class: 'muted small' }, how));
               el.style.setProperty('--tc', TIERS[tier].color); return el; }))); }))];
   },
 
