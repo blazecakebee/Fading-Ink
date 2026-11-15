@@ -1,7 +1,11 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.4.2';
+export const VERSION = '0.4.3';
 export const CHANGELOG = [
+  { v: '0.4.3', date: '2026-11-15', title: 'Qi Clash tuning', notes: [
+    'Qi Clash mini-game slowed down a lot (the marker now crosses the bar in about 2.5–3 seconds) and the target zone is wider.',
+    'Its speed is now the same on every screen — it used to run twice as fast on 120/144Hz monitors and phones.',
+  ] },
   { v: '0.4.2', date: '2026-11-15', title: 'More actions, breakthrough pills', notes: [
     'Actions now grow with age: 4 as a child, 5 at 16, 6 at 25, 7 at 35, up to 8 at 50. Social actions grow from 4 to 5 at 18 and 6 at 30.',
     '6 new traits give extra Actions or Social actions (Tireless, Up Before the Sun, Time Thief, Hundred Hands, Social Butterfly, and the secret Unbound by Days — earned by using every Action for 20 years straight).',
