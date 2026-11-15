@@ -457,3 +457,9 @@ body:not([data-theme='clean']):not([data-theme='parchment']):not([data-theme='pa
 .tip { position: fixed; z-index: 120; display: none; max-width: 280px; padding: 10px 12px; border-radius: 10px; background: #0b0e16f2; color: #eef2f7; border: 1px solid #ffffff22; box-shadow: 0 8px 24px #000a; font-size: .9rem; line-height: 1.4; pointer-events: none; }
 .tip b { display: block; font-size: 1rem; } .tip small { display: block; opacity: .7; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .06em; font-size: .7rem; }
 .chip { cursor: help; }
+
+.tile-map { position: relative; height: clamp(260px, 40vh, 480px); overflow: hidden; background: #0e1420; }
+.tile-map img { position: absolute; width: 256px; height: 256px; user-select: none; }
+.map-pin { position: absolute; width: 0; height: 0; } .map-pin span { position: absolute; left: -9px; top: -26px; width: 18px; height: 18px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--accent); border: 2px solid #fff; box-shadow: 0 3px 8px #000a; animation: pinDrop .5s ease-out; }
+.map-pin span::after { content: ''; position: absolute; left: 4px; top: 4px; width: 6px; height: 6px; border-radius: 50%; background: #fff; }
+@keyframes pinDrop { from { transform: translateY(-20px) rotate(-45deg); opacity: 0; } }

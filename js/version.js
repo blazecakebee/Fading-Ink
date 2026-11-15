@@ -1,7 +1,10 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.5.5';
+export const VERSION = '0.5.6';
 export const CHANGELOG = [
+  { v: '0.5.6', date: '2026-11-15', title: 'English world map', notes: [
+    'The World map now uses English place names, with a dark style on dark themes and a light style on light ones, plus a new pin for your city.',
+  ] },
   { v: '0.5.5', date: '2026-11-15', title: 'Comfort, inheritance, maps & body diagram', notes: [
     'Owning things now makes life better: a home (+2 to +6 Happiness and -2 to -6 Stress a year, depending on how nice), a car and pets all give yearly comfort. See the Comfort box in Assets & Market.',
     'Inheritance: when you die, your spouse inherits everything if you married without a prenup; otherwise your children inherit it all — money, investments, homes, cars and pets. Continuing as your child brings their share with them.',
