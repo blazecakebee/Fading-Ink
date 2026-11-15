@@ -24,7 +24,7 @@ export const TRAITS = [
   { id: 'glutton', tier: 'common', name: 'Glutton', desc: '+5 Happiness, -4 Health.', mods: { happiness: 5, health: -4 } },
   { id: 'hothead', tier: 'common', name: 'Hothead', desc: '+5 Strength, more fights find you.', mods: { strength: 5 }, fights: 1.5 },
   // UNCOMMON
-  { id: 'quick', tier: 'uncommon', name: 'Quick Reflexes', desc: '+12 Agility. Act first in combat more often.', mods: { agility: 12 }, initiative: 1 },
+  { id: 'quick', tier: 'uncommon', name: 'Quick Reflexes', desc: '+12 Agility. Act first in combat more often.', mods: { agility: 12 }, initiative: 1.15 },
   { id: 'silver_tongue', tier: 'uncommon', name: 'Silver Tongue', desc: '+12 Charisma. Better at talking your way out.', mods: { charisma: 12 } },
   { id: 'lucky', tier: 'uncommon', name: 'Lucky', desc: '+15 Luck.', mods: { luck: 15 } },
   { id: 'orphans_grit', tier: 'uncommon', name: "Orphan's Grit", desc: 'Hardship hardens you. +10 Vitality-like Health, +stress resistance.', mods: { health: 10 }, stressMult: 0.8, birth: 0, earn: 'orphaned' },

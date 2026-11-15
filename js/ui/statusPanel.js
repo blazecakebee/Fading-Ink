@@ -24,7 +24,7 @@ const row = (k, v, cls) => h('tr', {}, h('td', {}, k), h('td', { class: cls || '
 export function statusTab() {
   const c = G.char, cty = country(c), gs = gearStats(c), M = method(c); ensureBody(c);
   const cv = document.createElement('canvas'); cv.className = 'portrait fullbody';
-  drawFullBody(cv, c.genes, { age: c.age, gender: c.gender, realm: c.qi.realm, hair: c.hair, gear: c.gear || {}, body: c.body, heightCm: heightNow(c), elemColor: c.qi.realm >= 2 ? ELEMENTS.find(e => e.id === c.qi.elem)?.color : null });
+  drawFullBody(cv, c.genes, { age: c.age, gender: c.gender, realm: c.qi.realm, hair: c.hair, gear: c.gear || {}, body: c.body, heightCm: heightNow(c), elemColor: c.qi.realm >= 3 ? ELEMENTS.find(e => e.id === c.qi.elem)?.color : null });
   const pPow = power(c);
   const maxHp = Math.round((40 + c.stats.health * 0.5 + c.stats.strength * 0.3) * (1 + (pPow - 1) * 0.5) + gs.hp);
   const bk = c.stats.battle || 0;

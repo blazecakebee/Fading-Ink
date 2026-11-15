@@ -4,7 +4,7 @@ import { h, icon } from './dom.js';
 import { openModal } from './modal.js';
 import { portraitFor, randomGenes } from './portrait.js';
 import { fx, floatText, shake } from './fx.js';
-import { MOVES, BASE_MOVES, DIFFICULTY } from '../data/combat.js';
+import { MOVES, BASE_MOVES, DIFFICULTY, presence } from '../data/combat.js';
 import { REALMS } from '../data/realms.js';
 import { power } from '../systems/cultivation.js';
 import { traitMult } from '../systems/traits.js';
@@ -36,6 +36,8 @@ export function fight(enemyDef, opts = {}) {
     const diff = enemyDef.sparring ? 1 : DIFFICULTY;
     const en = { ...enemyDef, maxHp: Math.round(enemyDef.hp * (1 + (ePow - 1) * 0.5) * diff), str: Math.round(enemyDef.str * diff), agi: enemyDef.agi, pow: ePow, stam: 100, qi: 999, mom: 0, guard: false, armor: 0, evade: false, burn: 0, stun: 0, weak: false };
     en.hp = en.maxHp;
+    const P = presence(opts.tribulation || enemyDef.kind === 'heaven' || enemyDef.sparring ? 0 : c.qi.realm - (enemyDef.realm || 0));
+    if (P.crushed) me.stam = 50;
     // enemies have a simple 4-zone body: crippling a zone weakens them
     en.zones = { head: en.maxHp * 0.25, torso: en.maxHp * 0.6, arms: en.maxHp * 0.35, legs: en.maxHp * 0.35 }; en.zMax = { ...en.zones }; en.crippled = {};
     let target = 'torso', fatal = null;
@@ -58,7 +60,7 @@ export function fight(enemyDef, opts = {}) {
       return h('div', { class: 'fighter' + (isMe ? ' me' : '') }, isMe ? [pf, info] : [info, pf]);
     };
     const stamBar = h('i', { style: { '--c': '#3fcf5f' } }), qiBar = h('i', { style: { '--c': 'var(--qi)' } });
-    const log = h('div', { class: 'flog' }, opts.tribulation ? 'The sky splits open. Survive.' : enemyDef.sparring ? 'A friendly bout. Nobody gets badly hurt.' : `${en.name} squares up.`);
+    const log = h('div', { class: 'flog' }, opts.tribulation ? 'The sky splits open. Survive.' : enemyDef.sparring ? 'A friendly bout. Nobody gets badly hurt.' : `${en.name} squares up.${P.line ? ' ' + P.line : ''}`);
     const movesBox = h('div', { class: 'moves' }); const targetRow = h('div', { class: 'targets' });
     const infoBox = h('div', { class: 'flog', style: { display: 'none' } });
     const box = h('div', {}, h('div', { class: 'ftitle' }, opts.tribulation ? 'Tribulation' : enemyDef.sparring ? 'Sparring' : 'Fight'),
@@ -73,6 +75,7 @@ export function fight(enemyDef, opts = {}) {
     infoBox.append(...myMoves.map(k => h('div', {}, icon(MOVES[k].icon, 'sm'), ' ', h('b', {}, MOVES[k].name + ': '), MOVES[k].info, MOVES[k].qi ? ` (${MOVES[k].qi} Qi)` : '')));
     const mini = enemyDef.mini && MINIS[enemyDef.mini] ? enemyDef.mini : null; let miniUsed = false;
     if (mini) myMoves.push('special');
+    if (P.crush) myMoves.unshift('presence');
     if (!opts.noFlee) myMoves.push('flee');
     if (mini) infoBox.append(h('div', {}, icon(MINIS[mini].icon, 'sm'), ' ', h('b', {}, MINIS[mini].name + ' (special, once per fight): '), `${MINIS[mini].how} ${MINIS[mini].win}`));
 
@@ -85,6 +88,7 @@ export function fight(enemyDef, opts = {}) {
       targetRow.replaceChildren(h('span', { class: 'muted small' }, 'Target:'), ...Object.entries(GROUPS).map(([g, G2]) => h('button', { class: 'tchip' + (target === g ? ' on' : '') + (en.crippled[g] ? ' crip' : ''), title: G2.note, onclick: () => { target = g; fx('click'); draw(); } }, G2.name, en.crippled[g] ? ' ✗' : '')));
       movesBox.replaceChildren(...myMoves.map(k => {
         if (k === 'special') return h('button', { class: 'btn special', disabled: miniUsed, onclick: () => special() }, icon(MINIS[mini].icon, 'sm'), MINIS[mini].name, h('small', {}, miniUsed ? 'used' : 'special'));
+        if (k === 'presence') return h('button', { class: 'btn special', onclick: () => turn('presence') }, icon('crown', 'sm'), 'Crush with presence', h('small', {}, 'ends it'));
         if (k === 'flee') return h('button', { class: 'btn', style: { background: '#6a6a72' }, onclick: () => turn('flee') }, icon('travel', 'sm'), 'Flee');
         const mv = MOVES[k]; const can = me.stam >= Math.max(0, mv.cost) && (!mv.qi || me.qi >= mv.qi);
         return h('button', { class: 'btn', disabled: !can, onclick: () => turn(k) }, icon(mv.icon, 'sm'), mv.name, mv.qi ? h('small', {}, `${mv.qi} Qi`) : mv.cost > 0 ? h('small', {}, `${mv.cost} sta`) : null);
@@ -101,7 +105,8 @@ export function fight(enemyDef, opts = {}) {
       if (!chance(clamp(acc, 0.1, 0.98) * 100 / 100)) { att.mom = 0; fx('miss'); return `${attIsMe ? 'You' : en.name} used ${mv.name}... and missed.`; }
       const statV = mv.stat === 'qi' ? 60 + (attIsMe ? c.qi.affinity : 40) : mv.stat === 'agility' ? att.agi : att.str;
       let dmg = ri(...mv.dmg) * (0.6 + statV / 100) * (mv.stat === 'qi' ? att.pow : Math.sqrt(att.pow)) * (1 + att.mom * 0.1) * (1 + (att.gear?.dmg || 0)) * (1 + (att.bk || 0) / 250) * (!attIsMe || !en.weak ? 1 : 1.5) * (attIsMe ? (mv.stat === 'qi' ? me.mods.qi : me.mods.dmg) : (en.crippled.arms ? 0.65 : 1));
-      if (def.guard) { dmg *= 0.5; def.guard = false; } if (def.armor) { dmg *= 0.5; def.armor--; }
+      dmg *= attIsMe ? P.me : P.them;
+      if (def.guard && !mv.pierce) { dmg *= 0.5; def.guard = false; } if (def.armor && !mv.pierce) { dmg *= 0.5; def.armor--; }
       const crit = chance(0.08 + (attIsMe ? (c.stats.luck + gs.luck) / 1000 + (c.stats.battle || 0) / 2000 : 0)); if (crit) dmg *= 1.7;
       if (enemyDef.sparring && attIsMe === false) dmg *= 0.7;
       dmg = Math.max(1, Math.round(dmg)); def.hp -= dmg; att.mom = Math.min(3, att.mom + (mv.mom || 1)); def.mom = 0;
@@ -154,6 +159,7 @@ export function fight(enemyDef, opts = {}) {
     }
     async function turn(k) {
       if (busy) return; busy = true; fx('click');
+      if (k === 'presence') { c.flags.presenceWin = true; fx('heavy'); return end('win', `You release your aura. ${en.name} collapses, unable to lift a finger.`); }
       if (k === 'flee') {
         if (chance(0.35 + (me.agi - en.agi) / 200)) return end('flee', 'You slipped away.');
         log.textContent = 'You tried to flee but were cut off!'; await enemyTurn(); busy = false; return draw();
@@ -163,7 +169,8 @@ export function fight(enemyDef, opts = {}) {
       const lines = [];
       if (meFirst) { lines.push(attack(me, en, k, true)); draw(); if (en.hp > 0) { await wait(380); lines.push(await enemyTurn(true)); } }
       else { lines.push(await enemyTurn(true)); draw(); if (me.hp > 0) { await wait(380); lines.push(attack(me, en, k, true)); } }
-      for (const f of [me, en]) { if (f.burn > 0) { f.burn--; f.hp -= 6; } f.stam = clamp(f.stam + 8 * (f === me ? me.mods.stam : 1)); }
+      for (const f of [me, en]) { if (f.burn > 0) { f.burn--; f.hp -= 6; } f.stam = clamp(f.stam + 8 * (f === me ? me.mods.stam * (P.crushed ? 0.5 : 1) : 1)); }
+      if (en.regen && en.hp > 0) en.hp = Math.min(en.maxHp, en.hp + Math.round(en.maxHp * en.regen));
       if (fatal) { me.hp = 0; }
       log.textContent = lines.join(' ');
       draw();

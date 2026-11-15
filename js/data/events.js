@@ -67,7 +67,7 @@ const E = [
       if (c.money < price) return; money(c, -price); addItem(c, id, n); ui.log(`I bought ${n}× ${it.name} from a merchant for ${fmtMoney(c, price)}.`, 'good'); } },
   // --- exotic merchants: rare, stock pills (incl. breakthrough pills) at steep prices — Charisma helps
   { id: 'exotic_merchant', cond: c => c.age >= 14, w: 4, run: async c => {
-      const pills = ['qi_pill', 'heal_pill', 'marrow_pill', 'foundation_pill', 'foundation_pill', ...(c.qi.realm >= 2 ? ['core_pill'] : []), 'purity_pill', 'heart_pill', 'mending_salve', 'calm_incense', 'trib_talisman', 'ginseng'];
+      const pills = ['qi_pill', 'heal_pill', 'marrow_pill', 'foundation_pill', 'foundation_pill', ...(c.qi.realm >= 3 ? ['core_pill'] : []), 'purity_pill', 'heart_pill', 'mending_salve', 'calm_incense', 'trib_talisman', 'ginseng'];
       const k = country(c).econ; const stock = [];
       while (stock.length < 3) { const id = pick(pills); if (!stock.some(x => x.id === id)) stock.push({ id, price: priceFor(c, ({ core_pill: 15000, foundation_pill: 5000, trib_talisman: 4500, marrow_pill: 3500, purity_pill: 3000, ginseng: 3000 }[id] || 1200) * k * (0.8 + Math.random() * 0.6)) }); }
       const who = pick(['A veiled alchemist from the western deserts', 'A one-eyed pill sage on a talking donkey', 'A merchant from a sect that "does not exist"', 'A fox-eared trader who smells of plum blossom']);
@@ -101,3 +101,4 @@ export async function yearlyEvents(c) {
     await ev.run(c);
   }
 }
+export { E as EVENTS };

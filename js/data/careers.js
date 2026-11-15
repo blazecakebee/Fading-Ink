@@ -13,8 +13,8 @@ export const CAREERS = [
   { id: 'lawyer', name: 'Lawyer', pay: 120000, minAge: 23, edu: 2, stat: { smarts: 70, charisma: 50 } },
   { id: 'doctor', name: 'Doctor', pay: 190000, minAge: 25, edu: 2, stat: { smarts: 80 } },
   { id: 'hunter', name: 'Licensed Gate Hunter', pay: 70000, minAge: 18, edu: 0, realm: 1, desc: 'Clears Gates for the Hunter Association.' },
-  { id: 'enforcer', name: 'Sect Enforcer', pay: 150000, minAge: 18, edu: 0, realm: 2 },
-  { id: 'elder', name: 'Sect Elder', pay: 600000, minAge: 40, edu: 0, realm: 3 },
+  { id: 'enforcer', name: 'Sect Enforcer', pay: 150000, minAge: 18, edu: 0, realm: 3 },
+  { id: 'elder', name: 'Sect Elder', pay: 600000, minAge: 40, edu: 0, realm: 4 },
 ];
 export const EDUCATION = ['None', 'High School', 'University'];
 export const MAJORS = ['Medicine', 'Computer Science', 'Law', 'Business', 'Art', 'History', 'Engineering'];

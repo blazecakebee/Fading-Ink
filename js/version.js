@@ -1,7 +1,29 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.5.7';
+export const VERSION = '0.6.0';
 export const CHANGELOG = [
+  { v: '0.6.0', date: '2026-11-15', title: 'Bloodlines', notes: [
+    'Heirlooms: family treasures with small bonuses — Heirloom, Rare, Legendary and Mythic (0.1% of finds). Only your 3 finest are attuned. They pass only to your children, can be lost along the way, and end with the bloodline.',
+    'Realm presence: fight someone 2 realms below you and your aura weakens them; 3+ realms below and you can crush them without lifting a finger. It works both ways — beware those far above you.',
+    'Genetics (new Bloodline tab): everyone has 3 mundane genes. Earn Awakening points from new realms and branch out on the gene tree. The transcendent genes demand you accept a flaw first. Genes pass to your children.',
+    'Two new realms — Void Refinement and Body Integration — before Dao Seeking. Each major breakthrough now fights Heaven\'s resistance, and lifespans are finite: even an Immortal\'s years run out (~700 at the very peak).',
+    'Gates now scale with you: new SS and SSS ranks, Void Rifts and Fallen Celestial Palaces, new foes (Void Wraiths regenerate, Void Rend ignores guard). Outlevelled Gates give far less loot — or sweep them with your presence.',
+    'Sect & Guild tab: sect ranks (Outer → Inner → Core → Elder), a mission board, contribution, stipends, framing, expulsion and sect wars; inter-sect relations and an exchange whose prices follow them; personal disciples to scout, teach, gift and assign (neglected ones betray you).',
+    'The Hunter Guild is joinable — but only if you meet harsh requirements and beat an examiner. Climb from E to SSS. Mortal Rankers can reach B on Battle Knowledge alone. New odd jobs and mercenary contracts.',
+    'Living world news: each year\'s headlines (Gate surges, market crashes, Spirit Tides, beast tides, plagues, sect wars…) actually happen and change the world.',
+    'Rare birth anomalies, ancient ruins and overwhelming presences. Healthy, uninjured people almost never die at random any more.',
+    'Families: bonds build more slowly, family arguments you can talk down or out-argue, train your children yourself, give allowances, and at Nascent Soul bless one loved one with centuries of youth.',
+    '80 new traits — 10 in every tier — plus 13 new achievements.',
+    'Ink cinematics for your birth, every major breakthrough, legendary finds, promotions, the heir taking over and death. Turn them off in Settings.',
+  ] },
+  { v: '0.5.9', date: '2026-11-15', title: 'Simpler realm ladder', notes: ['Removed the tier labels (Human / Earth / Heaven…) from the realm ladder — just the realms now.'] },
+  { v: '0.5.8', date: '2026-11-15', title: 'Three new realms', notes: [
+    'The path of cultivation now has 11 realms: Mortal → Qi Refining → Qi Condensation → Foundation Establishment → Golden Core → Origin Spirit → Nascent Soul → Soul Formation → Spirit Severing → Dao Seeking → Immortal Ascension.',
+    'NEW realms: Qi Refining (your very first step), Origin Spirit and Soul Formation (each with its own stat cap, lifespan, power and Tribulation). Core Formation is now called Golden Core.',
+    'NEW "Path of Ascension" ladder in the Cultivation tab, with each realm\'s character and your current realm brushed in ink.',
+    'Existing cultivators keep their place: everyone moves onto the new ladder automatically (e.g. Qi Condensation stays Qi Condensation).',
+    '3 new realm achievements.',
+  ] },
   { v: '0.5.7', date: '2026-11-15', title: 'Map fix', notes: [
     'Fixed: the World map showed "API key required". It is now drawn by the game itself from public-domain Natural Earth borders — your country highlighted among its neighbours, English city names and a pin on your home, in your theme\'s colours. No map service needed, works offline.',
   ] },

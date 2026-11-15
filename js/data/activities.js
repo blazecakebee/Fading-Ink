@@ -70,12 +70,13 @@ export const ACTIVITIES = [
   { id: 'pill', cat: 'cultivation', name: 'Consume Qi Pill', icon: 'pill', minAge: 6, need: c => c.inv.qi_pill > 0 && c.qi.realm >= 1, run: c => { addItem(c, 'qi_pill', -1); const q = Math.round(qiCap(c) * 0.4 * traitMult(c, 'pill')); c.qi.qi = Math.min(qiCap(c), c.qi.qi + q); return { text: `The pill dissolved into warmth. +${q} Qi.`, cls: 'qi' }; } },
   { id: 'devour', cat: 'cultivation', name: 'Devour Demonic Core', icon: 'demon', minAge: 12, need: c => c.inv.demonic_core > 0, run: c => { addItem(c, 'demonic_core', -1); c.qi.qi = qiCap(c); stat(c, 'happiness', -15); earnTrait(c, 'kinslayer'); if (chance(0.5)) addCondition(c, 'corruption'); return { text: 'I swallowed the core. Something inside me grinned.', cls: 'bad', big: true }; } },
   { id: 'seek_sect', cat: 'cultivation', name: 'Seek a hidden sect', icon: 'manual', minAge: 12, need: c => c.qi.known && !c.sect, run: async c => {
-      const opts = SECTS.filter(s => !s.req.trait || has(c, s.req.trait));
+      const opts = SECTS.filter(s => (!s.req.trait || has(c, s.req.trait)) && !c.flags.exiled?.[s.id]);
+      if (!opts.length) return 'Word of my expulsions has spread. No sect will open its gates to me.';
       const s = pick(opts); const ok = Object.entries(s.req).every(([k, v]) => k === 'trait' || c.stats[k] >= v);
       if (!ok) return `I found the ${s.name}... they turned me away. (${Object.entries(s.req).map(([k, v]) => `${k} ${v}+`).join(', ')})`;
       const yes = await ui.choice({ title: s.name, text: `${s.desc}\n\nThey offer you a place. Join?`, icon: s.kind === 'gang' ? 'crime' : 'manual', options: [{ label: 'Join', value: true }, { label: 'Walk away', value: false }] });
       if (!yes) return `I declined the ${s.name}.`;
-      c.sect = s.id; learnManual(c, 'breathing');
+      c.sect = s.id; c.sectRank = 0; c.contrib = 0; c.flags.sectJoined = G.world.year; learnManual(c, 'breathing');
       if (s.align === 'demonic') learnManual(c, 'blood_art'); else if (s.id === 'iron') learnManual(c, 'iron_skin'); else learnManual(c, pick(['flame_palm', 'river_step']));
       if (chance(0.5)) addItem(c, 'qi_pill', 2);
       learnMethod(c, s.align === 'demonic' ? 'blood_sea' : pick(['turtle', 'five_elements', 'lotus', 'sword_intent', 'heart_fire']));

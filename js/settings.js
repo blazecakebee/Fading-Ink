@@ -18,7 +18,7 @@ export const DEFAULTS = {
   master: 0.8, music: 0.45, sfx: 0.7, station: 'sect', musicOn: true,
   reduceMotion: false, showIcons: true, showNumbers: true, compact: false, iconsOnly: false, hints: true,
   showRight: true, showChronicle: true, showWorldNews: true, confirmAgeUp: false, highContrast: false, cbBars: false,
-  fxOn: true, screenShake: true, uiSounds: true, autoOpenCats: false,
+  fxOn: true, screenShake: true, uiSounds: true, autoOpenCats: false, cinematics: true,
 };
 export const S = () => ({ ...DEFAULTS, ...META.settings });
 export function set(k, v) { META.settings[k] = v; apply(); save(); }

@@ -89,7 +89,7 @@ export function healthTab() {
     h('div', { class: 'grid3', style: { marginTop: '10px' } },
       h('div', { class: 'box' }, h('h3', {}, `Happiness ${moodFace(c.stats.happiness)}`), h('div', { class: 'muted small' }, `${c.stats.happiness}/100. Happiness rises with fun, friends and a partner, and falls with stress, pain and loss. It changes how well your actions go (×${(0.85 + c.stats.happiness / 500).toFixed(2)}). Very low happiness for a long time can lead to depression.`)),
       h('div', { class: 'box' }, h('h3', {}, 'Body'), h('div', { class: 'muted small' }, `Health ${c.stats.health}/100 · Stress ${c.stats.stress}/100`)),
-      h('div', { class: 'box' }, h('h3', {}, 'Qi medicine'), h('div', { class: 'muted small' }, c.qi.realm >= 1 ? 'You can try to heal yourself with Qi. It costs half your Qi capacity and can backfire into Qi Deviation.' : 'Reach Qi Condensation to heal with Qi. Qi medicines (Mending Salve, Heart-Calming Pill, Purification Pill) can be crafted by anyone.'))),
+      h('div', { class: 'box' }, h('h3', {}, 'Qi medicine'), h('div', { class: 'muted small' }, c.qi.realm >= 1 ? 'You can try to heal yourself with Qi. It costs half your Qi capacity and can backfire into Qi Deviation.' : 'Start cultivating (Qi Refining) to heal with Qi. Qi medicines (Mending Salve, Heart-Calming Pill, Purification Pill) can be crafted by anyone.'))),
     bodySection(c),
     h('h3', { class: 'display', style: { margin: '18px 0 8px' } }, 'Conditions'),
     conds.length ? h('div', { class: 'grid2' }, conds.map(x => { const C = COND_BY_ID[x.id];
@@ -124,7 +124,7 @@ export function bodySection(c) {
     h('div', { class: 'box' }, h('div', { class: 'caps' }, Object.entries(CAPACITIES).map(([k, name]) => h('div', { class: 'cap' }, h('span', {}, name), h('b', { class: caps[k] < 0.5 ? 'bad' : caps[k] < 0.9 ? '' : 'good' }, Math.round(caps[k] * 100) + '%')))),
       c.qi.realm >= 1 ? h('div', { class: 'row', style: { marginTop: '10px' } },
         h('button', { class: 'btn', disabled: c.actions <= 0 || c.qi.qi < qh.cost, onclick: () => runActivity({ id: 'qi_body_heal', cat: 'cultivation', run: cc => qiHeal(cc) }) }, `🌀 Qi-heal my body (${qh.cost} Qi, ⚡1)`),
-        h('span', { class: 'muted small' }, `${qh.weak ? '⚠ Your Qi is weak — ' + Math.round(qh.scarChance * 100) + '% chance each wound scars.' : 'Strong Qi: wounds close cleanly.'}${qh.regrow.length ? ` Can try to regrow: ${qh.regrow.map(p => p.name.toLowerCase()).join(', ')}${c.qi.realm < 2 ? ' (needs Foundation Establishment)' : ''}.` : ''}`))
+        h('span', { class: 'muted small' }, `${qh.weak ? '⚠ Your Qi is weak — ' + Math.round(qh.scarChance * 100) + '% chance each wound scars.' : 'Strong Qi: wounds close cleanly.'}${qh.regrow.length ? ` Can try to regrow: ${qh.regrow.map(p => p.name.toLowerCase()).join(', ')}${c.qi.realm < 3 ? ' (needs Foundation Establishment)' : ''}.` : ''}`))
         : h('div', { class: 'muted small', style: { marginTop: '8px' } }, 'Cultivators can mend wounds and even regrow lost limbs (within 2 years) with Qi. Without it, deep wounds may scar.')),
     (META.settings.bodyView || 'diagram') === 'diagram' ? h('div', { style: { marginTop: '10px' } }, bodyDiagram(c, render), h('div', { class: 'muted small', style: { marginTop: '6px' } }, 'Tip: click a body part or organ dot to focus it. Prosthetics and regrowth are in List view.'))
       : h('div', { class: 'grid2', style: { marginTop: '10px' } }, groups.map(([label, g]) => h('div', { class: 'card' }, h('h4', {}, label), PARTS.filter(p => p.group === g).map(partRow)))));

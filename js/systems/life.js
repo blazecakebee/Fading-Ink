@@ -8,6 +8,7 @@ import { METHODS } from '../data/realms.js';
 import { RECIPES, ITEMS } from '../data/items.js';
 import { REALMS, ELEMENTS } from '../data/realms.js';
 import { CAREERS } from '../data/careers.js';
+import { TRAIT_BY_ID } from '../data/traits.js';
 import { rollBirthTraits, applyTraitMods, traitVal, traitMult, earnTrait, has } from './traits.js';
 import { makePerson, yearlyPeople, familyAtBirth } from './people.js';
 import { randomGenes, mixGenes } from '../ui/portrait.js';
@@ -17,6 +18,10 @@ import { healthYear, TRAINABLE, trauma, geneticCheck, suddenDeathChance } from '
 import { ensureBody, bodyYear, adultHeight } from './body.js';
 import { bonds, bondBonus } from './people.js';
 import { checkEarned } from './traits.js';
+import { bonusVal } from './bonus.js';
+
+// Extension points: other systems (heirlooms, genetics, sects, world news, family) register here.
+export const HOOKS = { birth: [], yearStart: [], yearEnd: [], inherit: [], death: [] };
 
 export const ACTIONS_PER_YEAR = 4, SOCIAL_PER_YEAR = 4;
 export const STAT_KEYS = ['health', 'happiness', 'stress', 'smarts', 'looks', 'strength', 'battle', 'agility', 'charisma', 'luck'];
@@ -92,7 +97,7 @@ export function newLife(opts = {}) {
              strength: ri(10, 40), agility: ri(10, 40), charisma: base(), luck: base() },
     traits: [], qi: { known: false, realm: 0, stage: 1, qi: 0, elem: pick(ELEMENTS).id, affinity: ri(5, 60), meridians: 0, manuals: [], techs: [] },
     inv: {}, edu: { level: 0, school: null, uniYears: 0, major: null, grades: ri(40, 80) },
-    job: null, people: [], partnerId: null, log: [], counts: {}, flags: { stageSystem: 5 }, prison: 0,
+    job: null, people: [], partnerId: null, log: [], counts: {}, flags: { stageSystem: 5, realmsV2: true, realmsV3: true }, prison: 0,
     assets: [], stocks: 0, wins: 0, kills: 0, gatesCleared: 0, gates: [], sect: null,
     lifespan: ri(68, 92), actions: ACTIONS_PER_YEAR, social: SOCIAL_PER_YEAR, idleYears: 0, heirlooms: opts.heirlooms || [],
   };
@@ -122,10 +127,11 @@ export function newLife(opts = {}) {
   ensureBody(c); if (opts.heights) c.body.adultHeight = adultHeight(c.country, c.gender, opts.heights);
   beginYear(c);
   geneticCheck(c, true);
+  HOOKS.birth.forEach(f => f(c, opts));
   const parents = c.people.filter(p => p.role === 'Father' || p.role === 'Mother');
   ui.log(`I was born a ${gender === 'F' ? 'girl' : 'boy'} in ${c.city}, ${cty.name}, to a ${wealth.name.toLowerCase()} family.`, 'big');
   parents.forEach(p => ui.log(`My ${p.role.toLowerCase()} is ${fullName(p)}, ${p.age}${p.job ? ', a ' + p.job : ''}.`));
-  c.traits.forEach(t => ui.log(`Born with trait: ${t}`, 'trait'));
+  c.traits.forEach(t => ui.log(`Born with trait: ${TRAIT_BY_ID[t]?.name || t}`, 'trait'));
   if (c.traits.includes('reincarnator')) ui.log('Flashes of another life drift behind my eyes...', 'qi');
   if (opts.inheritMoney) ui.log(`I inherited ${fmtMoney(c, opts.inheritMoney)}.`, 'good');
   META.lives++;
@@ -156,6 +162,7 @@ export async function ageUp() {
   if (G.world.year % 60 === 0) { G.world.era = pick(ERAS); }
   beginYear(c);
   ui.fx('ageup');
+  for (const f of HOOKS.yearStart) await f(c);
 
   // prison skips most of life
   if (c.prison > 0) {
@@ -222,6 +229,7 @@ export async function ageUp() {
   healthYear(c);
   cultivationYear(c);
   await yearlyEvents(c);
+  for (const f of HOOKS.yearEnd) { if (!c.alive) break; await f(c); }
   checkEarned(c);
   checkDeath(c);
   save(); ui.refresh();
@@ -248,7 +256,7 @@ export function lifespan(c) {
   // cultivation adds lifespan little by little: earlier realms in full, the current realm grows with each stage
   let l = c.lifespan; for (let r = 1; r < c.qi.realm; r++) l += REALMS[r].life;
   const R = REALMS[c.qi.realm]; if (c.qi.realm) l += Math.round(R.life * c.qi.stage / R.stages);
-  return Math.round(l);
+  return Math.round(l + bonusVal(c, 'life'));
 }
 function checkDeath(c) {
   const ls = lifespan(c);
@@ -271,6 +279,7 @@ export function die(c, cause) {
   c.legacyEarned = pts; META.legacy += pts; META.bestRealm = Math.max(META.bestRealm, c.qi.realm);
   c.traits.forEach(t => META.unlockedTraits[t] = true);
   checkEarned(c);
+  HOOKS.death.forEach(f => f(c));
   ui.fx('death'); save();
 }
 
@@ -321,7 +330,7 @@ export function continueAs(childId) {
   const c = newLife({
     country: COUNTRIES.find(x => x.id === old.country), gender: ch.gender, name: { first: ch.first, last: ch.last },
     genes: ch.genes, wealth: WEALTH.find(w => w.id === old.wealth), generation: old.generation + 1,
-    inherit, heirlooms: [...old.heirlooms, ...(old.qi.realm >= 2 ? [`${old.first}'s Cultivation Notes`] : [])],
+    inherit, heirlooms: [],
     traits: [...new Set([...passed, ...rollBirthTraits({ traits: [] }).slice(0, 1)])],
     inheritMoney: Math.max(0, Math.round(heir)),
   });
@@ -332,5 +341,6 @@ export function continueAs(childId) {
   ui.log(`I am ${fullName(c)}, child of ${fullName(old)}. My parent's story has ended; mine continues.`, 'big');
   if (old.qi.realm >= 1) { c.qi.known = true; c.qi.manuals.push('breathing'); ui.log('I inherited my parent\'s breathing scroll. I know Qi is real.', 'qi'); }
   if (old.traits.includes('centenarian')) stat(c, 'health', 5);
+  HOOKS.inherit.forEach(f => f(old, c, ch));
   save(); return c;
 }

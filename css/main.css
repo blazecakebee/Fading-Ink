@@ -474,3 +474,63 @@ body:not([data-theme='clean']):not([data-theme='parchment']):not([data-theme='pa
 .map-label { fill: var(--text2); font-family: var(--font-ui); font-weight: 700; paint-order: stroke; stroke: var(--panel); stroke-width: .12; pointer-events: none; }
 .map-label.mine { fill: var(--accent2); }
 .map-pin-svg { fill: var(--accent); stroke: #fff; stroke-width: .08; filter: drop-shadow(0 .1px .2px #0008); }
+
+/* ---- realm ladder */
+.ladder { position: relative; display: flex; flex-direction: column; background: #16130fcc; border: 1px solid var(--border-soft); border-radius: 16px; padding: 10px 16px; }
+.rung { position: relative; display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 12px; padding: 7px 4px; }
+.rung::before { content: ''; position: absolute; left: 20px; top: -8px; height: 16px; width: 2px; background: var(--rc); opacity: .7; }
+.rung:first-child::before { display: none; }
+.rung-glyph { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--rc); color: #fff; font-weight: 700; font-size: .95rem; text-shadow: 0 1px 2px #0008; box-shadow: 0 0 0 2px #0004, 0 2px 6px #0006; z-index: 1; }
+.rung-name { font-family: var(--font-display); font-size: 1.12rem; color: var(--text); } .rung-name small { font-family: var(--font-ui); color: var(--accent2); }
+.rung-meta { color: #ffd36f; font-size: .85rem; } .rung-tier { text-align: right; font-weight: 700; font-size: .92rem; }
+.rung.locked { opacity: .45; } .rung.locked .rung-glyph { background: #3a3530; color: #9a8f80; box-shadow: 0 0 0 2px #0004; }
+.rung.done .rung-glyph { box-shadow: 0 0 0 2px #0004, 0 0 10px var(--rc); }
+.rung.current { margin: 4px -8px; padding: 10px 12px; }
+.rung.current::after { content: ''; position: absolute; inset: 2px 0 2px 24px; z-index: 0; border-radius: 40% 60% 55% 45% / 60% 40% 60% 40%;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--rc) 55%, transparent), color-mix(in srgb, var(--rc) 25%, transparent) 70%, transparent); filter: blur(1.5px); }
+.rung.current > * { position: relative; z-index: 1; } .rung.current .rung-glyph { width: 36px; height: 36px; box-shadow: 0 0 0 3px #fff8, 0 0 16px var(--rc); }
+
+
+/* ---- Ink cinematics (v0.6.0) ---- */
+.cine { position: fixed; inset: 0; z-index: 9000; background: radial-gradient(ellipse at 50% 45%, color-mix(in srgb, var(--c) 10%, #07050a) 0%, #050307 70%); opacity: 0; transition: opacity .5s; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: default; overflow: hidden; }
+.cine.on { opacity: 1; } .cine.out { opacity: 0; }
+.cine.pulse { animation: cinePulse 2.4s ease-out; }
+@keyframes cinePulse { 0% { box-shadow: inset 0 0 0 0 transparent; } 30% { box-shadow: inset 0 0 220px 40px color-mix(in srgb, var(--c) 35%, transparent); } 100% { box-shadow: inset 0 0 120px 10px color-mix(in srgb, var(--c) 12%, transparent); } }
+.cine svg { width: min(100vw, 1000px); height: 62vh; overflow: visible; filter: drop-shadow(0 0 6px var(--c)); }
+.cine path { fill: none; stroke: var(--c); stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation-name: cineDraw; animation-fill-mode: forwards; animation-timing-function: cubic-bezier(.45, .05, .3, 1); }
+@keyframes cineDraw { to { stroke-dashoffset: 0; } }
+.cine circle { fill: #fff; opacity: 0; animation: cineDot 2.2s ease-in-out infinite; filter: drop-shadow(0 0 4px var(--c)); }
+@keyframes cineDot { 0%, 100% { opacity: 0; } 40% { opacity: .95; } 70% { opacity: .35; } }
+.cine circle.cine-core { animation: cineCore 2.5s ease-out forwards; }
+@keyframes cineCore { 0% { opacity: 0; r: 2; } 40% { opacity: 1; r: 9; } 100% { opacity: .9; r: 5; } }
+.cine .cine-glyph { font: 700 130px 'Noto Serif SC', 'Songti SC', serif; fill: transparent; stroke: var(--c); stroke-width: 1.5; text-anchor: middle; stroke-dasharray: 900; stroke-dashoffset: 900; animation: cineGlyph 2.2s ease-out forwards; }
+@keyframes cineGlyph { 70% { stroke-dashoffset: 0; fill: transparent; } 100% { stroke-dashoffset: 0; fill: color-mix(in srgb, var(--c) 40%, transparent); } }
+.cine-text { min-height: 3.4em; text-align: center; font-family: 'Cormorant Garamond', Georgia, serif; color: #e8e2ec; transition: opacity .6s; margin-top: -2vh; }
+.cine-text p { margin: .2em 0; font-size: clamp(15px, 2.2vw, 22px); opacity: 0; transform: translateY(6px); transition: opacity 1s, transform 1s, color 1s; }
+.cine-text p.in { opacity: .55; transform: none; } .cine-text p.now { opacity: 1; }
+.cine-text.dim { opacity: .35; }
+.cine-title { text-align: center; opacity: 0; transform: translateY(8px) scale(.98); transition: opacity 1.1s, transform 1.1s; margin-top: 1.2vh; }
+.cine-title.in { opacity: 1; transform: none; }
+.cine-title small { display: block; font-size: 13px; letter-spacing: .25em; text-transform: uppercase; color: color-mix(in srgb, var(--c) 70%, #fff); margin-bottom: 4px; }
+.cine-title span { font-family: 'Cormorant Garamond', Georgia, serif; font-size: clamp(26px, 4.4vw, 46px); font-weight: 700; color: var(--c); text-shadow: 0 0 18px color-mix(in srgb, var(--c) 60%, transparent); }
+.cine-title i { display: block; height: 2px; margin: 6px auto 0; width: 0; background: var(--c); box-shadow: 0 0 8px var(--c); transition: width 1.2s .4s ease-out; }
+.cine-title.in i { width: 70%; }
+.cine-skip { position: absolute; right: 18px; bottom: 16px; background: transparent; border: 1px solid #ffffff22; color: #ffffff88; font-size: 12px; padding: 4px 12px; border-radius: 6px; cursor: pointer; }
+.cine-skip:hover { color: #fff; border-color: #ffffff66; }
+
+/* genetics tree & faction panels */
+.gene-tree { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.gene-col h4 { margin: 0 0 6px; text-align: center; }
+.gene-node { border: 1px solid var(--line, #ffffff22); border-radius: 10px; padding: 8px; margin-bottom: 8px; background: var(--panel2, #ffffff08); font-size: 13px; position: relative; }
+.gene-node.owned { border-color: var(--gc); box-shadow: 0 0 10px color-mix(in srgb, var(--gc) 40%, transparent); }
+.gene-node.open { border-style: dashed; border-color: var(--gc); cursor: pointer; }
+.gene-node.locked { opacity: .55; }
+.gene-node.neg b { color: #ff7a6a; } .gene-node.trans b { color: #ffd36f; }
+.gene-node .gcost { position: absolute; right: 8px; top: 6px; font-size: 11px; opacity: .8; }
+.gene-node + .gene-node::before { content: ''; position: absolute; top: -9px; left: 50%; width: 2px; height: 8px; background: var(--gc); opacity: .5; }
+.chip-gene { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; margin: 2px; border: 1px solid #ffffff22; }
+.heir-card { border-left: 3px solid var(--hc); }
+.mission { display: flex; gap: 10px; align-items: center; }
+.mission .grow { flex: 1; }
+.rel-pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; color: #111; }
+@media (max-width: 700px) { .gene-tree { grid-template-columns: repeat(2, 1fr); } }

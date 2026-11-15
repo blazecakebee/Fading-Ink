@@ -4,6 +4,7 @@ import { ui } from '../core/bus.js';
 import { META } from '../core/state.js';
 import { clamp, chance, weighted } from '../core/rng.js';
 import { REALMS } from '../data/realms.js';
+import { bonusMult, bonusVal } from './bonus.js';
 
 export const has = (c, id) => c.traits.includes(id);
 
@@ -28,9 +29,10 @@ export function applyTraitMods(c, id) {
   if (t.earlyQi) c.qi.known = true;
 }
 // product of multiplicative trait fields (qi, power, study, stressMult, crime...)
-export function traitMult(c, field) { return c.traits.reduce((m, id) => m * (TRAIT_BY_ID[id]?.[field] ?? 1), 1); }
+export function traitMult(c, field) { return c.traits.reduce((m, id) => m * (TRAIT_BY_ID[id]?.[field] ?? 1), 1) * bonusMult(c, field); }
 // sum of additive trait fields (breakthrough, life, refund)
-export function traitVal(c, field) { return c.traits.reduce((s, id) => s + (TRAIT_BY_ID[id]?.[field] ?? 0), 0); }
+// (genes, heirlooms and world news add to these too; 'life' from them is counted in lifespan() instead)
+export function traitVal(c, field) { return c.traits.reduce((s, id) => s + (TRAIT_BY_ID[id]?.[field] ?? 0), 0) + (field === 'life' ? 0 : bonusVal(c, field)); }
 
 // Thresholds for traits earned through play (checked after actions and each birthday)
 import { checkAchievements } from './achievements.js';

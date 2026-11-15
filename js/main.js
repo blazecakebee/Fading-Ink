@@ -8,7 +8,8 @@ import { ensureBody } from './systems/body.js';
 import { scheduleSync } from './net/cloud.js';
 import { ui } from './core/bus.js';
 import { ERAS } from './data/countries.js';
-import { REALMS } from './data/realms.js';
+import { REALMS, OLD_REALM_MAP, V2_REALM_MAP } from './data/realms.js';
+import { migrateExpansion, installExpansion } from './systems/expansion.js';
 import { pick, ri } from './core/rng.js';
 import { loadIcons } from './ui/dom.js';
 import { render, logLine, openSalon } from './ui/render.js';
@@ -36,6 +37,7 @@ Object.assign(ui, {
   openTab: tab => { G.ui.tab = tab; render(); },
 });
 setRerender(render);
+installExpansion();
 window.FadingInk = { G, META }; // handy for debugging in the browser console
 
 // Before v0.3.0 every realm had 9 stages; now they have 5. Rescale older cultivators proportionally (9 → 5, 7 → 4, 5 → 3…).
@@ -52,12 +54,26 @@ function migrateStages(c) {
   c.flags.stageSystem = 5;
 }
 
+// v0.5.8 added Qi Refining, Origin Spirit and Soul Formation: shift older characters onto the new realm ladder
+function migrateRealms(c) {
+  if (!c || c.flags?.realmsV2) return; c.flags ||= {};
+  if (c.qi.realm) { const before = c.qi.realm; c.qi.realm = OLD_REALM_MAP[before] ?? before; }
+  for (const p of c.people) if (p.realm) p.realm = OLD_REALM_MAP[p.realm] ?? p.realm;
+  c.flags.realmsV2 = true; c.flags.realmsV3 = true;
+}
+// v0.6.0 inserted Void Refinement and Body Integration before Dao Seeking
+function migrateRealmsV3(c) {
+  if (!c || c.flags?.realmsV3) return;
+  if (c.qi.realm) c.qi.realm = V2_REALM_MAP[c.qi.realm] ?? c.qi.realm;
+  for (const p of c.people) if (p.realm) p.realm = V2_REALM_MAP[p.realm] ?? p.realm;
+  c.flags.realmsV3 = true;
+}
 // Enter the game with a slot (or a brand-new life when id is null)
 let roomResumed = false;
 function play(id) {
   if (id && loadSlot(id)) { /* loaded */ }
   else { startSlot(newSlotId()); G.world = { year: ri(820, 900), era: pick(ERAS) }; newLife(); }
-  const c = G.char; migrateStages(c);
+  const c = G.char; migrateRealms(c); migrateRealmsV3(c); migrateStages(c); migrateExpansion(c);
   if (c.stats.mood != null) { c.stats.happiness = Math.round((c.stats.happiness + c.stats.mood) / 2); delete c.stats.mood; } // Mood merged into Happiness (v0.5.4)
   c.stats.battle ??= 5; c.conditions ||= []; c.lastTrained ||= {}; c.qi.methods ||= ['basic']; c.gear ||= {}; c.maxActions ||= 4; ensureBody(c);
   G.ui = { tab: 'life', openCats: {} };
@@ -71,7 +87,8 @@ ui.toMenu = toMenu;
 
 async function boot() {
   await loadIcons();
-  loadMeta(); migratePerks(); apply();
+  loadMeta(); migratePerks(); if (!META.realmsV2) { META.bestRealm = OLD_REALM_MAP[META.bestRealm || 0] ?? 0; META.realmsV2 = true; META.realmsV3 = true; }
+  if (!META.realmsV3) { META.bestRealm = V2_REALM_MAP[META.bestRealm || 0] ?? META.bestRealm; META.realmsV3 = true; } apply();
   onSave(scheduleSync);
   // ?play skips the menu straight into your last slot (handy after the auto-updater refreshes mid-game)
   const resume = sessionStorage.getItem('fi-in-game') && SLOTS.active;

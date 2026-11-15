@@ -54,7 +54,7 @@ export function buildPortrait(genes, { age = 20, gender = 'F', realm = 0, hair =
   const g = Array.from({ length: H }, () => Array(W).fill(null));
   const set = (x, y, c) => { x = Math.round(x); y = Math.round(y); if (x >= 0 && y >= 0 && x < W && y < H && c) g[y][x] = c; };
   // cultivators age slowly
-  const visAge = realm >= 2 ? Math.min(age, 28 + age * 0.08) : realm === 1 ? Math.min(age, 18 + (age - 18) * 0.7) : age;
+  const visAge = realm >= 3 ? Math.min(age, 28 + age * 0.08) : realm >= 1 ? Math.min(age, 18 + (age - 18) * 0.7) : age;
   const st = ageStage(age < 18 ? age : visAge);
   // rounder, softer faces: smaller chin taper, slightly wider heads
   const P = { infant: { cy: 17, rx: 8, ry: 7.6, chin: 0.1 }, child: { cy: 15, rx: 7.8, ry: 8, chin: 0.22 }, teen: { cy: 14.5, rx: 7.6, ry: 8.3, chin: 0.34 },
@@ -122,7 +122,7 @@ export function buildPortrait(genes, { age = 20, gender = 'F', realm = 0, hair =
   const eyeL = cx - 6, eyeR = cx + 2; // left x of each 4px eye
   const lash = '#1d1424', glow = realm >= 1 ? (elemColor || REALMS[realm].color) : null;
   for (const [ex, side] of [[eyeL, -1], [eyeR, 1]]) {
-    const iris = glow && realm >= 2 ? shade(glow, -0.2) : eyeC, irisL = glow ? shade(glow, 0.2) : shade(eyeC, 0.4), irisD = shade(iris, -0.45);
+    const iris = glow && realm >= 3 ? shade(glow, -0.2) : eyeC, irisL = glow ? shade(glow, 0.2) : shade(eyeC, 0.4), irisD = shade(iris, -0.45);
     const outer = side < 0 ? ex - 1 : ex + 4, inner = side < 0 ? ex + 3 : ex;
     // brows (hidden under fringe for most styles, visible on short hair)
     if (st !== 'infant') { const by = eyeY - 3; for (let i = 0; i < 3; i++) set(side < 0 ? ex + i : ex + 1 + i, by, hcD); }
@@ -189,7 +189,7 @@ export function buildPortrait(genes, { age = 20, gender = 'F', realm = 0, hair =
   // glasses
   if (genes.glasses && st !== 'infant' && st !== 'child') for (const ex of [eyeL, eyeR]) { for (let i = -1; i <= 4; i++) { set(ex + i, eyeY - 2, '#2b2b2b'); set(ex + i, eyeY + 3, '#2b2b2b'); } for (let j = -1; j <= 2; j++) { set(ex - 1, eyeY + j, '#2b2b2b'); set(ex + 4, eyeY + j, '#2b2b2b'); } }
   // cultivation forehead mark
-  if (realm >= 3) { const mc = elemColor || REALMS[realm].color; set(cx, top + 4, mc); set(cx - 1, top + 5, mc); set(cx, top + 5, '#ffffff'); set(cx, top + 6, mc); }
+  if (realm >= 4) { const mc = elemColor || REALMS[realm].color; set(cx, top + 4, mc); set(cx - 1, top + 5, mc); set(cx, top + 5, '#ffffff'); set(cx, top + 6, mc); }
 
   if (raw) return { g, st, skin, skinS, skinD, cloth, clothD, accent, hc, bodyTop, bottomHead };
   return finish(g, realm, elemColor, R);
@@ -204,11 +204,11 @@ function finish(g, realm, elemColor, R) {
     const n = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => g[y + dy]?.[x + dx]);
     if (n) out[y][x] = '#1b1222';
   }
-  if (realm >= 2) {
+  if (realm >= 3) {
     const ac = elemColor || REALMS[realm].color;
     const ring = (d, alpha) => { const snap = out.map(r => r.slice());
       for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (!snap[y][x] && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => snap[y + dy]?.[x + dx] && !String(snap[y + dy][x + dx]).startsWith(ac + '1'))) out[y][x] = ac + alpha; };
-    ring(1, '66'); if (realm >= 4) ring(2, '33');
+    ring(1, '66'); if (realm >= 6) ring(2, '33');
     for (let i = 0; i < 4 + realm * 2; i++) { const x = Math.floor(R() * W), y = Math.floor(R() * 22); if (!out[y][x]) out[y][x] = '#ffffffaa'; }
   }
   return out;

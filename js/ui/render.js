@@ -20,6 +20,10 @@ import { TRAITS, TIERS, TIER_ORDER, TRAIT_BY_ID } from '../data/traits.js';
 import { REALMS, ELEMENTS, MANUALS, SECTS } from '../data/realms.js';
 import { CAREERS, EDUCATION } from '../data/careers.js';
 import { GATE_RANKS, ENEMIES, LOOT, GATE_TYPES, makeGate } from '../data/combat.js';
+import { bonusMult } from '../systems/bonus.js';
+import { geneName } from '../systems/genetics.js';
+import { gainHeirloom, gateHeirloomChance } from '../systems/heirlooms.js';
+import { HEIRLOOMS } from '../data/heirlooms.js';
 import { WEALTH, TIERS as TIERS_C, BIOMES as BIOMES_C } from '../data/countries.js';
 import { ri, pick, chance, weighted } from '../core/rng.js';
 import { renderSettings } from './settingsPanel.js';
@@ -31,8 +35,8 @@ import { svgMap, osmLink } from './worldMap.js';
 import { net, hostRoom, joinRoom, leave, sendChat, doCoopAction, COOP_ACTIONS, coopTick } from '../net/coop.js';
 
 export const NAV = [
-  ['Your Life', [['life', 'Life', 'life'], ['status', 'Status', 'robe'], ['character', 'Character', 'character'], ['skills', 'Skills & Traits', 'skills'], ['health', 'Health', 'doctor'], ['inventory', 'Inventory', 'bag'], ['cultivation', 'Cultivation', 'cultivation'], ['crafting', 'Crafting & Gear', 'anvil'], ['gates', 'Dungeons & Gates', 'gates']]],
-  ['People & Places', [['people', 'People', 'people'], ['career', 'Career', 'career'], ['education', 'Education', 'education'], ['assets', 'Assets & Market', 'assets'], ['world', 'World', 'world']]],
+  ['Your Life', [['life', 'Life', 'life'], ['status', 'Status', 'robe'], ['character', 'Character', 'character'], ['skills', 'Skills & Traits', 'skills'], ['health', 'Health', 'doctor'], ['inventory', 'Inventory', 'bag'], ['cultivation', 'Cultivation', 'cultivation'], ['crafting', 'Crafting & Gear', 'anvil'], ['gates', 'Dungeons & Gates', 'gates'], ['bloodline', 'Bloodline', 'legacy']]],
+  ['People & Places', [['people', 'People', 'people'], ['factions', 'Sect & Guild', 'crown'], ['career', 'Career', 'career'], ['education', 'Education', 'education'], ['assets', 'Assets & Market', 'assets'], ['world', 'World', 'world']]],
   ['Your Story', [['chronicle', 'Chronicle', 'study'], ['legacy', 'Legacy & Family', 'legacy'], ['coop', 'Co-op', 'people'], ['achievements', 'Achievements', 'trophy'], ['updates', 'Update Log', 'letter'], ['settings', 'Settings', 'settings']]],
 ];
 
@@ -48,14 +52,15 @@ export function logLine(text, cls = '') {
 export async function runActivity(a) {
   const c = G.char; if (!c.alive) return;
   const cost = a.cost === 's' ? 'social' : 'actions';
-  if (c[cost] <= 0) return toast('No actions left this year. Age up!');
+  const free = a.cost === 'free';
+  if (!free && c[cost] <= 0) return toast('No actions left this year. Age up!');
   if (c.prison && a.cat !== 'mind' && a.cat !== 'training') return toast('You are in prison.');
   fx('click');
   const res = await a.run(c);
   if (res == null) { render(); return; } // cancelled / couldn't afford → no cost
   const r = typeof res === 'string' ? { text: res } : res;
-  c[cost]--; c.usedThisYear = (c.usedThisYear || 0) + 1;
-  if (traitVal(c, 'refund') && chance(traitVal(c, 'refund'))) { c[cost]++; r.text += ' (D̷U̷P̷L̷I̷C̷A̷T̷E̷D̷ — action refunded)'; }
+  if (!free) { c[cost]--; c.usedThisYear = (c.usedThisYear || 0) + 1; }
+  if (!free && traitVal(c, 'refund') && chance(traitVal(c, 'refund'))) { c[cost]++; r.text += ' (D̷U̷P̷L̷I̷C̷A̷T̷E̷D̷ — action refunded)'; }
   c.counts[a.id] = (c.counts[a.id] || 0) + 1; const n = c.counts[a.id];
   if (a.id !== 'meditate' && c.qi.fatigue) c.qi.fatigue = Math.max(0, c.qi.fatigue - 0.5);
   logLine(r.text, r.cls || '');
@@ -149,7 +154,7 @@ export function traitChip(id) {
 }
 
 // ---------- center tabs
-const TABS = {
+export const TABS = {
   life() {
     const c = G.char, cur = c.log[c.log.length - 1] || { lines: [] };
     const flavor = c.age === 0 ? 'A new story begins in faded ink.' : c.prison ? 'Cold walls. Counting days.' : pick(['The city hums. Somewhere, a Gate whispers.', 'Another year written into the ledger.', 'The ink of your life is still wet.']);
@@ -249,7 +254,8 @@ const TABS = {
           h('button', { class: 'btn', style: { marginTop: '8px' }, disabled: !!fr.missing.length || c.actions <= 0, onclick: async () => {
             const v = await prompt({ title: 'Found your sect', icon: 'crown', text: `Cost: ${fmtMoney(c, fr.cost)}. Choose wisely — this name will outlive you.`, fields: [{ key: 'name', label: 'Sect name', placeholder: 'e.g. Azure Lotus Sect', max: 32 }, { key: 'clan', label: 'Clan surname (your new last name)', placeholder: 'e.g. Long', max: 16 }] });
             if (v) runActivity({ id: 'found_sect', cat: 'cultivation', run: cc => foundSect(cc, v.name, v.clan) }); } }, 'Found sect (⚡1)')) : null,
-        h('div', { class: 'card' }, h('h4', {}, 'Realm ladder'), REALMS.map((r, i) => h('div', { style: { color: i <= q.realm ? r.color : 'var(--muted)' } }, `${i <= q.realm ? '◆' : '◇'} ${r.name}${r.req?.pill ? ' (needs Foundation Pill)' : ''}${r.trib ? ' ⚡' : ''}`)))),
+      ),
+      h('h3', { class: 'display', style: { margin: '18px 0 8px' } }, 'Path of Ascension'), realmLadder(c),
     ];
   },
 
@@ -263,7 +269,10 @@ const TABS = {
         return h('div', { class: 'card' }, h('div', { class: 'row' }, icon(T.icon, 'lg'), h('div', {}, h('h4', { style: { color: R.color } }, `${g.rank}-Rank · ${T.name}`), h('div', { class: 'muted small' }, T.desc))),
           h('div', { class: 'muted small', style: { marginTop: '6px' } }, `${R.fights} fights · Boss: ${bossE?.name || '?'} · closes in ${g.years}y · recommended: ${REALMS[R.realm].name}`),
           h('div', { class: 'small', style: { marginTop: '4px' } }, 'Loot: ', Object.keys(T.loot).map(id => id === 'gold' ? 'gold' : id === 'manual' ? 'manuals & methods' : ITEMS[id]?.name).join(', ')),
-          h('button', { class: 'btn', style: { marginTop: '8px' }, disabled: !c.alive || c.actions <= 0 || c.age < 14, onclick: () => enterGate(i) }, icon('gates', 'sm'), ' Enter')); }))
+          gateYield(c, R) < 1 ? h('div', { class: 'small', style: { color: 'var(--bad, #ff7a6a)', marginTop: '4px' } }, `Outlevelled — only ${Math.round(gateYield(c, R) * 100)}% loot`) : null,
+          h('div', { class: 'row', style: { marginTop: '8px', gap: '6px' } },
+            h('button', { class: 'btn', disabled: !c.alive || c.actions <= 0 || c.age < 14, onclick: () => enterGate(i) }, icon('gates', 'sm'), ' Enter'),
+            c.qi.realm - R.realm >= 3 ? h('button', { class: 'btn ghost', disabled: !c.alive || c.actions <= 0, 'data-tip': 'You are 3+ realms above this Gate. Its monsters cannot even stand before you.', onclick: () => enterGate(i, true) }, icon('crown', 'sm'), ' Sweep with presence') : null)); }))
         : h('div', { class: 'card muted' }, 'No open Gates near you. Hike the mountains or wait for news.'),
       h('div', { class: 'row', style: { marginTop: '14px' } }, h('button', { class: 'btn ghost', onclick: () => { G.ui.tab = 'inventory'; render(); } }, icon('bag', 'sm'), ` Open inventory (${inv.reduce((s, [, n]) => s + n, 0)} items)`))];
   },
@@ -398,14 +407,14 @@ async function personModal(p) {
   const opts = SOCIAL.filter(s => p.alive && c.alive && c.age >= (s.age || 0) && (!s.need || s.need(c, p)));
   const { indexCard } = await import('./conversation.js');
   const v = await choice({ title: `${p.first} ${p.last}`, portrait: indexCard(p),
-    text: `${p.role}${bonds(c).best === p ? ' · ★ Best Friend' : ''} · Age ${p.age}${p.job ? ' · ' + p.job : ''}${p.realm ? ' · senses of Qi about them' : ''}\nRelationship: ${relLabel(p)} (${p.close}%)${p.close >= 75 ? '\nThey might gift you something or teach you what they know.' : ''}${p.alive ? '' : '\nDeceased.'}\nSocial actions left: ${c.social}`,
+    text: `${p.role}${bonds(c).best === p ? ' · ★ Best Friend' : ''} · Age ${p.age}${p.job ? ' · ' + p.job : ''}${p.realm ? ' · senses of Qi about them' : ''}${p.blessed ? ' · 🌸 blessed with longevity' : ''}${p.dna ? '\nGenes: ' + p.dna.map(geneName).join(', ') : ''}\nRelationship: ${relLabel(p)} (${p.close}%)${p.close >= 75 ? '\nThey might gift you something or teach you what they know.' : ''}${p.alive ? '' : '\nDeceased.'}\nSocial actions left: ${c.social}`,
     options: [...opts.map(s => ({ label: `${s.emoji || '•'}  ${s.name}   · 1 social`, value: s.id, disabled: c.social <= 0 })), { label: 'Close', value: null, ghost: true }] });
   if (!v) return;
   const s = SOCIAL.find(x => x.id === v);
   await runActivity({ id: 'soc_' + s.id, cost: 's', person: p, run: cc => s.run(cc, p) });
 }
 
-const traitVal0 = c => c.traits.reduce((m, id) => m * (TRAIT_BY_ID[id]?.loot || 1), 1);
+const traitVal0 = c => c.traits.reduce((m, id) => m * (TRAIT_BY_ID[id]?.loot || 1), 1) * bonusMult(c, 'loot');
 
 async function coopPersonModal(p) {
   const c = G.char;
@@ -418,32 +427,38 @@ async function coopPersonModal(p) {
 }
 
 const gateType = g => { if (!g.type) Object.assign(g, makeGate(g.rank), { years: g.years }); return GATE_TYPES.find(t => t.id === g.type); };
-async function enterGate(i) {
+// Outlevelled gates give sharply less: 2 realms above → 55%, 3 → 30%, 4+ → 15%.
+export const gateYield = (c, R) => { const gap = c.qi.realm - R.realm; return gap >= 4 ? 0.15 : gap === 3 ? 0.3 : gap === 2 ? 0.55 : 1; };
+async function enterGate(i, sweep) {
   const c = G.char, g = c.gates[i], R = GATE_RANKS.find(r => r.rank === g.rank), T = gateType(g);
   await runActivity({ id: 'gate', cat: 'adventure', run: async cc => {
-    for (let f = 0; f < R.fights; f++) {
+    if (sweep) { cc.flags.presenceWin = true; cc.wins += R.fights; }
+    else for (let f = 0; f < R.fights; f++) {
       const boss = f === R.fights - 1;
       const e = ENEMIES.find(x => x.id === (boss ? T.boss[g.rank] || pick(T.pool) : pick(T.pool)));
-      const def = boss ? { ...e, hp: Math.round(e.hp * 1.3), str: Math.round(e.str * 1.1), name: `BOSS · ${e.name}` } : { ...e, name: `${e.name} (${f + 1}/${R.fights})` };
+      const er = Math.max(e.realm || 0, R.realm + (boss ? 1 : 0));
+      const def = boss ? { ...e, realm: er, hp: Math.round(e.hp * 1.3), str: Math.round(e.str * 1.1), name: `BOSS · ${e.name}` } : { ...e, realm: Math.max(e.realm || 0, R.realm), name: `${e.name} (${f + 1}/${R.fights})` };
       const r = await import('./combat.js').then(m => m.fight(def));
       if (r === 'win' && e.id === 'ghost_king') cc.flags.ghostKing = true;
       if (r !== 'win') return { text: r === 'flee' ? `I fled the ${T.name}.` : `I was beaten inside the ${g.rank}-rank ${T.name} and dragged myself out.`, cls: 'bad' };
       cc.wins++;
     }
-    cc.gates.splice(i, 1); cc.gatesCleared++; if (cc.gatesCleared >= 10) earnTrait(cc, 'gatebreaker'); if (g.rank === 'S') cc.flags.gateS = true;
-    const tier = 'EDCBAS'.indexOf(g.rank);
-    const n = Math.round((ri(2, 3) + Math.floor(tier / 2)) * traitVal0(cc));
+    cc.gates.splice(i, 1); cc.gatesCleared++; if (cc.gatesCleared >= 10) earnTrait(cc, 'gatebreaker'); if (/^S/.test(g.rank)) cc.flags.gateS = true;
+    const tier = GATE_RANKS.indexOf(R), yld = gateYield(cc, R);
+    const n = Math.max(1, Math.round((ri(2, 3) + Math.floor(tier / 2)) * traitVal0(cc) * yld));
     const table = Object.entries(T.loot).map(([id, w]) => ({ id, w }));
     const got = {};
     const add = (name, k = 1) => { got[name] = (got[name] || 0) + k; };
     for (let k = 0; k < n; k++) {
       const L = weighted(table, x => x.w);
-      if (L.id === 'gold') { const m = Math.round(ri(200, 2000) * (1 + tier) * country(cc).econ); money(cc, m); add(fmtMoney(cc, m)); }
+      if (L.id === 'gold') { const m = Math.round(ri(200, 2000) * (1 + tier) * (1 + Math.max(0, tier - 5)) * yld * country(cc).econ); money(cc, m); add(fmtMoney(cc, m)); }
       else if (L.id === 'manual') { const mm = METHODS.filter(x => !(cc.qi.methods || ['basic']).includes(x.id) && (T.id === 'altar' || !x.demonic)); const m = pick(MANUALS.filter(x => x.id !== 'breathing' && !cc.qi.manuals.includes(x.id)));
         if (mm.length && (chance(0.5) || !m)) { const x = pick(mm); learnMethod(cc, x.id); add(x.name); } else if (m) { learnManual(cc, m.id); add(m.name); } }
       else { addItem(cc, L.id); add(ITEMS[L.id]?.name || L.id); }
     }
-    return { text: `I cleared the ${g.rank}-rank ${T.name}! Loot: ${Object.entries(got).map(([k, v]) => v > 1 ? `${v}× ${k}` : k).join(', ')}.`, cls: 'good', big: true };
+    if (chance(gateHeirloomChance(tier) * yld)) { const x = gainHeirloom(cc, `${g.rank}-rank ${T.name}`); if (x) add(HEIRLOOMS[x.id].name); }
+    if (cc.guild && tier >= cc.guild.rank - 1) cc.guild.merit += Math.round((tier + 1) * 8 * yld);
+    return { text: `${sweep ? `I walked into the ${g.rank}-rank ${T.name} and nothing inside dared move. ` : ''}I cleared the ${g.rank}-rank ${T.name}!${yld < 1 ? ` (outlevelled: ${Math.round(yld * 100)}% loot)` : ''} Loot: ${Object.entries(got).map(([k, v]) => v > 1 ? `${v}× ${k}` : k).join(', ')}.`, cls: 'good', big: true };
   } });
 }
 
@@ -463,6 +478,21 @@ export async function openSurgery() {
     if (chance(x.ok)) { const g = ri(...x.gain); stat(cc, 'looks', g); stat(cc, 'happiness', 10); return { text: `The surgery went well. Looks +${g}. I barely recognise myself in the mirror — in a good way.`, cls: 'good', big: true }; }
     if (chance(x.botch / (1 - x.ok))) { const l = ri(3, 10); stat(cc, 'looks', -l); stat(cc, 'happiness', -15); return { text: `The surgery was botched. Looks -${l}. I can't stop staring at the scars.`, cls: 'bad', big: true }; }
     return { text: 'The surgery healed fine, but nobody can tell the difference.', cls: '' }; } });
+}
+
+// Realm ladder: highest realm at the top, your realm highlighted with an ink-brush stroke
+function realmLadder(c) {
+  const q = c.qi;
+  return h('div', { class: 'ladder' }, [...REALMS.map((r, i) => [r, i])].reverse().map(([r, i]) => {
+    const cur = i === q.realm, done = i < q.realm;
+    const row = h('div', { class: 'rung' + (cur ? ' current' : done ? ' done' : ' locked') },
+      h('span', { class: 'rung-glyph', style: { '--rc': r.color } }, r.glyph),
+      h('span', { class: 'rung-name' }, r.name, cur && r.stages > 1 ? h('small', {}, ` · Stage ${q.stage}/${r.stages}`) : null),
+      h('span', { class: 'rung-meta' }, r.trib ? h('span', { title: `${r.trib}-bolt Heavenly Tribulation` }, '⚡'.repeat(Math.min(3, r.trib))) : null, r.req?.pill ? h('span', { class: 'muted small', title: 'Needs a Foundation Establishment Pill' }, ' 💊') : null));
+    row.style.setProperty('--rc', r.color);
+    row.title = `${r.name} — stat cap ${r.cap}, +${r.life}y lifespan, power ×${r.power}`;
+    return row;
+  }));
 }
 
 export function openSalon() {
@@ -492,5 +522,6 @@ export function render() {
   // keep anything the player is typing (chat, room code…) when the screen redraws
   const kept = [...center.querySelectorAll('[data-keep]')].map(el => ({ k: el.dataset.keep, v: el.value, focus: document.activeElement === el, s: el.selectionStart, e: el.selectionEnd }));
   center.replaceChildren(...[fn()].flat(3).filter(Boolean));
+  if (G.char.flags?.intro) { const o = G.char.flags.intro; delete G.char.flags.intro; ui.cinematic?.(o); }
   for (const st of kept) { const el = center.querySelector(`[data-keep="${st.k}"]`); if (!el) continue; el.value = st.v; if (st.focus) { el.focus(); try { el.setSelectionRange(st.s, st.e); } catch (e) {} } }
 }

@@ -11,10 +11,12 @@ import { known as _known } from './crafting.js';
 import { METHODS, MANUALS } from '../data/realms.js';
 import { ITEMS, RECIPES } from '../data/items.js';
 import { perk as _perk } from '../data/legacyTree.js';
+import { npcDna } from './genetics.js';
 
 const JOBS = ['teacher', 'factory worker', 'nurse', 'shopkeeper', 'taxi driver', 'accountant', 'farmer', 'chef', 'police officer', 'tea house owner', 'mechanic'];
 
-export function makePerson(c, o = {}) {
+export function makePerson(c, o = {}) { const p = makePerson0(c, o); p.dna ||= npcDna(p.realm || 0); return p; }
+function makePerson0(c, o = {}) {
   const cty = COUNTRIES.find(x => x.id === (o.country || c.country)) || COUNTRIES[0];
   const gender = o.gender || (chance(0.5) ? 'F' : 'M');
   let last = o.last || pick(cty.last); if (gender === 'F' && cty.fem && !o.last) last = cty.fem(last);
@@ -23,7 +25,7 @@ export function makePerson(c, o = {}) {
     age: o.age ?? ri(c.age - 2, c.age + 2), role: o.role || 'Acquaintance', alive: true,
     close: o.close ?? ri(20, 60), genes: o.genes || randomGenes(gender), job: o.job || null,
     stats: { smarts: ri(20, 90), strength: ri(15, 80), agility: ri(15, 80), charisma: ri(20, 90), luck: ri(20, 80), looks: 0 },
-    realm: o.realm ?? ((o.age ?? 20) >= 16 && chance(0.1) ? ri(1, 2) : 0), hostile: !!o.hostile, met: G.world.year, ...o.extra,
+    realm: o.realm ?? ((o.age ?? 20) >= 16 && chance(0.1) ? ri(1, 3) : 0), hostile: !!o.hostile, met: G.world.year, ...o.extra,
   };
 }
 
@@ -50,7 +52,8 @@ export function yearlyPeople(c) {
     if (!p.alive) continue;
     p.age++;
     if (p.role !== 'Enemy') p.close = clamp(p.close - ri(0, 4));
-    const deathChance = p.age > 85 ? 0.25 : p.age > 70 ? 0.06 : p.age > 50 ? 0.01 : 0.002;
+    const a = p.age - (p.blessed?.years || 0) - [0, 2, 5, 12, 25, 35, 45, 55, 65, 75, 85, 100, 150].slice(1, (p.realm || 0) + 1).reduce((x, y) => x + y, 0); // longevity blessings & cultivation
+    const deathChance = a > 85 ? 0.25 : a > 70 ? 0.06 : a > 50 ? 0.01 : 0.002;
     if (chance(deathChance)) {
       p.alive = false;
       const fam = ['Father', 'Mother', 'Brother', 'Sister', 'Spouse', 'Son', 'Daughter'].includes(p.role);
@@ -108,7 +111,8 @@ export function bondList(c) {
   return out;
 }
 // Positive closeness changes scale with Social traits.
-export function gainClose(c, p, d) { p.close = clamp(p.close + (d > 0 ? Math.round(d * 1.3 * _tm(c, 'social') * (_perk('m2') ? 1.1 : 1)) : d)); return p.close; }
+// Bonds build slowly now: deep trust takes years of effort, not a handful of chats.
+export function gainClose(c, p, d) { p.close = clamp(p.close + (d > 0 ? Math.round(d * 0.85 * _tm(c, 'social') * (_perk('m2') ? 1.1 : 1)) : d)); return p.close; }
 
 // People who like you a lot sometimes give you things, teach you skills, recipes, or even cultivation methods.
 export function favor(c, p) {

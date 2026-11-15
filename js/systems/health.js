@@ -52,7 +52,7 @@ export function healthYear(c) {
     c.stats[k] = Math.min(c.stats[k], (REALMS[c.qi.realm].cap || 100));
   }
   // ---- looks only fade with age (cultivation slows or stops it)
-  if (c.age > 30) { const rate = c.qi.realm >= 2 ? 0 : c.qi.realm === 1 ? 0.25 : c.age > 50 ? 1 : 0.5; if (chance(rate)) c.stats.looks = clamp(c.stats.looks - 1); }
+  if (c.age > 30) { const rate = c.qi.realm >= 3 ? 0 : c.qi.realm >= 1 ? 0.25 : c.age > 50 ? 1 : 0.5; if (chance(rate)) c.stats.looks = clamp(c.stats.looks - 1); }
 
   // ---- existing conditions
   c.conditions ||= [];
@@ -78,8 +78,11 @@ export function geneticCheck(c, birth) {
 }
 export const bleedMult = c => (c.conditions || []).reduce((m, x) => m * (COND_BY_ID[x.id].bleed || 1), 1);
 // Sudden death can happen at any age; heart problems and severe illness raise the odds.
+// Random deaths are rare when you're healthy and whole: they come from old age, sickness, wounds and risk instead.
 export function suddenDeathChance(c) {
-  return 0.0015 + (c.conditions || []).reduce((s, x) => s + (COND_BY_ID[x.id].sudden || 0) + (x.id === 'heart' ? 0.01 : 0) + (COND_BY_ID[x.id].grows ? 0.004 * x.sev : 0), 0) - c.qi.realm * 0.0003;
+  const hurt = c.body ? Object.values(c.body.parts || {}).some(p => p.missing || (p.inj && p.inj.length)) : false;
+  const base = c.stats.health >= 70 && !(c.conditions || []).length && !hurt ? 0.0002 : c.stats.health >= 40 ? 0.0007 : 0.002;
+  return Math.max(0, base + (c.conditions || []).reduce((s, x) => s + (COND_BY_ID[x.id].sudden || 0) + (x.id === 'heart' ? 0.01 : 0) + (COND_BY_ID[x.id].grows ? 0.004 * x.sev : 0), 0) - c.qi.realm * 0.0003);
 }
 
 // Trauma hooks other systems can call

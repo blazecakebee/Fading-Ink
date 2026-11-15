@@ -8,7 +8,7 @@ import { stat, die, addItem, money, country, fmtMoney } from './life.js';
 import { bondBonus } from './people.js';
 import { condQiMult, addCondition } from './health.js';
 import { gearStats } from './crafting.js';
-import { SECTS, METHODS } from '../data/realms.js';
+import { SECTS, METHODS, RI } from '../data/realms.js';
 import { perk as perkC } from '../data/legacyTree.js';
 import { ITEMS } from '../data/items.js';
 
@@ -66,6 +66,7 @@ export function breakthroughInfo(c) {
   add(`Meridians ${c.qi.meridians}/12`, c.qi.meridians * 0.015);
   add('Traits', traitVal(c, 'breakthrough'));
   if (perkC('c4')) add('Legacy: Tribulation Scars', 0.05);
+  if (major && c.qi.realm >= 2) add("Heaven's resistance", -0.02 * c.qi.realm); // every realm is harder to break than the last
   add(`Stress ${c.stats.stress}`, -c.stats.stress / 300);
   add('Happiness', (c.stats.happiness - 60) / 600);
   add('Partner (dual cultivation)', bondBonus(c, 'breakthrough') - 1);
@@ -120,12 +121,12 @@ export async function breakthrough(c) {
 // Passive yearly cultivation bits
 export function cultivationYear(c) {
   // sects look after disciples who are ready for Foundation Establishment
-  if (c.sect && c.qi.realm === 1 && c.qi.stage >= 5 && !c.inv.foundation_pill && chance(0.35)) {
+  if (c.sect && c.qi.realm === RI.qi && c.qi.stage >= 5 && !c.inv.foundation_pill && chance(0.35)) {
     addItem(c, 'foundation_pill'); ui.log(`An elder of the ${sectName(c)} handed me a Foundation Establishment Pill. "You are ready."`, 'qi');
   }
   if (c.qi.known && c.qi.manuals.length && c.qi.realm === 0 && c.qi.qi >= qiCap(c)) {
     // mortals auto-condense into Qi realm when they first fill up
-    c.qi.realm = 1; c.qi.stage = 1; c.qi.qi = 0; ui.log('A warm thread of Qi settled in my dantian. I have entered Qi Condensation.', 'qi'); ui.fx('breakthrough', { major: true, realm: 'Qi Condensation', color: REALMS[1].color });
+    c.qi.realm = 1; c.qi.stage = 1; c.qi.qi = 0; ui.log(`A warm thread of Qi settled in my dantian. I have entered ${REALMS[1].name}.`, 'qi'); ui.fx('breakthrough', { major: true, realm: REALMS[1].name, color: REALMS[1].color });
   }
   if (c.qi.realm > 0) c.qi.qi = Math.min(qiCap(c), c.qi.qi + qiGain(c, 3));
 }
@@ -142,7 +143,7 @@ export const sectName = c => c.sect === 'own' ? c.ownSect?.name : c.sect === 'gu
 export function foundReq(c) {
   const cost = Math.round(5000 * country(c).econ), out = [];
   if (c.age < 18) out.push('Be at least 18');
-  if (!(c.qi.realm >= 2 || (c.qi.realm === 1 && c.qi.stage >= 5))) out.push('Reach Qi Condensation stage 5');
+  if (!(c.qi.realm >= RI.foundation || (c.qi.realm === RI.qi && c.qi.stage >= 5))) out.push('Reach Qi Condensation stage 5');
   if (c.money < cost) out.push(`Have ${fmtMoney(c, cost)}`);
   return { cost, missing: out };
 }
@@ -150,7 +151,7 @@ export function foundReq(c) {
 export function foundSect(c, name, clan) {
   const { cost, missing } = foundReq(c); if (missing.length) return null;
   money(c, -cost); c.flags.birthLast ||= c.last; c.last = clan;
-  c.ownSect = { name, clan, founded: c.age, disciples: 3 }; c.sect = 'own';
+  c.ownSect = { name, clan, founded: c.age, disciples: 3 }; c.sect = 'own'; c.sectRank = 4;
   if (!c.qi.manuals.includes('breathing')) c.qi.manuals.push('breathing');
   return { text: `I founded the ${name}. From today I am ${c.first} ${clan}, ${c.gender === 'F' ? 'Matriarch' : 'Patriarch'} of the ${clan} Clan.`, cls: 'qi', big: true };
 }

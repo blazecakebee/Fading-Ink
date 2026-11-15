@@ -47,7 +47,7 @@ export function renderSettings() {
         toggle('Show stat numbers', 'showNumbers'), toggle('Show world news', 'showWorldNews'), toggle('Show hints', 'hints'),
         toggle('Confirm age-up', 'confirmAgeUp', null, 'when you still have actions left')),
       card('Accessibility & effects', '✨',
-        toggle('Visual effects', 'fxOn'), toggle('Screen shake in combat', 'screenShake'), toggle('Reduce motion', 'reduceMotion'),
+        toggle('Visual effects', 'fxOn'), toggle('Cinematic scenes (birth, breakthroughs, heirlooms)', 'cinematics'), toggle('Screen shake in combat', 'screenShake'), toggle('Reduce motion', 'reduceMotion'),
         toggle('UI click sounds', 'uiSounds'), toggle('High contrast', 'highContrast'), toggle('Colorblind-friendly bars', 'cbBars')),
       card('Audio', '🎵',
         slider('Master volume', 'master', 0, 1, 0.05, v => Math.round(v * 100) + '%'),

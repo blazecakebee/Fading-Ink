@@ -113,7 +113,7 @@ export function bodyYear(c) {
 
 // Qi healing: mends injuries; regrows limbs lost within 2 years (needs Foundation Establishment or higher)
 export function qiHealInfo(c) {
-  const cost = Math.round((REALMS[c.qi.realm].maxQi || 40) * 0.6); const weak = c.qi.qi < cost * 1.5 || c.qi.realm < 2;
+  const cost = Math.round((REALMS[c.qi.realm].maxQi || 40) * 0.6); const weak = c.qi.qi < cost * 1.5 || c.qi.realm < 3;
   const regrow = PARTS.filter(p => c.body.parts[p.id].missing && !c.body.parts[p.id].permanent);
   return { cost, weak, regrow, scarChance: weak ? 0.45 : 0.08 };
 }
@@ -124,7 +124,7 @@ export function qiHeal(c) {
   for (const p of PARTS) { const s = c.body.parts[p.id]; if (s.missing) continue;
     s.inj = s.inj.filter(i => { if (i.type === 'scar') return true; healed++; if (chance(info.scarChance)) { i.type = 'scar'; scars++; return true; } return false; });
     s.hp = maxHp(c, p.id); }
-  if (info.regrow.length && c.qi.realm >= 2 && chance(0.5 + c.qi.realm * 0.08)) { const p = info.regrow[0]; c.body.parts[p.id].missing = false; c.body.parts[p.id].hp = Math.round(maxHp(c, p.id) * 0.5); c.body.parts[p.id].prosthetic = null; regrown = p.name; c.flags.regrown = true; ui.fx('breakthrough', { major: false }); }
+  if (info.regrow.length && c.qi.realm >= 3 && chance(0.4 + c.qi.realm * 0.06)) { const p = info.regrow[0]; c.body.parts[p.id].missing = false; c.body.parts[p.id].hp = Math.round(maxHp(c, p.id) * 0.5); c.body.parts[p.id].prosthetic = null; regrown = p.name; c.flags.regrown = true; ui.fx('breakthrough', { major: false }); }
   c.conditions = (c.conditions || []).filter(x => x.id !== 'blindness' || (partEff(c, 'eye_l') === 0 && partEff(c, 'eye_r') === 0));
   return { text: `I guided Qi through my wounds. ${healed ? `${healed} injur${healed === 1 ? 'y' : 'ies'} mended` : 'My body is whole'}${scars ? `, but ${scars} healed as scar${scars > 1 ? 's' : ''} — my Qi was too weak` : ''}.${regrown ? ` My ${regrown.toLowerCase()} GREW BACK!` : ''}`, cls: regrown ? 'qi' : 'good', big: !!regrown };
 }

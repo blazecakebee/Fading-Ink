@@ -6,6 +6,7 @@ import { openModal } from './modal.js';
 import { fx } from './fx.js';
 import { fullName, continueAs, newLife, willInfo, fmtMoney } from '../systems/life.js';
 import { realmName } from '../systems/cultivation.js';
+import { REALMS } from '../data/realms.js';
 import { render, traitChip } from './render.js';
 import { TREE, BRANCHES, NODE, perk, nodeCost, canBuy } from '../data/legacyTree.js';
 import { icon as ic } from './dom.js';
@@ -24,7 +25,7 @@ export function renderLegacy() {
   const kids = c.people.filter(p => ['Son', 'Daughter'].includes(p.role));
   const node = (p, label) => h('div', { class: 'card', style: { textAlign: 'center', minWidth: '120px' } }, h('div', { class: 'pframe', style: { display: 'inline-block' } }, portraitFor(p, 56)), h('div', {}, h('b', {}, p.first)), h('div', { class: 'muted' }, `${label} · ${p.age}${p.alive === false ? ' †' : ''}`));
   return [h('h2', { class: 'display' }, 'Legacy & Family'),
-    h('div', { class: 'year-card', style: { marginTop: '10px' } }, h('h3', {}, `Legacy Points: ${META.legacy}`), h('div', { class: 'muted' }, `Lives lived: ${META.lives} · Highest realm ever: ${['Mortal', 'Qi Condensation', 'Foundation', 'Core', 'Nascent Soul', 'Spirit Severing', 'Dao Seeking', 'Immortal'][META.bestRealm]}`),
+    h('div', { class: 'year-card', style: { marginTop: '10px' } }, h('h3', {}, `Legacy Points: ${META.legacy}`), h('div', { class: 'muted' }, `Lives lived: ${META.lives} · Highest realm ever: ${REALMS[META.bestRealm || 0]?.name}`),
       h('p', { class: 'muted' }, 'Earn points by living long, reaching realms, clearing Gates, winning fights, graduating, getting rich and unlocking achievements. Spend them in the skill tree below — upgrades apply to every future life.')),
     legacyTree(),
     h('h3', { class: 'display', style: { margin: '18px 0 8px' } }, 'Family Tree'),
