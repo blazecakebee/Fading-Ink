@@ -1,0 +1,422 @@
+{
+ "tile": 16,
+ "cols": 16,
+ "source": "Angais/pixel-art-atlas-1.4m (CC0)",
+ "icons": {
+  "life": {
+   "i": 0,
+   "subject": "candle",
+   "row_id": 676
+  },
+  "character": {
+   "i": 1,
+   "subject": "mirror",
+   "row_id": 1213
+  },
+  "skills": {
+   "i": 2,
+   "subject": "book",
+   "row_id": 1315
+  },
+  "cultivation": {
+   "i": 3,
+   "subject": "spirit orb",
+   "row_id": 1153
+  },
+  "gates": {
+   "i": 4,
+   "subject": "dungeon door",
+   "row_id": 7180
+  },
+  "people": {
+   "i": 5,
+   "subject": "heart icon",
+   "row_id": 221
+  },
+  "career": {
+   "i": 6,
+   "subject": "briefcase",
+   "row_id": 726
+  },
+  "education": {
+   "i": 7,
+   "subject": "graduation cap",
+   "row_id": 1766
+  },
+  "assets": {
+   "i": 8,
+   "subject": "cottage",
+   "row_id": 2283
+  },
+  "market": {
+   "i": 9,
+   "subject": "coin pouch",
+   "row_id": 2709
+  },
+  "world": {
+   "i": 10,
+   "subject": "globe",
+   "row_id": 190
+  },
+  "legacy": {
+   "i": 11,
+   "subject": "banner",
+   "row_id": 478
+  },
+  "settings": {
+   "i": 12,
+   "subject": "gearbox",
+   "row_id": 782
+  },
+  "combat": {
+   "i": 13,
+   "subject": "crossed swords",
+   "row_id": 1325
+  },
+  "crime": {
+   "i": 14,
+   "subject": "crowbar",
+   "row_id": 8258
+  },
+  "health": {
+   "i": 15,
+   "subject": "first aid kit",
+   "row_id": 2571
+  },
+  "mind": {
+   "i": 16,
+   "subject": "brain coral",
+   "row_id": 305
+  },
+  "gym": {
+   "i": 17,
+   "subject": "dumbbell",
+   "row_id": 10955
+  },
+  "meditate": {
+   "i": 18,
+   "subject": "lotus flower",
+   "row_id": 13387
+  },
+  "study": {
+   "i": 19,
+   "subject": "open book",
+   "row_id": 2109
+  },
+  "play": {
+   "i": 20,
+   "subject": "teddy bear",
+   "row_id": 2069
+  },
+  "teddy": {
+   "i": 21,
+   "subject": "teddy bear",
+   "row_id": 2069
+  },
+  "food": {
+   "i": 22,
+   "subject": "apple",
+   "row_id": 1916
+  },
+  "pill": {
+   "i": 23,
+   "subject": "pill bottle",
+   "row_id": 232
+  },
+  "manual": {
+   "i": 24,
+   "subject": "scroll",
+   "row_id": 496
+  },
+  "car": {
+   "i": 25,
+   "subject": "car",
+   "row_id": 2684
+  },
+  "pet": {
+   "i": 26,
+   "subject": "dog",
+   "row_id": 376
+  },
+  "dice": {
+   "i": 27,
+   "subject": "pair of dice",
+   "row_id": 380
+  },
+  "phone": {
+   "i": 28,
+   "subject": "smartphone",
+   "row_id": 95
+  },
+  "ring": {
+   "i": 29,
+   "subject": "engagement ring",
+   "row_id": 1062
+  },
+  "baby": {
+   "i": 30,
+   "subject": "baby bottle",
+   "row_id": 644
+  },
+  "grave": {
+   "i": 31,
+   "subject": "tombstone",
+   "row_id": 472
+  },
+  "crown": {
+   "i": 32,
+   "subject": "crown",
+   "row_id": 3250
+  },
+  "salon": {
+   "i": 33,
+   "subject": "hair dryer",
+   "row_id": 564
+  },
+  "doctor": {
+   "i": 34,
+   "subject": "stethoscope",
+   "row_id": 286
+  },
+  "travel": {
+   "i": 35,
+   "subject": "suitcase",
+   "row_id": 783
+  },
+  "music": {
+   "i": 36,
+   "subject": "lute",
+   "row_id": 1084
+  },
+  "art": {
+   "i": 37,
+   "subject": "paintbrush",
+   "row_id": 1675
+  },
+  "fire": {
+   "i": 38,
+   "subject": "flame",
+   "row_id": 4541
+  },
+  "lightning": {
+   "i": 39,
+   "subject": "lightning bolt",
+   "row_id": 265
+  },
+  "water": {
+   "i": 40,
+   "subject": "water drop",
+   "row_id": 823
+  },
+  "earth": {
+   "i": 41,
+   "subject": "rock",
+   "row_id": 1260
+  },
+  "wood": {
+   "i": 42,
+   "subject": "sapling",
+   "row_id": 587
+  },
+  "metal": {
+   "i": 43,
+   "subject": "ingot mold",
+   "row_id": 1010
+  },
+  "ghost": {
+   "i": 44,
+   "subject": "ghost",
+   "row_id": 7915
+  },
+  "demon": {
+   "i": 45,
+   "subject": "skull ring",
+   "row_id": 53
+  },
+  "chest": {
+   "i": 46,
+   "subject": "treasure chest",
+   "row_id": 961
+  },
+  "gem": {
+   "i": 47,
+   "subject": "gem",
+   "row_id": 3566
+  },
+  "shield": {
+   "i": 48,
+   "subject": "shield",
+   "row_id": 30
+  },
+  "fist": {
+   "i": 49,
+   "subject": "boxing glove",
+   "row_id": 4294
+  },
+  "kick": {
+   "i": 50,
+   "subject": "boots",
+   "row_id": 2649
+  },
+  "heart": {
+   "i": 51,
+   "subject": "heart icon",
+   "row_id": 221
+  },
+  "brokenheart": {
+   "i": 52,
+   "subject": "broken heart icon",
+   "row_id": 7789
+  },
+  "star": {
+   "i": 53,
+   "subject": "star",
+   "row_id": 4117
+  },
+  "trophy": {
+   "i": 54,
+   "subject": "trophy bowl",
+   "row_id": 492
+  },
+  "gift": {
+   "i": 55,
+   "subject": "gift bag",
+   "row_id": 597
+  },
+  "beer": {
+   "i": 56,
+   "subject": "beer mug",
+   "row_id": 2049
+  },
+  "cards": {
+   "i": 57,
+   "subject": "fanned playing cards",
+   "row_id": 3190
+  },
+  "stocks": {
+   "i": 58,
+   "subject": "bar chart icon",
+   "row_id": 71
+  },
+  "shop": {
+   "i": 59,
+   "subject": "market stall",
+   "row_id": 8281
+  },
+  "hammer": {
+   "i": 60,
+   "subject": "hammer",
+   "row_id": 176
+  },
+  "knife": {
+   "i": 61,
+   "subject": "combat knife",
+   "row_id": 29
+  },
+  "eye": {
+   "i": 62,
+   "subject": "cybernetic eye",
+   "row_id": 1676
+  },
+  "moon": {
+   "i": 63,
+   "subject": "crescent moon",
+   "row_id": 7171
+  },
+  "sun": {
+   "i": 64,
+   "subject": "sun",
+   "row_id": 3548
+  },
+  "skull": {
+   "i": 65,
+   "subject": "skull ring",
+   "row_id": 53
+  },
+  "key": {
+   "i": 66,
+   "subject": "keyboard",
+   "row_id": 245
+  },
+  "letter": {
+   "i": 67,
+   "subject": "folded letter",
+   "row_id": 412
+  },
+  "tea": {
+   "i": 68,
+   "subject": "teapot",
+   "row_id": 413
+  },
+  "wine": {
+   "i": 69,
+   "subject": "wine bottle",
+   "row_id": 9736
+  },
+  "cake": {
+   "i": 70,
+   "subject": "birthday cake",
+   "row_id": 500
+  },
+  "flower": {
+   "i": 71,
+   "subject": "rose",
+   "row_id": 37
+  },
+  "bed": {
+   "i": 72,
+   "subject": "bed",
+   "row_id": 899
+  },
+  "clock": {
+   "i": 73,
+   "subject": "pocket watch",
+   "row_id": 1379
+  },
+  "lantern": {
+   "i": 74,
+   "subject": "lantern",
+   "row_id": 1546
+  },
+  "bell": {
+   "i": 75,
+   "subject": "bluebell",
+   "row_id": 61
+  },
+  "feather": {
+   "i": 76,
+   "subject": "feather",
+   "row_id": 7437
+  },
+  "snowball": {
+   "i": 77,
+   "subject": "snowball",
+   "row_id": 37482
+  },
+  "computer": {
+   "i": 78,
+   "subject": "laptop",
+   "row_id": 501
+  },
+  "pickaxe": {
+   "i": 79,
+   "subject": "pickaxe",
+   "row_id": 1481
+  },
+  "fishing": {
+   "i": 80,
+   "subject": "fishing rod",
+   "row_id": 4718
+  },
+  "tent": {
+   "i": 81,
+   "subject": "camping tent",
+   "row_id": 1173
+  },
+  "boat": {
+   "i": 82,
+   "subject": "sailboat",
+   "row_id": 300
+  }
+ }
+}

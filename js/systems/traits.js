@@ -1,0 +1,41 @@
+// Trait rolling, effects and earned-trait unlocks.
+import { TRAITS, TIERS, TIER_ORDER, TRAIT_BY_ID } from '../data/traits.js';
+import { ui } from '../core/bus.js';
+import { META } from '../core/state.js';
+import { clamp, chance, weighted } from '../core/rng.js';
+
+export const has = (c, id) => c.traits.includes(id);
+
+// Roll 1-3 birth traits. Higher tiers are exponentially rarer. Legacy perk "luckyStars" improves odds.
+export function rollBirthTraits(c) {
+  const out = []; const n = chance(0.25) ? 3 : chance(0.6) ? 2 : 1;
+  const boost = 1 + (META.perks?.stars || 0) * 0.5;
+  for (let i = 0; i < n; i++) {
+    const tierId = weighted(TIER_ORDER.map(t => ({ t, weight: TIERS[t].birth * (t === 'common' ? 1 : boost) })), x => x.weight).t;
+    const pool = TRAITS.filter(t => t.tier === tierId && t.birth !== 0 && !out.includes(t.id) && !conflicts(out, t.id));
+    if (pool.length) out.push(pool[Math.floor(Math.random() * pool.length)].id);
+  }
+  return out;
+}
+const CONFLICTS = [['sturdy', 'sickly'], ['cheerful', 'hothead'], ['lucky', 'cursed'], ['quick', 'clumsy']];
+const conflicts = (list, id) => CONFLICTS.some(([a, b]) => (id === a && list.includes(b)) || (id === b && list.includes(a)));
+
+export function applyTraitMods(c, id) {
+  const t = TRAIT_BY_ID[id]; if (!t) return;
+  if (t.mods) for (const [k, v] of Object.entries(t.mods)) c.stats[k] = clamp(c.stats[k] + v);
+  if (t.earlyQi) c.qi.known = true;
+}
+// product of multiplicative trait fields (qi, power, study, stressMult, crime...)
+export function traitMult(c, field) { return c.traits.reduce((m, id) => m * (TRAIT_BY_ID[id]?.[field] ?? 1), 1); }
+// sum of additive trait fields (breakthrough, life, refund)
+export function traitVal(c, field) { return c.traits.reduce((s, id) => s + (TRAIT_BY_ID[id]?.[field] ?? 0), 0); }
+
+export function earnTrait(c, id) {
+  if (has(c, id)) return false;
+  const t = TRAIT_BY_ID[id]; if (!t) return false;
+  c.traits.push(id); applyTraitMods(c, id);
+  ui.log(`New trait unlocked: ${t.name} [${TIERS[t.tier].name}]`, 'trait');
+  ui.fx('trait', { tier: t.tier, name: t.name });
+  META.unlockedTraits[id] = true;
+  return true;
+}
