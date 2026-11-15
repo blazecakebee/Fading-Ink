@@ -1,4 +1,253 @@
-// Co-op (next milestone). Plan: PeerJS / WebRTC rooms with a short code so it runs on static GitHub Pages.
-// Host owns the shared "world" (year, gates, NPC pool); each player owns their own character.
-// Messages: hello, state-sync, invite(sect|gang|spar|gym|date), fight-turn, marry, child-born.
-export const COOP_ENABLED = false;
+// Co-op multiplayer over WebRTC (PeerJS, vendored in js/vendor). Works on static hosting like GitHub Pages:
+// PeerJS's free cloud server only introduces players to each other; game data then flows peer-to-peer.
+// Topology: the host's browser is the hub. Clients send everything to the host, who relays to the others.
+// Everyone keeps their own life and ages at their own pace; co-op players show up in each other's People tab.
+import { G, save } from '../core/state.js';
+import { ui } from '../core/bus.js';
+import { ri, pick, clamp, chance, uid } from '../core/rng.js';
+import { mixGenes } from '../ui/portrait.js';
+import { stat } from '../systems/life.js';
+import { learnManual } from '../systems/cultivation.js';
+import { SECTS } from '../data/realms.js';
+
+const PREFIX = 'fadingink-v1-';
+export const net = { peer: null, role: null, code: null, myId: null, conns: new Map(), peers: new Map(), chat: [], pending: new Map(), status: 'offline' };
+
+let libPromise = null;
+function loadLib() {
+  if (window.Peer) return Promise.resolve();
+  return libPromise ||= new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'js/vendor/peerjs.min.js'; s.onload = res; s.onerror = () => rej(new Error('Could not load PeerJS')); document.head.append(s); });
+}
+// ?peerhost=localhost&peerport=9000 lets you point at your own PeerJS server (used for local testing)
+function peerOpts() {
+  const q = new URLSearchParams(location.search); const o = { debug: 0 };
+  if (q.get('peerhost')) Object.assign(o, { host: q.get('peerhost'), port: +q.get('peerport') || 9000, path: q.get('peerpath') || '/', secure: location.protocol === 'https:' });
+  return o;
+}
+const refresh = () => { try { ui.refresh(); } catch (e) {} };
+const setStatus = s => { net.status = s; refresh(); };
+
+export function myProfile() {
+  const c = G.char; if (!c) return null;
+  return { charId: c.id, first: c.first, last: c.last, gender: c.gender, age: c.age, genes: c.genes, hair: c.hair, alive: c.alive,
+    stats: { smarts: c.stats.smarts, strength: c.stats.strength, agility: c.stats.agility, charisma: c.stats.charisma, luck: c.stats.luck, looks: c.stats.looks, health: c.stats.health },
+    realm: c.qi.realm, stage: c.qi.stage, techs: c.qi.techs, sect: c.sect, traits: c.traits, city: c.city, partnerCharId: c.people.find(p => p.id === c.partnerId)?.coop || null };
+}
+
+// ---------- connecting
+export async function hostRoom() {
+  await loadLib(); leave(true);
+  const code = Array.from({ length: 5 }, () => 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[ri(0, 30)]).join('');
+  setStatus('connecting');
+  const peer = new window.Peer(PREFIX + code, peerOpts()); net.peer = peer;
+  peer.on('open', id => { net.myId = id; net.role = 'host'; net.code = code; setStatus('online'); sys(`Room ${code} is open. Share the code with your friends.`); });
+  peer.on('connection', conn => wire(conn));
+  peer.on('error', e => { if (e.type === 'unavailable-id') return hostRoom(); fail(e); });
+  peer.on('disconnected', () => { if (net.peer === peer && !peer.destroyed) peer.reconnect(); });
+}
+export async function joinRoom(code) {
+  code = String(code || '').trim().toUpperCase(); if (!code) return;
+  await loadLib(); leave(true); setStatus('connecting');
+  const peer = new window.Peer(undefined, peerOpts()); net.peer = peer;
+  peer.on('open', id => {
+    net.myId = id; net.role = 'client'; net.code = code;
+    const conn = peer.connect(PREFIX + code, { reliable: true }); wire(conn);
+    setTimeout(() => { if (net.status === 'connecting') fail({ type: 'timeout', message: 'No room with that code answered.' }); }, 12000);
+  });
+  peer.on('error', fail);
+}
+export function leave(silent) {
+  if (net.peer) { try { broadcast({ t: 'bye' }); } catch (e) {} try { net.peer.destroy(); } catch (e) {} }
+  Object.assign(net, { peer: null, role: null, code: null, myId: null, status: 'offline' }); net.conns.clear(); net.peers.clear();
+  for (const [, p] of net.pending) p.resolve(null); net.pending.clear();
+  markAllOffline(); if (!silent) { sys('You left the room.'); refresh(); }
+}
+function fail(e) {
+  const msg = e?.type === 'peer-unavailable' ? 'No room with that code exists (or the host left).' : e?.message || String(e);
+  ui.toast('Co-op: ' + msg); sys('Error: ' + msg); if (net.status !== 'online' || net.role === 'client') leave(true); setStatus('offline');
+}
+function wire(conn) {
+  conn.on('open', () => {
+    net.conns.set(conn.peer, conn); if (net.role === 'client') setStatus('online');
+    conn.send({ t: 'hello', from: net.myId, profile: myProfile() });
+    if (net.role === 'host') for (const [pid, prof] of net.peers) conn.send({ t: 'profile', from: pid, profile: prof }); // catch the newcomer up
+  });
+  conn.on('data', d => onData(conn, d));
+  conn.on('close', () => dropped(conn.peer));
+  conn.on('error', () => dropped(conn.peer));
+}
+function dropped(pid) {
+  net.conns.delete(pid);
+  if (net.role === 'client') { sys('Lost connection to the host.'); leave(true); refresh(); return; }
+  gone(pid); broadcast({ t: 'bye', from: pid });
+}
+
+// ---------- messaging (host relays for clients)
+function sendTo(to, msg) {
+  msg.from ||= net.myId;
+  if (net.conns.has(to)) net.conns.get(to).send(msg);
+  else if (net.role === 'client') net.conns.forEach(c => c.send({ ...msg, to }));
+}
+function broadcast(msg) {
+  msg.from ||= net.myId;
+  if (net.role === 'host') net.conns.forEach((c, pid) => { if (pid !== msg.from) c.send(msg); });
+  else net.conns.forEach(c => c.send({ ...msg, to: '*' }));
+}
+function onData(conn, d) {
+  if (!d || typeof d !== 'object') return;
+  if (net.role === 'host') {
+    d.from = d.t === 'profile' && d.from && d.from !== conn.peer ? d.from : conn.peer; // clients can't spoof another sender
+    if (d.to && d.to !== net.myId) {
+      if (d.to === '*') { const { to, ...m } = d; net.conns.forEach((c, pid) => { if (pid !== conn.peer) c.send(m); }); }
+      else { const { to, ...m } = d; net.conns.get(to)?.send(m); return; }
+    }
+    if (d.t === 'hello') { const { to, ...m } = d; net.conns.forEach((c, pid) => { if (pid !== conn.peer) c.send({ ...m, t: 'profile' }); }); }
+  }
+  handle(d);
+}
+
+// ---------- incoming
+function handle(d) {
+  switch (d.t) {
+    case 'hello': case 'profile': {
+      if (!d.profile) return; const isNew = !net.peers.has(d.from);
+      net.peers.set(d.from, d.profile); upsertPerson(d.from, d.profile);
+      if (isNew) sys(`${d.profile.first} ${d.profile.last} joined.`);
+      return refresh();
+    }
+    case 'bye': { const p = net.peers.get(d.from); if (p) sys(`${p.first} left.`); gone(d.from); return refresh(); }
+    case 'chat': net.chat.push({ who: net.peers.get(d.from)?.first || '?', text: String(d.text).slice(0, 300) }); trimChat(); ui.fx('click'); return refresh();
+    case 'req': return onRequest(d);
+    case 'res': { const p = net.pending.get(d.id); if (p) { net.pending.delete(d.id); p.resolve(d); } return; }
+    case 'note': return onNote(d);
+  }
+}
+function gone(pid) { net.peers.delete(pid); const c = G.char; c?.people.forEach(p => { if (p.peerId === pid) p.online = false; }); }
+function markAllOffline() { G.char?.people.forEach(p => { if (p.coop) p.online = false; }); }
+const sys = text => { net.chat.push({ who: '•', text }); trimChat(); };
+const trimChat = () => { if (net.chat.length > 80) net.chat.splice(0, net.chat.length - 80); };
+export function sendChat(text) { text = String(text || '').trim(); if (!text || !net.peer) return; net.chat.push({ who: G.char.first, text, me: true }); broadcast({ t: 'chat', text }); refresh(); }
+
+// Co-op players live in your People list (role "Co-op Friend" until you date/marry them).
+function upsertPerson(peerId, prof) {
+  const c = G.char; if (!c) return;
+  let p = c.people.find(x => x.coop === prof.charId);
+  if (!p) {
+    p = { id: uid(), coop: prof.charId, role: 'Co-op Friend', close: 50, met: G.world.year };
+    c.people.push(p); ui.log(`I met ${prof.first} ${prof.last} (another player).`, 'good');
+  }
+  Object.assign(p, { peerId, online: true, first: prof.first, last: prof.last, gender: prof.gender, age: prof.age, genes: prof.genes, hair: prof.hair,
+    alive: prof.alive, stats: { ...prof.stats }, realm: prof.realm, techs: prof.techs, sect: prof.sect, traits: prof.traits });
+  if (!prof.alive && !p.deathNoted) { p.deathNoted = true; ui.log(`${prof.first} ${prof.last} has died.`, 'death'); if (c.partnerId === p.id) c.partnerId = null; }
+}
+
+// ---------- requests: sender pays a Social action; receiver gets a popup to accept or decline
+export const COOP_ACTIONS = [
+  { id: 'hangout', name: 'Hang out', ask: 'wants to hang out.' },
+  { id: 'gym', name: 'Hit the gym together', ask: 'wants to hit the gym with you.', age: 12 },
+  { id: 'train', name: 'Train Qi together', ask: 'wants to circulate Qi together.', need: (c, p) => c.qi.realm >= 1 && p.realm >= 1 },
+  { id: 'spar', name: 'Spar', ask: 'challenges you to a friendly spar.', age: 8 },
+  { id: 'sect', name: 'Invite to my sect/gang', ask: 'invites you to join their', need: (c, p) => !!c.sect && p.sect !== c.sect && p.age >= 12 },
+  { id: 'date', name: 'Ask out', ask: 'is asking you out!', age: 14, need: (c, p) => !c.partnerId && p.role === 'Co-op Friend' && p.age >= 14 },
+  { id: 'marry', name: 'Propose', ask: 'is proposing to you!', age: 18, need: (c, p) => p.role === 'Partner' && p.age >= 18 },
+  { id: 'baby', name: 'Try for a baby', ask: 'wants to have a child with you.', age: 18, need: (c, p) => ['Partner', 'Spouse'].includes(p.role) && c.age < 50 && p.age < 50 },
+  { id: 'breakup', name: 'Break up', need: (c, p) => ['Partner', 'Spouse'].includes(p.role), notice: true },
+];
+
+function request(peerId, kind, data = {}) {
+  return new Promise(resolve => {
+    const id = uid(); net.pending.set(id, { resolve });
+    sendTo(peerId, { t: 'req', id, kind, data, profile: myProfile() });
+    setTimeout(() => { if (net.pending.has(id)) { net.pending.delete(id); resolve(null); } }, 60000);
+  });
+}
+const respond = (to, id, ok, data = {}) => sendTo(to, { t: 'res', id, ok, data, profile: myProfile() });
+
+// Called from the People popup. Returns chronicle text (or null = cancelled, Social action refunded).
+export async function doCoopAction(p, kind) {
+  const c = G.char;
+  if (!p.online || !net.peers.has(p.peerId)) { ui.toast(`${p.first} is not online.`); return null; }
+  const A = COOP_ACTIONS.find(a => a.id === kind);
+  if (A.notice) { // one-way, no permission needed
+    sendTo(p.peerId, { t: 'note', kind, profile: myProfile() });
+    p.role = 'Ex'; c.partnerId = null; p.close = clamp(p.close - 30); return { text: `${p.first} and I broke up.`, cls: 'bad' };
+  }
+  let data = {};
+  if (kind === 'sect') data.sect = c.sect;
+  if (kind === 'baby') data.kid = makeKid(c, p);
+  ui.toast(`Waiting for ${p.first} to answer…`);
+  const r = await request(p.peerId, kind, data);
+  if (!r) { ui.toast(`${p.first} didn't answer.`); return null; }
+  if (!r.ok) { p.close = clamp(p.close - 2); return { text: `${p.first} declined (${A.name.toLowerCase()}).`, cls: kind === 'date' || kind === 'marry' ? 'bad' : '' }; }
+  return applyAccepted(c, p, kind, data, r.data, true);
+}
+
+async function onRequest(d) {
+  const c = G.char; if (!c) return;
+  upsertPerson(d.from, d.profile); const p = c.people.find(x => x.coop === d.profile.charId);
+  const A = COOP_ACTIONS.find(a => a.id === d.kind); if (!A) return respond(d.from, d.id, false);
+  // auto-decline what this character can't do right now
+  const blocked = !c.alive || (A.age && c.age < A.age) || (d.kind === 'date' && c.partnerId) || (d.kind === 'marry' && p.role !== 'Partner') || (d.kind === 'baby' && (c.age >= 50 || !['Partner', 'Spouse'].includes(p.role)));
+  if (blocked) return respond(d.from, d.id, false);
+  ui.fx('milestone');
+  const sectName = d.kind === 'sect' ? ' ' + (SECTS.find(s => s.id === d.data.sect)?.name || 'sect') + '.' : '';
+  const ok = await ui.choice({ title: `${d.profile.first} ${d.profile.last}`, icon: 'people', text: `${d.profile.first} ${A.ask}${sectName}`, dismiss: false,
+    options: [{ label: 'Accept', value: true }, { label: 'Decline', value: false, ghost: true }] });
+  respond(d.from, d.id, !!ok);
+  if (ok) { applyAccepted(c, p, d.kind, d.data, {}, false); save(); refresh(); }
+}
+function onNote(d) {
+  const c = G.char; const p = c?.people.find(x => x.coop === d.profile?.charId); if (!p) return;
+  if (d.kind === 'breakup') { p.role = 'Ex'; if (c.partnerId === p.id) c.partnerId = null; p.close = clamp(p.close - 30); ui.log(`${p.first} broke up with me.`, 'bad'); ui.fx('fail'); }
+  if (d.kind === 'spar_result') ui.log(`${p.first} sparred with me: ${d.text}`);
+  save(); refresh();
+}
+
+function applyAccepted(c, p, kind, data, resData, iAmSender) {
+  switch (kind) {
+    case 'hangout': p.close = clamp(p.close + ri(8, 15)); stat(c, 'happiness', 6); stat(c, 'stress', -6);
+      return logRet(c, iAmSender, `I hung out with ${p.first} ${pick(['at the night market', 'on the rooftop', 'at the arcade', 'by the river'])}.`, 'good');
+    case 'gym': { const g = ri(3, 6); stat(c, 'strength', g); stat(c, 'health', 3); p.close = clamp(p.close + 6); return logRet(c, iAmSender, `${p.first} and I hit the gym together. Strength +${g}.`, 'good'); }
+    case 'train': { const g = Math.round(15 + (c.qi.affinity + 50) / 4); c.qi.qi += g; p.close = clamp(p.close + 6); return logRet(c, iAmSender, `${p.first} and I circulated Qi in harmony. +${g} Qi.`, 'qi'); }
+    case 'spar': {
+      if (!iAmSender) { ui.log(`I accepted ${p.first}'s spar challenge.`); return; }
+      return ui.fight({ id: 'player', kind: 'human', name: `${p.first} ${p.last}`, genes: p.genes, gender: p.gender, age: p.age, hair: p.hair, realm: p.realm || 0, hp: 30 + (p.stats.health || 50) * 0.5, str: p.stats.strength, agi: p.stats.agility,
+        moves: ['jab', 'punch', 'kick', 'guard', ...(p.realm >= 1 ? ['qi_palm'] : []), ...(p.techs || [])], sparring: true }).then(r => {
+        const txt = r === 'win' ? 'VICTORY' : r === 'flee' ? 'I yielded' : 'DEFEAT'; p.close = clamp(p.close + 3); if (r === 'win') c.wins++;
+        sendTo(p.peerId, { t: 'note', kind: 'spar_result', text: r === 'win' ? 'they won.' : 'I won.', profile: myProfile() });
+        return { text: `Spar vs ${p.first} (player): ${txt}.`, cls: r === 'win' ? 'good' : '' }; });
+    }
+    case 'sect': {
+      if (iAmSender) return { text: `${p.first} joined my ${SECTS.find(s => s.id === data.sect)?.name}.`, cls: 'good', big: true };
+      c.sect = data.sect; learnManual(c, 'breathing'); ui.log(`I joined the ${SECTS.find(s => s.id === data.sect)?.name} with ${p.first}.`, 'qi'); return;
+    }
+    case 'date': p.role = 'Partner'; c.partnerId = p.id; p.close = clamp(p.close + 15); stat(c, 'happiness', 12);
+      return logRet(c, iAmSender, `${p.first} and I are dating!`, 'good', true);
+    case 'marry': p.role = 'Spouse'; c.partnerId = p.id; p.close = clamp(p.close + 20); stat(c, 'happiness', 20);
+      return logRet(c, iAmSender, `${p.first} and I got married!`, 'good', true);
+    case 'baby': {
+      const kid = { ...data.kid, otherParent: p.id, last: data.kid.last };
+      if (!c.people.some(x => x.id === kid.id)) c.people.push(kid);
+      stat(c, 'happiness', 15);
+      return logRet(c, iAmSender, `${kid.first} was born — ${p.first}'s and my ${kid.gender === 'F' ? 'daughter' : 'son'}!`, 'good', true);
+    }
+  }
+}
+function logRet(c, iAmSender, text, cls, big) { if (iAmSender) return { text, cls, big }; ui.log(text, cls); if (big) ui.fx('milestone'); }
+
+// The child exists in BOTH players' lives (same id) so either parent can continue as them.
+function makeKid(c, p) {
+  const gender = chance(0.5) ? 'F' : 'M';
+  const names = gender === 'F' ? ['Mei', 'Yuna', 'Aoi', 'Luna', 'Sofia', 'Amara', 'Lin', 'Ivy'] : ['Kai', 'Ren', 'Leo', 'Arjun', 'Mateo', 'Jin', 'Ezra', 'Tao'];
+  const st = {}; for (const k of ['smarts', 'strength', 'agility', 'charisma', 'luck']) st[k] = clamp(Math.round(((c.stats[k] ?? 50) + (p.stats?.[k] ?? 50)) / 2 + ri(-15, 15)));
+  return { id: uid(), first: pick(names), last: c.gender === 'M' ? c.last : p.gender === 'M' ? p.last : c.last, gender, age: 0, role: gender === 'F' ? 'Daughter' : 'Son', alive: true, close: 90,
+    genes: mixGenes(c.genes, p.genes, gender), stats: st, realm: 0, met: G.world.year };
+}
+
+// Push my profile to everyone whenever my character changes (throttled).
+let lastSent = 0, queued = false;
+export function coopTick() {
+  if (net.status !== 'online') return;
+  const now = Date.now(); if (now - lastSent < 1500) { if (!queued) { queued = true; setTimeout(() => { queued = false; coopTick(); }, 1600); } return; }
+  lastSent = now; broadcast({ t: 'profile', profile: myProfile() });
+}

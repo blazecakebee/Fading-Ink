@@ -31,7 +31,7 @@ export function fight(enemyDef, opts = {}) {
     const prevStation = currentStation(); if (S().musicOn && !opts.quietMusic) playStation('battle');
 
     // portraits: humans get a generated face, spirits/heaven get a big CC0 sprite
-    const ePortrait = enemyDef.kind === 'human' ? portraitFor({ genes: enemyDef.genes || randomGenes(chance(0.5) ? 'M' : 'F'), age: 25, gender: 'M', realm: enemyDef.realm || 0 }, 112)
+    const ePortrait = enemyDef.kind === 'human' ? portraitFor({ genes: enemyDef.genes || randomGenes(chance(0.5) ? 'M' : 'F'), age: enemyDef.age || 25, gender: enemyDef.gender || 'M', hair: enemyDef.hair, realm: enemyDef.realm || 0 }, 112)
       : icon(enemyDef.kind === 'heaven' ? 'lightning' : enemyDef.id === 'hungry_ghost' || enemyDef.id === 'corrupt_soul' ? 'ghost' : 'demon', 'xl');
     const mePortrait = portraitFor(c, 112);
     const ui = {};

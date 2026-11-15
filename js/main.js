@@ -12,6 +12,8 @@ import { apply, syncMusic } from './settings.js';
 import { setRerender } from './ui/settingsPanel.js';
 import { newLife } from './systems/life.js';
 import { deathScreen } from './ui/legacyPanel.js';
+import { startUpdateChecks } from './core/updates.js';
+import { openChangelog } from './ui/render.js';
 
 Object.assign(ui, {
   log: logLine, toast, fx, choice, fight, refresh: render, openSalon,
@@ -32,5 +34,6 @@ async function boot() {
   const startAudio = () => { syncMusic(); removeEventListener('pointerdown', startAudio); };
   addEventListener('pointerdown', startAudio);
   setInterval(save, 15000);
+  startUpdateChecks(entries => { if (entries.length) openChangelog(entries, true); });
 }
 boot();

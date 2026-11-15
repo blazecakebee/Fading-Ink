@@ -17,11 +17,13 @@ import { WEALTH } from '../data/countries.js';
 import { ri, pick, chance, weighted } from '../core/rng.js';
 import { renderSettings } from './settingsPanel.js';
 import { renderLegacy } from './legacyPanel.js';
+import { VERSION, CHANGELOG } from '../version.js';
+import { net, hostRoom, joinRoom, leave, sendChat, doCoopAction, COOP_ACTIONS, coopTick } from '../net/coop.js';
 
 export const NAV = [
   ['Your Life', [['life', 'Life', 'life'], ['character', 'Character', 'character'], ['skills', 'Skills & Traits', 'skills'], ['cultivation', 'Cultivation', 'cultivation'], ['gates', 'Dungeons & Gates', 'gates']]],
   ['People & Places', [['people', 'People', 'people'], ['career', 'Career', 'career'], ['education', 'Education', 'education'], ['assets', 'Assets & Market', 'assets'], ['world', 'World', 'world']]],
-  ['Your Story', [['chronicle', 'Chronicle', 'study'], ['legacy', 'Legacy & Family', 'legacy'], ['coop', 'Co-op', 'people'], ['settings', 'Settings', 'settings']]],
+  ['Your Story', [['chronicle', 'Chronicle', 'study'], ['legacy', 'Legacy & Family', 'legacy'], ['coop', 'Co-op', 'people'], ['updates', 'Update Log', 'letter'], ['settings', 'Settings', 'settings']]],
 ];
 
 // ---------- chronicle logging (used through bus.ui.log)
@@ -60,7 +62,8 @@ function topbar() {
     h('div', { class: 'center' }, h('div', {}, h('b', {}, `Year ${G.world.year}`), ' · ', h('span', { class: 'era' }, G.world.era)),
       h('div', { class: 'where' }, '📍 ', `${c.city}, ${cty.name}`)),
     h('div', { class: 'right' }, h('div', {}, icon('market', 'sm'), ' ', h('span', { class: 'money' }, fmtMoney(c, c.money)), ' ', h('span', { class: 'muted' }, WEALTH.find(w => w.id === c.wealth).name)),
-      h('div', { class: 'sub' }, `Fame: ${c.fame > 60 ? 'Famous' : c.fame > 25 ? 'Known' : 'Unknown'} · Life #${META.lives} · Gen ${c.generation}`)));
+      h('div', { class: 'sub' }, `Fame: ${c.fame > 60 ? 'Famous' : c.fame > 25 ? 'Known' : 'Unknown'} · Life #${META.lives} · Gen ${c.generation}`),
+      h('button', { class: 'version-chip', title: 'Update log', onclick: () => openChangelog(CHANGELOG) }, `v${VERSION}`)));
 }
 function agebar() {
   const c = G.char;
@@ -83,7 +86,7 @@ async function onAgeUp() {
 // ---------- left nav
 function sidebar() {
   const c = G.char;
-  const badge = id => id === 'gates' && c.gates.length ? c.gates.length : id === 'cultivation' && c.qi.realm && c.qi.qi >= qiCap(c) ? '!' : null;
+  const badge = id => id === 'coop' && net.status === 'online' ? net.peers.size + 1 : id === 'gates' && c.gates.length ? c.gates.length : id === 'cultivation' && c.qi.realm && c.qi.qi >= qiCap(c) ? '!' : null;
   $('#sidebar').replaceChildren(...NAV.flatMap(([g, items]) => [h('div', { class: 'nav-group' }, g),
     ...items.filter(([id]) => id !== 'cultivation' || c.qi.known || META.bestRealm > 0).map(([id, label, ic]) => h('button', { class: 'nav-btn' + (G.ui.tab === id ? ' active' : ''), title: label, onclick: () => { fx('click'); G.ui.tab = id; render(); } },
       icon(ic), h('span', { class: 'lbl' }, label), badge(id) ? h('span', { class: 'badge' }, badge(id)) : null))]));
@@ -199,11 +202,11 @@ const TABS = {
 
   people() {
     const c = G.char;
-    const groups = [['Family', p => isFamily(p) && p.role !== 'Spouse'], ['Love', p => ['Spouse', 'Partner', 'Crush', 'Ex'].includes(p.role)], ['Friends', p => p.role === 'Friend'], ['School & Work', p => ['Classmate', 'Coworker', 'Acquaintance'].includes(p.role)], ['Enemies', p => p.role === 'Enemy']];
+    const groups = [['Family', p => isFamily(p) && p.role !== 'Spouse'], ['Love', p => ['Spouse', 'Partner', 'Crush', 'Ex'].includes(p.role)], ['Friends & Players', p => p.role === 'Friend' || p.role === 'Co-op Friend'], ['School & Work', p => ['Classmate', 'Coworker', 'Acquaintance'].includes(p.role)], ['Enemies', p => p.role === 'Enemy']];
     return [h('h2', { class: 'display' }, 'People'), h('p', { class: 'muted' }, `Social actions left: ${c.social}/${SOCIAL_PER_YEAR}. Click someone to interact.`),
       ...groups.map(([g, f]) => { const ps = c.people.filter(f); if (!ps.length) return null;
         return [h('h3', { class: 'display', style: { margin: '16px 0 8px' } }, g), h('div', { class: 'grid2' }, ps.map(p => h('div', { class: 'card person' + (p.alive ? '' : ' dead'), onclick: () => personModal(p) },
-          h('div', { class: 'pframe' }, portraitFor(p, 52)), h('div', { style: { flex: 1 } }, h('b', {}, `${p.first} ${p.last}`), h('div', { class: 'rel' }, `${p.role} · ${p.age}${p.alive ? '' : ' · deceased'} · ${relLabel(p)}`),
+          h('div', { class: 'pframe' }, portraitFor(p, 52)), h('div', { style: { flex: 1 } }, h('b', {}, `${p.first} ${p.last}`, p.coop ? h('span', { class: 'online' + (p.online ? ' on' : ''), title: p.online ? 'Player online' : 'Player offline' }, p.online ? ' ● player' : ' ○ player') : null), h('div', { class: 'rel' }, `${p.role} · ${p.age}${p.alive ? '' : ' · deceased'} · ${relLabel(p)}`),
             h('div', { class: 'bar' }, h('i', { style: { width: p.close + '%', '--c': p.role === 'Enemy' ? 'var(--bad)' : 'var(--good)' } }))))))]; })];
   },
 
@@ -256,10 +259,35 @@ const TABS = {
     return [h('h2', { class: 'display' }, `The Chronicle of ${fullName(c)}`), h('div', { class: 'feed' }, c.log.flatMap(y => [h('p', { class: 'big' }, `Age ${y.age} · Year ${y.year}`), ...y.lines.map(l => h('p', { class: l.c }, l.t))]))];
   },
   coop() {
-    return [h('h2', { class: 'display' }, 'Co-op (coming next)'), h('div', { class: 'feed' },
-      h('p', {}, 'Planned: peer-to-peer rooms using a short room code — no server needed, so it works on GitHub Pages.'),
-      h('p', {}, 'Join each other\'s sects or gangs, spar, train or hit the gym together, date, and have children who inherit both players\' looks, stats and traits.'),
-      h('p', { class: 'muted' }, 'Code lives in js/net/coop.js once it lands.'))];
+    const c = G.char;
+    const intro = h('p', { class: 'muted' }, 'Play alongside friends. Each of you lives your own life and ages at your own pace — but you can hang out, hit the gym, train Qi, spar, invite each other into your sect or gang, date, marry and have children together. Co-op players appear in your People tab.');
+    if (net.status !== 'online') {
+      const input = h('input', { class: 'code-in', placeholder: 'ROOM CODE', maxlength: 5, onkeydown: e => { if (e.key === 'Enter') joinRoom(input.value); } });
+      return [h('h2', { class: 'display' }, 'Co-op'), intro,
+        h('div', { class: 'grid2', style: { marginTop: '12px' } },
+          h('div', { class: 'card' }, h('h4', {}, 'Host a room'), h('p', { class: 'muted' }, 'Your browser becomes the room. Keep this tab open while friends play.'),
+            h('button', { class: 'btn', disabled: net.status === 'connecting', onclick: () => { fx('click'); hostRoom(); } }, net.status === 'connecting' ? 'Connecting…' : 'Create room')),
+          h('div', { class: 'card' }, h('h4', {}, 'Join a room'), h('p', { class: 'muted' }, 'Type the 5-letter code your friend gives you.'),
+            h('div', { class: 'row' }, input, h('button', { class: 'btn', disabled: net.status === 'connecting', onclick: () => { fx('click'); joinRoom(input.value); } }, 'Join')))),
+        net.chat.length ? h('div', { class: 'box', style: { marginTop: '12px' } }, net.chat.slice(-4).map(m => h('div', { class: 'muted' }, m.text))) : null];
+    }
+    const players = [...net.peers.entries()];
+    const log = h('div', { class: 'chatlog' }, net.chat.map(m => h('div', { class: m.who === '•' ? 'muted' : '' }, m.who === '•' ? m.text : [h('b', { style: { color: m.me ? 'var(--accent2)' : 'var(--qi)' } }, m.who + ': '), m.text])));
+    requestAnimationFrame(() => { log.scrollTop = log.scrollHeight; });
+    const msg = h('input', { class: 'chat-in', placeholder: 'Say something…', maxlength: 300, onkeydown: e => { if (e.key === 'Enter') { sendChat(msg.value); msg.value = ''; } } });
+    return [h('h2', { class: 'display' }, 'Co-op'),
+      h('div', { class: 'year-card', style: { marginTop: '10px' } }, h('div', { class: 'row' }, h('span', { class: 'muted' }, net.role === 'host' ? 'You are hosting · room code' : 'Connected · room code'),
+        h('span', { class: 'room-code' }, net.code), h('button', { class: 'btn ghost', onclick: () => { navigator.clipboard?.writeText(net.code); toast('Code copied'); } }, 'Copy'),
+        h('button', { class: 'btn ghost', style: { marginLeft: 'auto' }, onclick: () => leave() }, 'Leave room'))),
+      h('h3', { class: 'display', style: { margin: '16px 0 8px' } }, `Players (${players.length + 1})`),
+      h('div', { class: 'grid2' }, h('div', { class: 'card person' }, h('div', { class: 'pframe' }, portraitFor(c, 52)), h('div', {}, h('b', {}, fullName(c) + ' (you)'), h('div', { class: 'rel' }, `Age ${c.age} · ${c.qi.realm ? realmName(c) : 'Mortal'}`))),
+        players.map(([pid, pr]) => { const person = c.people.find(x => x.coop === pr.charId);
+          return h('div', { class: 'card person', onclick: () => person && personModal(person) }, h('div', { class: 'pframe' }, portraitFor({ ...pr, qi: null, realm: pr.realm }, 52)),
+            h('div', {}, h('b', {}, `${pr.first} ${pr.last}`), h('div', { class: 'rel' }, `Age ${pr.age}${pr.alive ? '' : ' · deceased'} · ${person?.role || ''}`))); })),
+      h('h3', { class: 'display', style: { margin: '16px 0 8px' } }, 'Chat'), log, h('div', { class: 'row', style: { marginTop: '8px' } }, msg, h('button', { class: 'btn', onclick: () => { sendChat(msg.value); msg.value = ''; } }, 'Send'))];
+  },
+  updates() {
+    return [h('h2', { class: 'display' }, 'Update Log'), h('p', { class: 'muted' }, `You're playing version ${VERSION}. When a new version goes live, the game lets you know and refreshes itself.`), changelogBody(CHANGELOG)];
   },
   legacy: () => renderLegacy(),
   settings: () => renderSettings(),
@@ -268,6 +296,7 @@ const TABS = {
 // ---------- interactions
 async function personModal(p) {
   const c = G.char;
+  if (p.coop) return coopPersonModal(p);
   const opts = SOCIAL.filter(s => p.alive && c.alive && c.age >= (s.age || 0) && (!s.need || s.need(c, p)));
   const v = await choice({ title: `${p.first} ${p.last}`, portrait: h('div', { class: 'pframe' }, portraitFor(p, 96)),
     text: `${p.role} · Age ${p.age}${p.job ? ' · ' + p.job : ''}\nRelationship: ${relLabel(p)} (${p.close}%)${p.alive ? '' : '\nDeceased.'}\nSocial actions left: ${c.social}`,
@@ -275,6 +304,16 @@ async function personModal(p) {
   if (!v) return;
   const s = SOCIAL.find(x => x.id === v);
   await runActivity({ id: 'soc_' + s.id, cost: 's', run: cc => s.run(cc, p) });
+}
+
+async function coopPersonModal(p) {
+  const c = G.char;
+  const acts = COOP_ACTIONS.filter(a => p.alive && c.alive && c.age >= (a.age || 0) && (!a.need || a.need(c, p)));
+  const v = await choice({ title: `${p.first} ${p.last}`, portrait: h('div', { class: 'pframe' }, portraitFor(p, 96)),
+    text: `Player · ${p.role} · Age ${p.age}\n${p.online ? 'Online now' : 'Offline — they need to be in your co-op room'}\nRelationship: ${relLabel(p)} (${p.close}%)\nSocial actions left: ${c.social}`,
+    options: [...acts.map(a => ({ label: `${a.name}  (💬1)`, value: a.id, disabled: c.social <= 0 || !p.online })), { label: 'Open chat', value: '_chat', ghost: true }, { label: 'Close', value: null, ghost: true }] });
+  if (!v) return; if (v === '_chat') { G.ui.tab = 'coop'; return render(); }
+  await runActivity({ id: 'coop_' + v, cost: 's', run: () => doCoopAction(p, v) });
 }
 
 async function enterGate(i) {
@@ -310,9 +349,18 @@ export function openSalon() {
   redraw(); const m = openModal([h('h2', {}, icon('salon', 'lg'), 'Salon'), body]);
 }
 
+function changelogBody(entries) {
+  return h('div', {}, entries.map((e, i) => h('div', { class: 'box', style: { marginTop: '12px' } },
+    h('h3', {}, `v${e.v} — ${e.title}`, i === 0 && e.v === VERSION ? h('span', { class: 'new-tag' }, 'CURRENT') : null), h('div', { class: 'muted', style: { marginBottom: '6px' } }, e.date),
+    h('ul', { class: 'notes' }, e.notes.map(n => h('li', {}, n))))));
+}
+export function openChangelog(entries, fresh) {
+  openModal([h('h2', {}, icon('letter', 'lg'), fresh ? `Updated to v${VERSION}!` : 'Update Log'), changelogBody(entries)]);
+}
+
 export function render() {
   if (!G.char) return;
-  topbar(); agebar(); sidebar(); rightCol();
+  topbar(); agebar(); sidebar(); rightCol(); coopTick();
   const center = $('#center'); const fn = TABS[G.ui.tab] || TABS.life;
   center.replaceChildren(...[fn()].flat(3).filter(Boolean));
 }
