@@ -1,5 +1,5 @@
 // Main screen rendering: top bar, age bar, left nav, center tab content, right stats column.
-import { effRealm, onBodyPath } from '../systems/path.js';
+import { effRealm, onBodyPath, canSeeSevered } from '../systems/path.js';
 import { G, META, save } from '../core/state.js';
 import { ui } from '../core/bus.js';
 import { h, icon, $ } from './dom.js';
@@ -127,7 +127,7 @@ function sidebar() {
   const curLabel = NAV.flatMap(([, it]) => it).find(([id]) => id === G.ui.tab)?.[1] || 'Menu';
   $('#sidebar').classList.toggle('open', !!G.ui.navOpen);
   $('#sidebar').replaceChildren(h('button', { class: 'nav-toggle', onclick: () => { fx('click'); G.ui.navOpen = !G.ui.navOpen; render(); } }, h('span', {}, '☰ ', curLabel), h('span', { class: 'muted' }, G.ui.navOpen ? 'Close ▴' : 'All tabs ▾')), ...NAV.flatMap(([g, items]) => [h('div', { class: 'nav-group' }, g),
-    ...items.filter(([id]) => id !== 'cultivation' || c.qi.known || META.bestRealm > 0).map(([id, label, ic]) => h('button', { class: 'nav-btn' + (G.ui.tab === id ? ' active' : ''), title: label, onclick: () => { fx('click'); G.ui.tab = id; G.ui.navOpen = false; render(); window.innerWidth <= 760 && document.getElementById('center').scrollIntoView({ behavior: 'smooth' }); } },
+    ...items.filter(([id]) => (id !== 'cultivation' || (!onBodyPath(c) && (c.qi.known || META.bestRealm > 0))) && (id !== 'severed' || canSeeSevered(c))).map(([id, label, ic]) => h('button', { class: 'nav-btn' + (G.ui.tab === id ? ' active' : ''), title: label, onclick: () => { fx('click'); G.ui.tab = id; G.ui.navOpen = false; render(); window.innerWidth <= 760 && document.getElementById('center').scrollIntoView({ behavior: 'smooth' }); } },
       icon(ic), h('span', { class: 'lbl' }, label), badge(id) ? h('span', { class: 'badge' }, badge(id)) : null))]));
 }
 
@@ -185,7 +185,7 @@ export const TABS = {
     if (!c.alive) return [card, h('div', { class: 'row', style: { marginTop: '16px' } }, h('button', { class: 'btn', onclick: () => import('./legacyPanel.js').then(m => m.deathScreen()) }, 'Continue your legacy'))];
     const cats = CATEGORIES.map(cat => {
       const acts = ACTIVITIES.filter(a => a.cat === cat.id && c.age >= (a.minAge ?? 0) && c.age <= (a.maxAge ?? 999) && (!a.need || a.need(c)));
-      if (cat.id === 'cultivation' && !c.qi.known) return null;
+      if (cat.id === 'cultivation' && (!c.qi.known || onBodyPath(c))) return null;
       if (!acts.length) return null;
       const d = h('details', { class: 'cat', open: G.ui.openCats[cat.id] ?? META.settings.autoOpenCats }, h('summary', {}, icon(cat.icon), cat.name, h('span', { class: 'n' }, `${acts.length} activit${acts.length === 1 ? 'y' : 'ies'}`)),
         h('div', { class: 'acts' }, acts.map(a => h('button', { class: 'act', disabled: (a.cost === 's' ? c.social : c.actions) <= 0, onclick: () => runActivity(a) },

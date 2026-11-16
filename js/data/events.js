@@ -76,7 +76,7 @@ const E = [
         const v = await ui.choice({ title: 'Exotic Merchant', icon: 'cauldron', text: `${who} unrolls a silk cloth of pills.${discount(c) ? `\n(Your charisma gets you ${Math.round(discount(c) * 100)}% off.)` : ''}\nCash: ${fmtMoney(c, c.money)}`,
           options: [...stock.map((x, i) => ({ label: `${ITEMS[x.id].name} — ${fmtMoney(c, x.price)}`, value: i, disabled: x.sold || c.money < x.price })), { label: 'Done', value: -1, ghost: true }] });
         if (v == null || v === -1) open = false;
-        else { const x = stock[v]; money(c, -x.price); addItem(c, x.id); x.sold = true; ui.fx('coin'); ui.log(`I bought a ${ITEMS[x.id].name} from an exotic merchant for ${fmtMoney(c, x.price)}.`, 'good'); }
+        else { const x = stock[v]; if (x.sold || c.money < x.price) continue; money(c, -x.price); addItem(c, x.id); x.sold = true; ui.fx('coin'); ui.log(`I bought a ${ITEMS[x.id].name} from an exotic merchant for ${fmtMoney(c, x.price)}.`, 'good'); }
       } } },
   // --- adult life
   { id: 'lottery', cond: c => c.age >= 18, w: 1, run: c => { if (chance(0.02 * (1 + c.stats.luck / 50))) { const g = Math.round(ri(10000, 200000) * country(c).econ); money(c, g); ui.log(`I won the lottery: ${fmtMoney(c, g)}!`, 'big'); ui.fx('milestone'); } } },

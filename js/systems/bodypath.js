@@ -5,7 +5,7 @@ import { ri, pick, chance, clamp } from '../core/rng.js';
 import { stat, addItem } from './life.js';
 import { BODY_TIERS } from '../data/bodypath.js';
 import { ENEMIES } from '../data/combat.js';
-import { onBodyPath, bodyTier } from './path.js';
+import { onBodyPath, bodyTier, knowsSevered } from './path.js';
 import { addMuscle } from './body.js';
 import { traitMult } from './traits.js';
 
@@ -14,8 +14,8 @@ export function startPath(c, why) {
   c.path = 'body'; c.bodyPath = { tier: 0, prog: why === 'born' ? 30 : 0, wins: c.wins, gates: c.gatesCleared, since: c.age };
   Object.assign(c.qi, { known: false, realm: 0, stage: 1, qi: 0, manuals: [], techs: [], methods: ['basic'], meridians: 0 });
 }
-export const REJECT = { id: 'reject_qi', cat: 'mind', name: 'Reject your Qi forever (Severed Path)', icon: 'skull', minAge: 12, need: c => !onBodyPath(c) && c.qi.realm <= 4, run: async c => {
-  const ok = await ui.choice({ title: 'The Severed Path', icon: 'skull', text: `Cut every thread of Qi from your body — forever.\n\n• You lose your realm${c.qi.realm ? ` (${c.qi.realm ? 'everything you cultivated' : ''})` : ''}, all Qi arts and methods, and can never cultivate again.\n• In return your body has no ceiling: temper it through nine tiers until it rivals Nascent Souls and beyond.\n• Qi users cannot sense you or press you down with their presence, and your strikes hit them harder.\n• But your lifespan will be far shorter than a cultivator's.`,
+export const REJECT = { id: 'reject_qi', cat: 'mind', name: 'Reject your Qi forever (Severed Path)', icon: 'skull', minAge: 12, need: c => !onBodyPath(c) && c.qi.realm === 0 && knowsSevered(c), run: async c => {
+  const ok = await ui.choice({ title: 'The Severed Path', icon: 'skull', text: `Cut every thread of Qi from your body — forever.\n\n• You can never cultivate Qi — no realms, Qi arts or methods, ever. There is no going back.\n• In return your body has no ceiling: temper it through nine tiers until it rivals Nascent Souls and beyond.\n• Qi users cannot sense you or press you down with their presence, and your strikes hit them harder.\n• But your lifespan will be far shorter than a cultivator's.`,
     options: [{ label: 'Sever it all', value: true }, { label: 'Not yet', value: false, ghost: true }] });
   if (!ok) return null;
   const hadSect = c.sect && !['own', 'iron'].includes(c.sect);
@@ -62,3 +62,17 @@ export function bodyYear(c) {
   if (b.prog >= bodyTier(c).need && b.tier < BODY_TIERS.length - 1 && !b.readyNoted) { b.readyNoted = b.tier; ui.log('My body is ready for its next Trial (Training activities).', 'qi'); }
   if (b.readyNoted !== undefined && b.readyNoted !== b.tier) delete b.readyNoted;
 }
+
+// ---- how you first hear of the Severed Path (it has to be learned from someone)
+export const SEVERED_EVENTS = [
+  { id: 'severed_wanderer', cond: c => c.age >= 10 && c.age <= 35 && c.qi.realm === 0 && !knowsSevered(c), w: 0.3, run: async c => {
+      const v = await ui.choice({ title: 'The Man Without Qi', icon: 'fist', text: 'In a back-alley fight pit, a scarred mortal breaks a Qi Condensation cultivator\'s arm with his bare hand. Afterwards he notices you staring.\n"They can\'t feel me coming. I tore the Qi out of myself years ago. Want to know how?"', options: [{ label: 'Listen to him', value: true }, { label: 'Walk away', value: false, ghost: true }] });
+      if (!v) return ui.log('I walked away from the man without Qi. Some doors only open once.');
+      c.flags.severedLore = 'wanderer'; ui.log('The scarred man told me of the Severed Path: reject Qi forever, and temper the body until it rivals cultivators. (Severed Path tab)', 'qi'); } },
+  { id: 'severed_scroll', cond: c => c.age >= 12 && c.qi.realm === 0 && !knowsSevered(c) && (c.counts.library || c.counts.explore_alleys), w: 0.25, run: c => {
+      c.flags.severedLore = 'scroll'; ui.log('Between two dusty books I found a scroll titled "On Cutting the Thread" — a manual for rejecting Qi and forging the body instead. (Severed Path tab)', 'qi'); } },
+  { id: 'severed_syndicate', cond: c => c.sect === 'iron' && c.qi.realm === 0 && !knowsSevered(c), w: 1.5, run: c => {
+      c.flags.severedLore = 'iron'; ui.log('An old enforcer of the Iron Fist Syndicate showed me his secret: he has no Qi at all. "The Severed Path," he called it. (Severed Path tab)', 'qi'); } },
+  { id: 'severed_master', cond: c => c.qi.realm === 0 && !knowsSevered(c) && Object.values(c.martial || {}).some(x => x >= 22), w: 1, run: c => {
+      c.flags.severedLore = 'dojo'; ui.log('My martial arts master pulled me aside after class: "You have a body that could walk the Severed Path — if you\'re willing to give up Qi forever." (Severed Path tab)', 'qi'); } },
+];

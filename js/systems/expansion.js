@@ -23,7 +23,7 @@ import { MARTIAL, SWITCH_ART, PRIVATE, MIGRATE, schoolYear, CHILDHOOD, cloudBonu
 import { portfolioYear, migrateStocks } from './market.js';
 import { ownSectYear } from './factions.js';
 import { META } from '../core/state.js';
-import { REJECT, BODY_ACTS, bodyYear, startPath } from './bodypath.js';
+import { REJECT, BODY_ACTS, bodyYear, startPath, SEVERED_EVENTS } from './bodypath.js';
 import { ACHIEVEMENTS, ACH_BY_ID } from '../data/achievements.js';
 
 // ---- traits
@@ -59,7 +59,7 @@ ACTIVITIES.push(
 // ---- events
 const gs = EVENTS.find(e => e.id === 'gate_spawn');
 if (gs) { Object.defineProperty(gs, 'w', { get: () => newsMult('gate_surge') ? 12 : 5 }); gs.run = c => { spawnGate(c); }; }
-EVENTS.push(
+EVENTS.push(...SEVERED_EVENTS,
   { id: 'ruins', cond: c => c.age >= 16, w: 0.25, run: async c => {
       const v = await ui.choice({ title: 'Collapsed Ruins', icon: 'chest', text: 'A landslide has exposed the corner of an ancient storehouse. Something glints under the rubble.', options: [{ label: 'Dig carefully', value: 'dig' }, { label: 'Leave it', value: false }] });
       if (!v) return ui.log('I left the ruins alone.');

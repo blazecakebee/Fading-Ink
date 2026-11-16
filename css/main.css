@@ -446,7 +446,7 @@ body:not([data-theme='clean']):not([data-theme='parchment']):not([data-theme='pa
 .wound { stroke: #00000066; stroke-width: 1.6; stroke-linecap: round; pointer-events: none; } .wound.scar { stroke: #6a6a7a; } .wound.burn { stroke: #a8320f88; } .wound.fracture { stroke: #3a0a0a; stroke-dasharray: 1 1; }
 .body-legend { display: flex; flex-wrap: wrap; gap: 6px 10px; justify-content: center; color: #c9d1e0; } .body-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: middle; }
 .body-list { display: flex; flex-direction: column; gap: 8px; max-height: 520px; overflow: auto; }
-.blist-part { background: #121826; border: 1px solid #ffffff12; border-radius: 10px; overflow: hidden; }
+.blist-part { flex: none; background: #121826; border: 1px solid #ffffff12; border-radius: 10px; overflow: hidden; }
 .blist-head { display: flex; align-items: center; gap: 10px; padding: 6px 10px; color: #ffd25a; } .blist-head b { flex: none; }
 .blist-bar { flex: 1; height: 5px; background: #ffffff14; border-radius: 99px; overflow: hidden; } .blist-bar i { display: block; height: 100%; }
 .blist-inj { padding: 6px 12px; color: #f0f3fa; background: linear-gradient(90deg, #7a141455, transparent); border-top: 1px solid #ffffff0a; display: flex; gap: 6px; align-items: center; }
