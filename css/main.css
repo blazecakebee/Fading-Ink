@@ -680,3 +680,21 @@ details.chron > summary { list-style: none; cursor: pointer; } details.chron > s
 details.chron:not([open]) > summary h3::after { content: ' ▸'; }
 .batch select { background: var(--panel); color: var(--text); border: 1px solid var(--border-soft); border-radius: 6px; padding: 3px 6px; }
 #agebar { justify-content: flex-start; } #agebar .budget { margin-left: auto; }
+/* v0.9.1 Sect & Guild */
+.fac-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 14px; }
+.fac-tabs button { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 99px; border: 1px solid var(--border-soft); background: var(--panel2); color: var(--text); cursor: pointer; font-weight: 700; }
+.fac-tabs button.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); } .fac-tabs .n { background: var(--accent); color: var(--btn-text, #111); border-radius: 99px; padding: 0 7px; font-size: .75rem; }
+.fac-hero { display: flex; gap: 14px; align-items: flex-start; padding: 14px; margin-bottom: 12px; border-radius: var(--radius); border: 1px solid var(--border-soft); border-left: 4px solid var(--fc); background: linear-gradient(120deg, color-mix(in srgb, var(--fc) 14%, transparent), var(--panel2) 55%); }
+.fac-emblem { flex: none; width: 58px; height: 58px; border-radius: 14px; display: grid; place-items: center; font-size: 1.9rem; font-weight: 900; font-family: serif; color: var(--fc); border: 2px solid var(--fc); background: color-mix(in srgb, var(--fc) 12%, transparent); }
+.fac-title { font-size: 1.35rem; } .fac-badge { flex: none; padding: 4px 10px; border-radius: 99px; border: 1px solid var(--fc); color: var(--fc); font-weight: 800; font-size: .8rem; }
+.fac-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin-top: 10px; }
+.fac-tile { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border-radius: 8px; background: var(--panel); border: 1px solid var(--border-soft); }
+.fac-next { margin-top: 10px; display: grid; gap: 6px; } .fac-prog .muted { display: flex; justify-content: space-between; }
+.fac-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; margin-bottom: 10px; } .fac-grid.small-cards { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+.fac-mission { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; min-height: 120px; border-radius: var(--radius); background: var(--panel2); border: 1px solid var(--border-soft); border-top: 3px solid var(--dc, var(--border)); }
+.fac-mission.done { opacity: .55; } .diff-pill { display: inline-block; padding: 0 8px; border-radius: 99px; font-size: .72rem; font-weight: 800; color: #111; background: var(--dc, #b9c0ca); }
+.fac-rel { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 8px; background: var(--panel2); border: 1px solid var(--border-soft); }
+.fac-h { margin: 14px 0 8px; } .fac-req { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.fac-disc { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px; margin: 8px 0; border-radius: var(--radius); background: var(--panel2); border: 1px solid var(--border-soft); }
+.lvl-pips { display: flex; gap: 4px; margin-top: 3px; } .lvl-pips i { width: 14px; height: 6px; border-radius: 3px; background: var(--border-soft); } .lvl-pips i.on { background: var(--accent); }
+.fac-title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } .fac-hero .grow { flex: 1; }

@@ -1,7 +1,12 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.0';
+export const VERSION = '0.9.1';
 export const CHANGELOG = [
+  { v: '0.9.1', date: '2026-11-16', title: 'Sect & Guild, redesigned', notes: [
+    'The Sect & Guild tab has been rebuilt to match the rest of the game. Each organisation gets a header card with its emblem, your rank, stat tiles and a progress bar to your next rank.',
+    'Missions, Guild contracts, the Exchange and Sect Halls are now card grids, with colour-coded difficulty and level pips for halls. Relations show as tidy cards, and Guild requirements as chips.',
+    'The section tabs are icon pills, and the Missions tab shows how many missions you have left.',
+  ] },
   { v: '0.9.0', date: '2026-11-16', title: 'A cleaner screen', notes: [
     'Sidebar: tabs are grouped into collapsible drawers (Self & Body, Progression, World & Social, Economy & Action, Game). They remember whether they\'re open, and a closed drawer shows a badge if something inside needs you.',
     'Life tab: pin up to 6 actions (☆) to a quick bar at the top. "Repeat routine" re-runs your most-used actions until you\'re out of actions, and the batch slider does one action several times in one go. Risky actions (crime, adventure) are marked in red.',

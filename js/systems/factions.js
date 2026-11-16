@@ -178,7 +178,7 @@ export function disciplesYear(c) {
 
 // ---------------- Hunter Guild
 export const GUILD_RANKS = ['E', 'D', 'C', 'B', 'A', 'S', 'SS', 'SSS'];
-const MERIT = [0, 60, 180, 400, 800, 1500, 3000, 6000];
+export const MERIT = [0, 60, 180, 400, 800, 1500, 3000, 6000];
 export function guildJoinReq(c) {
   const why = [];
   if (c.age < 16) why.push('be 16 or older');

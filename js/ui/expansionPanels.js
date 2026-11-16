@@ -77,10 +77,10 @@ function missionRow(c, m, i) {
 function disciplesBox(c) {
   const slots = F.discipleSlots(c); if (!slots) return card(h('h3', {}, 'Personal disciples'), h('span', { class: 'muted small' }, 'Become a Core Disciple (or found your own sect) to take personal disciples.'));
   const list = c.disciples || [];
-  const act = (label, f, d) => h('button', { class: 'btn ghost', disabled: c.social <= 0, onclick: () => R.run({ id: 'disciple', cost: 's', run: cc => f(cc, d) }) }, label);
+  const act = (label, f, d) => h('button', { class: 'btn ghost mini', disabled: c.social <= 0, onclick: () => R.run({ id: 'disciple', cost: 's', run: cc => f(cc, d) }) }, label);
   return card(h('h3', {}, `Personal disciples (${list.length}/${slots})`),
     h('p', { class: 'muted small' }, 'Teach them (💬1) and they grow; ignore them and loyalty sours — disloyal disciples betray you. Assigned disciples earn contribution each year and fight beside you in sect wars.'),
-    ...list.map(d => h('div', { class: 'row', style: { gap: '10px', marginBottom: '8px', alignItems: 'center', flexWrap: 'wrap' } }, portraitFor({ genes: d.genes, age: d.age, gender: d.gender, realm: d.realm }, 48),
+    ...list.map(d => h('div', { class: 'fac-disc' }, portraitFor({ genes: d.genes, age: d.age, gender: d.gender, realm: d.realm }, 48),
       h('div', { style: { flex: 1, minWidth: '160px' } }, h('b', {}, `${d.first} ${d.last}`), h('span', { class: 'muted small' }, ` · ${F.discRank(d)} disciple`), h('div', { class: 'muted small' }, `Age ${d.age} · ${REALMS[d.realm].name}${d.realm ? ` (${Math.round(d.prog)}%)` : ` (${Math.round(d.prog)}% to Qi Refining)`} · talent ${d.talent} · loyalty ${d.loyalty}`), h('div', {}, ...geneChips(d.dna))),
       act('Instruct', F.teach, d), act('Spar', F.sparDisciple, d), act('Gift pill', F.giftDisciple, d),
       (pr => h('button', { class: 'btn ghost', disabled: !pr.ok, title: pr.ok ? '' : pr.why.join(', '), onclick: () => R.run({ id: 'promote_disciple', cost: 'free', run: cc => F.promoteDisciple(cc, d) }) }, (d.rank || 0) >= 3 ? 'Elder' : 'Promote'))(F.canPromoteDisciple(c, d)),
@@ -92,51 +92,62 @@ function disciplesBox(c) {
       if (v == null || v < 0) return 'I found no one worth teaching this year.';
       return { text: F.recruit(cc, cand[v]), cls: 'good', big: true }; } }) }, '⚡ Scout for disciples') : null);
 }
+// v0.9.1 Sect & Guild, rebuilt: a header card per organisation, stat tiles, progress bars and card grids
+const tile = (ic, label, val) => h('div', { class: 'fac-tile' }, icon(ic, 'sm'), h('div', {}, h('div', { class: 'muted small' }, label), h('b', {}, val)));
+const progress = (cur, need, label) => need && isFinite(need) ? h('div', { class: 'fac-prog' }, h('div', { class: 'muted small' }, label, h('span', {}, ` ${Math.min(cur, need)}/${need}`)), h('div', { class: 'bar' }, h('i', { style: { width: Math.min(100, cur / need * 100) + '%', '--c': 'var(--accent)' } }))) : null;
+function facHero(glyph, title, sub, badge, color, ...rest) {
+  const el = h('div', { class: 'fac-hero' }, h('div', { class: 'fac-emblem' }, glyph), h('div', { class: 'grow', style: { minWidth: 0 } }, h('div', { class: 'fac-title display' }, title, badge ? h('span', { class: 'fac-badge' }, badge) : null), h('div', { class: 'muted small' }, sub), ...rest));
+  el.style.setProperty('--fc', color || 'var(--accent)'); return el;
+}
+const DIFF_COL = { Easy: '#5fd38a', Fair: '#b9c0ca', Hard: '#ff8a3a' };
+function missionCard(c, m) {
+  const I = F.missionInfo(c, m), dc = DIFF_COL[I.diff] || 'var(--muted)';
+  const el = h('div', { class: 'fac-mission' + (m.done ? ' done' : '') }, h('div', { class: 'row', style: { gap: '8px' } }, icon(m.icon, 'lg'), h('div', { class: 'grow' }, h('b', {}, m.name), h('div', {}, h('span', { class: 'diff-pill' }, I.diff), h('span', { class: 'muted small' }, ` foes ~${I.enemy}`)))),
+    m.check ? h('div', { class: 'muted small' }, `Tests ${m.check.join(' & ')}`) : null,
+    h('div', { class: 'row', style: { justifyContent: 'space-between', marginTop: 'auto' } }, h('span', { class: 'small good' }, m.org === 'sect' ? `+${I.contrib} contribution` : `+${I.merit} merit · ${fmtMoney(c, I.money)}`),
+      h('button', { class: 'btn mini', disabled: m.done || c.actions <= 0 || !c.alive, onclick: () => R.run({ id: 'mission_' + m.org, cat: 'adventure', run: cc => F.runMission(cc, m) }) }, m.done ? 'Done ✓' : 'Go ⚡1')));
+  el.style.setProperty('--dc', dc); return el;
+}
 export function factionsTab() {
-  const c = G.char, B = F.boards(c);
-  const tabs = [['overview', 'Overview'], ...(c.sect ? [['missions', 'Missions'], ['disciples', 'Disciples'], ['exchange', 'Relations & Exchange']] : []), ...(F.isOwn(c) ? [['halls', 'Sect Halls']] : []), ['guild', 'Hunter Guild']];
+  const c = G.char, B = F.boards(c), own = F.isOwn(c);
+  const tabs = [['overview', 'Overview', 'crown'], ...(c.sect ? [['missions', 'Missions', 'gates'], ['disciples', 'Disciples', 'people'], ['exchange', 'Relations', 'shop']] : []), ...(own ? [['halls', 'Halls', 'anvil']] : []), ['guild', 'Hunter Guild', 'combat']];
   let sub = G.ui.facTab || 'overview'; if (!tabs.some(t => t[0] === sub)) sub = 'overview';
-  const nav = h('div', { class: 'seg', style: { flexWrap: 'wrap', margin: '6px 0 12px' } }, tabs.map(([k, v]) => h('button', { class: sub === k ? 'on' : '', onclick: () => { G.ui.facTab = k; R.render(); } }, v)));
+  const nav = h('div', { class: 'fac-tabs' }, tabs.map(([k, v, ic]) => h('button', { class: sub === k ? 'on' : '', onclick: () => { G.ui.facTab = k; R.render(); } }, icon(ic, 'sm'), v, k === 'missions' ? h('span', { class: 'n' }, B.sect.filter(m => !m.done).length) : null)));
   const out = [h('h2', { class: 'display' }, 'Sect & Guild'), nav];
+  const sectHero = () => { const nx = F.nextRank(c), dis = c.disciples || [];
+    return facHero(own ? '宗' : '門', F.sectLabel(c), own ? `Founded at age ${c.ownSect.founded}` : 'Your sect', F.rankName(c), null,
+      h('div', { class: 'fac-tiles' }, own ? tile('people', 'Members', c.ownSect.disciples) : tile('star', 'Contribution', c.contrib || 0), tile('education', 'Disciples', `${dis.length}/${F.discipleSlots(c)}`), tile('gates', 'Missions left', B.sect.filter(m => !m.done).length), tile('bell', 'Fame', (c.fame || 0).toLocaleString())),
+      nx ? h('div', { class: 'fac-next' }, progress(c.contrib || 0, nx.R.contrib, `Next rank: ${nx.R.name}`), nx.ok ? h('button', { class: 'btn', onclick: () => R.run({ id: 'promote', cost: 'free', run: cc => F.promote(cc) }) }, 'Request promotion') : h('div', { class: 'muted small' }, 'Needs ', nx.why.join(' · '))) : null); };
+  const guildHero = () => { const g = c.guild, nx = F.guildNext(c);
+    return facHero(F.GUILD_RANKS[g.rank], 'Hunter Guild Association', `${F.GUILD_RANKS[g.rank]}-rank Hunter${g.elite ? ' · Elite' : ''} · retainer ${fmtMoney(c, F.guildSalary(c))}/yr`, null, '#4fa3ff',
+      h('div', { class: 'fac-tiles' }, tile('star', 'Merit', g.merit), tile('gates', 'Gates cleared', c.gatesCleared), tile('trophy', 'Bounties', c.bountiesDone || 0), tile('combat', 'Contracts left', B.guild.filter(m => !m.done).length)),
+      nx ? h('div', { class: 'fac-next' }, progress(g.merit, F.MERIT?.[g.rank + 1], `Next: ${nx.name}-rank`), nx.ok ? h('button', { class: 'btn', onclick: () => R.run({ id: 'gpromote', cost: 'free', run: cc => F.guildPromote(cc) }) }, 'Take the promotion exam') : h('div', { class: 'muted small' }, 'Needs ', nx.why.join(' · '))) : h('div', { class: 'small good' }, 'Highest rank.')); };
   if (sub === 'overview') {
-    if (c.sect) {
-      const nx = F.nextRank(c), dis = c.disciples || [];
-      out.push(card(h('h3', {}, F.sectLabel(c)), h('table', { class: 'kv' }, [['Your rank', F.rankName(c)], ...(F.isOwn(c) ? [['Sect members', c.ownSect.disciples], ['Founded', `age ${c.ownSect.founded}`]] : [['Contribution', c.contrib || 0]]), ['Personal disciples', `${dis.length}/${F.discipleSlots(c)}`], ['Missions this year', `${B.sect.filter(m => m.done).length}/${B.sect.length}`], ['At war with', F.others(c).filter(x => c.sectRel?.[x.id] === 'war').map(x => x.name).join(', ') || 'nobody']].map(([k, v]) => h('tr', {}, h('td', {}, k), h('td', {}, String(v))))),
-        nx ? h('div', { class: 'small', style: { marginTop: '8px' } }, `Next: ${nx.R.name} — `, nx.ok ? h('button', { class: 'btn', onclick: () => R.run({ id: 'promote', cost: 'free', run: cc => F.promote(cc) }) }, 'Request promotion') : h('span', { class: 'muted' }, nx.why.join(', '))) : null,
-        h('div', { class: 'muted small', style: { marginTop: '6px' } }, F.isOwn(c) ? 'As Sect Master you can build halls, hold recruitment drives and promote your disciples.' : 'Missions earn contribution and stipends grow with rank. Contribution below -30, or years of idleness as an outer disciple, gets you expelled.')));
-    } else out.push(card(h('h3', {}, 'No sect'), h('span', { class: 'muted small' }, c.qi.known ? 'Seek a hidden sect from the Cultivation activities, or found your own from the Cultivation tab.' : 'You know nothing of sects… yet.')));
-    out.push(card(h('h3', {}, 'Hunter Guild'), c.guild ? h('div', {}, `${F.GUILD_RANKS[c.guild.rank]}-rank Hunter · ${c.guild.merit} merit`) : h('span', { class: 'muted small' }, 'Not a member. See the Hunter Guild tab.')));
+    out.push(c.sect ? sectHero() : facHero('無', 'No sect', c.qi.known ? 'Seek a hidden sect (Cultivation actions), or found your own from the Cultivation tab.' : 'You know nothing of sects… yet.', null, 'var(--muted)'));
+    out.push(c.guild ? guildHero() : facHero('?', 'Hunter Guild', 'Not a member yet — see the Hunter Guild tab.', null, 'var(--muted)'));
   }
-  if (sub === 'missions') out.push(h('p', { class: 'muted small' }, 'Three missions a year. Each costs 1 action.'), ...B.sect.map((m, i) => missionRow(c, m, i)));
+  if (sub === 'missions') out.push(h('p', { class: 'muted small' }, 'Three missions a year, 1 action each. They earn contribution; failing them costs it.'), h('div', { class: 'fac-grid' }, B.sect.map(m => missionCard(c, m))));
   if (sub === 'disciples') out.push(disciplesBox(c));
   if (sub === 'exchange') {
     F.ensureRels(c); const ex = F.exchange(c);
-    out.push(card(h('h3', {}, 'Relations'), h('div', { class: 'small' }, ...F.others(c).map(x => h('div', { style: { margin: '3px 0' } }, x.name, ' ', relPill(c.sectRel[x.id])))),
-      h('p', { class: 'muted small' }, 'Allied sects sell for 20% less, hostile ones for 35% more; sects at war won\'t trade at all. Missions against rivals sour relations.')),
-      card(h('h3', {}, 'Exchange'), ex.length ? h('div', {}, ...ex.map((o, i) => h('div', { class: 'row', style: { justifyContent: 'space-between', marginBottom: '4px' } },
-        h('span', {}, icon(ITEMS[o.id].icon, 'sm'), ` ${ITEMS[o.id].name} `, h('span', { class: 'muted small' }, `· ${SECTS.find(x => x.id === o.sect).name} · ${o.left} left`)),
-        h('button', { class: 'btn ghost', disabled: o.left <= 0 || c.money < o.price, onclick: () => { const t = F.buyOffer(c, i); if (t) R.run({ id: 'buy_ex', cost: 'free', run: () => t }); } }, fmtMoney(c, o.price))))) : h('span', { class: 'muted small' }, 'Nobody will trade with you this year.')));
+    out.push(h('h3', { class: 'display fac-h' }, 'Relations'), h('div', { class: 'fac-grid small-cards' }, F.others(c).map(x => h('div', { class: 'fac-rel' }, h('b', {}, x.name), relPill(c.sectRel[x.id])))),
+      h('p', { class: 'muted small' }, 'Allied sects sell for 20% less, hostile ones for 35% more; sects at war won\'t trade. Missions against rivals sour relations.'),
+      h('h3', { class: 'display fac-h' }, 'Exchange'), ex.length ? h('div', { class: 'fac-grid' }, ex.map((o, i) => h('div', { class: 'fac-mission' }, h('div', { class: 'row', style: { gap: '8px' } }, icon(ITEMS[o.id].icon, 'lg'), h('div', { class: 'grow' }, h('b', {}, ITEMS[o.id].name), h('div', { class: 'muted small' }, `${SECTS.find(x => x.id === o.sect).name} · ${o.left} left`))),
+        h('button', { class: 'btn mini', style: { marginTop: 'auto' }, disabled: o.left <= 0 || c.money < o.price, onclick: () => { const t = F.buyOffer(c, i); if (t) R.run({ id: 'buy_ex', cost: 'free', run: () => t }); } }, `Buy · ${fmtMoney(c, o.price)}`)))) : h('p', { class: 'muted small' }, 'Nobody will trade with you this year.'));
   }
   if (sub === 'halls') {
     const o = c.ownSect; o.halls ||= {};
-    out.push(card(h('h3', {}, 'Recruitment'), h('p', { class: 'muted small' }, `Members: ${o.disciples}. Hold a drive to attract more (more members = bigger yearly tithes).`),
-      h('button', { class: 'btn', disabled: c.actions <= 0, onclick: () => R.run({ id: 'recruit_drive', cat: 'cultivation', run: cc => F.recruitDrive(cc) || 'I couldn\'t afford a recruitment drive.' }) }, '⚡ Hold a recruitment drive')),
-      h('div', { class: 'grid2' }, Object.entries(F.HALLS).map(([id, H]) => { const lvl = o.halls[id] || 0, cost = F.hallCost(c, lvl);
-        return card(h('div', {}, icon(H.icon, 'sm'), ' ', h('b', {}, `${H.name} `), h('span', { class: 'muted small' }, `Lv ${lvl}/3`)), h('div', { class: 'muted small' }, H.desc),
-          h('button', { class: 'btn mini', style: { marginTop: '6px' }, disabled: lvl >= 3 || c.money < cost, onclick: () => R.run({ id: 'build_hall', cost: 'free', run: cc => F.buildHall(cc, id) }) }, lvl >= 3 ? 'Maxed' : `Build · ${fmtMoney(c, cost)}`)); })));
+    out.push(facHero('宗', o.name || F.sectLabel(c), `${o.disciples} members · more members, bigger yearly tithes`, 'Sect Master', null,
+      h('button', { class: 'btn', style: { marginTop: '8px' }, disabled: c.actions <= 0, onclick: () => R.run({ id: 'recruit_drive', cat: 'cultivation', run: cc => F.recruitDrive(cc) || 'I couldn\'t afford a recruitment drive.' }) }, 'Hold a recruitment drive ⚡1')),
+      h('div', { class: 'fac-grid' }, Object.entries(F.HALLS).map(([id, H]) => { const lvl = o.halls[id] || 0, cost = F.hallCost(c, lvl);
+        return h('div', { class: 'fac-mission' }, h('div', { class: 'row', style: { gap: '8px' } }, icon(H.icon, 'lg'), h('div', { class: 'grow' }, h('b', {}, H.name), h('div', { class: 'lvl-pips' }, [0, 1, 2].map(k => h('i', { class: k < lvl ? 'on' : '' }))))), h('div', { class: 'muted small' }, H.desc),
+          h('button', { class: 'btn mini', style: { marginTop: 'auto' }, disabled: lvl >= 3 || c.money < cost, onclick: () => R.run({ id: 'build_hall', cost: 'free', run: cc => F.buildHall(cc, id) }) }, lvl >= 3 ? 'Maxed' : `Build · ${fmtMoney(c, cost)}`)); })));
   }
   if (sub === 'guild') {
-    if (c.guild) {
-      const nx = F.guildNext(c);
-      out.push(card(h('h3', {}, 'Hunter Guild'), h('div', {}, h('b', {}, `${F.GUILD_RANKS[c.guild.rank]}-rank Hunter`), ` · ${c.guild.merit} merit · retainer ${fmtMoney(c, F.guildSalary(c))}/yr`),
-        nx ? h('div', { class: 'small', style: { marginTop: '6px' } }, `Next: ${nx.name}-rank — `, nx.ok ? h('button', { class: 'btn', onclick: () => R.run({ id: 'gpromote', cost: 'free', run: cc => F.guildPromote(cc) }) }, 'Take the promotion exam') : h('span', { class: 'muted' }, nx.why.join(', '))) : h('div', { class: 'small' }, 'You stand at the very top of the Guild.'),
-        h('div', { class: 'muted small' }, 'Clearing Gates near your rank also earns merit. Mortal "Rankers" can climb to B-rank on Battle Knowledge alone.')));
-      out.push(h('h3', { class: 'display', style: { margin: '12px 0 6px' } }, 'Guild contracts'), ...B.guild.map((m, i) => missionRow(c, m, i)));
-    } else {
-      const why = F.guildJoinReq(c);
-      out.push(card(h('h3', {}, 'Hunter Guild'), h('p', { class: 'muted small' }, 'The Guild Association licenses Gate hunters — cultivators and mortal Rankers alike. Entry is brutal: you must meet every requirement and then beat an examiner at least as strong as you, with no fleeing.'),
-        why.length ? h('div', { class: 'small' }, 'Requirements: ', why.join(' · ')) : h('button', { class: 'btn', disabled: c.actions <= 0, onclick: () => R.run({ id: 'guild_trial', cat: 'adventure', run: cc => F.guildTrial(cc) }) }, '⚡ Take the entrance trial')));
-    }
+    if (c.guild) out.push(guildHero(), h('h3', { class: 'display fac-h' }, 'Guild contracts'), h('div', { class: 'fac-grid' }, B.guild.map(m => missionCard(c, m))), h('p', { class: 'muted small' }, 'Clearing Gates near your rank also earns merit. Mortal "Rankers" can climb to B-rank on Battle Knowledge alone.'));
+    else { const why = F.guildJoinReq(c);
+      out.push(facHero('?', 'Hunter Guild Association', 'Licenses Gate hunters — cultivators and mortal Rankers alike. Meet every requirement, then beat an examiner at least as strong as you. No fleeing.', null, '#4fa3ff',
+        why.length ? h('div', { class: 'fac-req' }, why.map(w => h('span', { class: 'chip' }, w))) : h('button', { class: 'btn', style: { marginTop: '8px' }, disabled: c.actions <= 0, onclick: () => R.run({ id: 'guild_trial', cat: 'adventure', run: cc => F.guildTrial(cc) }) }, 'Take the entrance trial ⚡1'))); }
   }
   return out;
 }
