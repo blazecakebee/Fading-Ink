@@ -1,7 +1,12 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.8.1';
+export const VERSION = '0.8.2';
 export const CHANGELOG = [
+  { v: '0.8.2', date: '2026-11-15', title: 'Colourful people', notes: [
+    'The People tab is colour-coded: family in amber, love in pink, friends in green, school and work in blue, teachers and agents in purple, enemies in red. Everyone shows ♀ or ♂ next to their name.',
+    'Every social action now says what happened: what you talked about (it depends on their age), what you trained, what you argued about, what gift you gave, and so on.',
+    'Fixed: coloured bars across the game (stats, stamina, relationships and more) all showed the same default colour. They now use their proper colours.',
+  ] },
   { v: '0.8.1', date: '2026-11-15', title: 'A tougher job market', notes: [
     'Salaries cut by about 30% across the board. The top jobs were cut harder: Doctor, Lawyer, Software Engineer, Manager, Architect, and above all Sect Enforcer and Sect Elder.',
     'Only some jobs are hiring each year, and the best-paid ones open rarely. The listings change every year, and getting hired is harder.',

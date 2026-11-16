@@ -587,3 +587,11 @@ body:not([data-theme='clean']):not([data-theme='parchment']):not([data-theme='pa
 .kv-key { display: inline-flex; align-items: center; gap: 6px; } .kv-key .icon { flex: none; opacity: .9; }
 .grade { display: inline-block; font-size: .7rem; font-weight: 700; padding: 1px 6px; margin-right: 6px; border-radius: 4px; color: #111; background: var(--gc); vertical-align: middle; }
 .card.item.q-hi { box-shadow: inset 0 0 0 1px #ffd36f66; } .card.item.q-lo { opacity: .9; }
+
+/* v0.8.2 people colour-coded by group */
+.grp-fam { --grp: #ffb02e; } .grp-love { --grp: #ff6fa8; } .grp-friend { --grp: #4fd18b; } .grp-work { --grp: #6fa8ff; } .grp-teach { --grp: #b48cff; } .grp-enemy { --grp: #ff5a5a; }
+.card.person[class*="grp-"] { border-left: 4px solid var(--grp); }
+.card.person[class*="grp-"] b { color: color-mix(in srgb, var(--grp) 35%, currentColor); }
+.grp-h { display: flex; align-items: center; gap: 8px; } .grp-h::before { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--grp); box-shadow: 0 0 6px var(--grp); }
+.grp-h.fam { --grp: #ffb02e; } .grp-h.love { --grp: #ff6fa8; } .grp-h.friend { --grp: #4fd18b; } .grp-h.work { --grp: #6fa8ff; } .grp-h.teach { --grp: #b48cff; } .grp-h.enemy { --grp: #ff5a5a; }
+.gsym { font-weight: 700; } .gsym.f { color: #ff8fc8; } .gsym.m { color: #7fb8ff; }

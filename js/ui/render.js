@@ -318,14 +318,15 @@ export const TABS = {
 
   people() {
     const c = G.char;
-    const groups = [['Family', p => isFamily(p) && p.role !== 'Spouse'], ['Love', p => ['Spouse', 'Partner', 'Crush', 'Ex'].includes(p.role)], ['Friends & Players', p => p.role === 'Friend' || p.role === 'Co-op Friend'], ['School & Work', p => ['Classmate', 'Coworker', 'Acquaintance'].includes(p.role)], ['Teachers & Agents', p => !!p.trainer || !!p.agent], ['Enemies', p => p.role === 'Enemy']];
+    const groups = [['Family', p => isFamily(p) && p.role !== 'Spouse', 'fam'], ['Love', p => ['Spouse', 'Partner', 'Crush', 'Ex'].includes(p.role), 'love'], ['Friends & Players', p => p.role === 'Friend' || p.role === 'Co-op Friend', 'friend'], ['School & Work', p => ['Classmate', 'Coworker', 'Acquaintance'].includes(p.role), 'work'], ['Teachers & Agents', p => !!p.trainer || !!p.agent, 'teach'], ['Enemies', p => p.role === 'Enemy', 'enemy']];
+    const gSym = p => h('span', { class: 'gsym ' + (p.gender === 'F' ? 'f' : 'm'), title: p.gender === 'F' ? 'Female' : 'Male' }, p.gender === 'F' ? ' ♀' : ' ♂');
     const bl = bondList(c), best = bonds(c).best;
     return [h('h2', { class: 'display' }, 'People'), h('p', { class: 'muted' }, `Social actions left: ${c.social}/${c.maxSocial || SOCIAL_PER_YEAR}. Click someone to interact. Socialising trains Charisma; people at 75%+ may gift you things or teach you skills, recipes and cultivation methods.`),
       h('div', { class: 'box' }, h('h3', {}, 'Bonds'), bl.length ? bl.map(b => h('div', { style: { margin: '4px 0' } }, h('b', {}, `${b.label}: ${b.who.first}`), h('span', { class: 'muted' }, ' — ' + b.perks.join(' · ')))) : h('div', { class: 'muted' }, 'Get a friend to 80% closeness to make them your Best Friend, or a partner to 50%+, to unlock training, study, Qi and salary bonuses.')),
-      ...groups.map(([g, f]) => { const ps = c.people.filter(f); if (!ps.length) return null;
-        return [h('h3', { class: 'display', style: { margin: '16px 0 8px' } }, g), h('div', { class: 'grid2' }, ps.map(p => h('div', { class: 'card person' + (p.alive ? '' : ' dead'), onclick: () => personModal(p) },
-          h('div', { class: 'pframe' }, portraitFor(p, 52)), h('div', { style: { flex: 1 } }, h('b', {}, best === p ? '★ ' : '', `${p.first} ${p.last}`, p.coop ? h('span', { class: 'online' + (p.online ? ' on' : ''), title: p.online ? 'Player online' : 'Player offline' }, p.online ? ' ● player' : ' ○ player') : null), h('div', { class: 'rel' }, `${p.role} · ${p.age}${p.alive ? '' : ' · deceased'} · ${relLabel(p)}`),
-            h('div', { class: 'bar' }, h('i', { style: { width: p.close + '%', '--c': p.role === 'Enemy' ? 'var(--bad)' : 'var(--good)' } }))))))]; })];
+      ...groups.map(([g, f, cls]) => { const ps = c.people.filter(f); if (!ps.length) return null;
+        return [h('h3', { class: 'display grp-h ' + cls, style: { margin: '16px 0 8px' } }, g), h('div', { class: 'grid2' }, ps.map(p => h('div', { class: `card person grp-${cls}` + (p.alive ? '' : ' dead'), onclick: () => personModal(p) },
+          h('div', { class: 'pframe' }, portraitFor(p, 52)), h('div', { style: { flex: 1 } }, h('b', {}, best === p ? '★ ' : '', `${p.first} ${p.last}`, gSym(p), p.coop ? h('span', { class: 'online' + (p.online ? ' on' : ''), title: p.online ? 'Player online' : 'Player offline' }, p.online ? ' ● player' : ' ○ player') : null), h('div', { class: 'rel' }, `${p.role} · ${p.age}${p.alive ? '' : ' · deceased'} · ${relLabel(p)}`),
+            h('div', { class: 'bar' }, h('i', { style: { width: p.close + '%', '--c': 'var(--grp)' } }))))))]; })];
   },
 
   career() {
