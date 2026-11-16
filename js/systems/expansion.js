@@ -13,6 +13,7 @@ import { REALMS } from '../data/realms.js';
 import { ENEMIES } from '../data/combat.js';
 import { earnTrait } from './traits.js';
 import { ensureDna, grantPoints, childDna, npcDna, geneName } from './genetics.js';
+import { canGetQiIllness, clearQiIllness } from './health.js';
 import { inheritHeirlooms, migrateHeirlooms, gainHeirloom } from './heirlooms.js';
 import { factionsYear } from './factions.js';
 import { newsYear, ensureMatchingGate, spawnGate, birthAnomaly, BIRTH_EVENTS, newsMult } from './world.js';
@@ -104,6 +105,7 @@ HOOKS.inherit.push((old, c, ch) => {
 HOOKS.yearStart.push(c => { newsYear(c); portfolioYear(c); birthYear(c, haveChild); });
 HOOKS.yearEnd.push(async c => {
   grantPoints(c); schoolYear(c); ownSectYear(c); bodyYear(c);
+  if (!canGetQiIllness(c) && clearQiIllness(c)) ui.log('Without cultivated Qi in my body, the Qi sickness simply faded away.', 'good');
   await factionsYear(c);
   if (c.alive) await disputeYear(c);
   ensureMatchingGate(c);
@@ -151,7 +153,7 @@ export async function installExpansion() {
 // ---- save migration for characters from before v0.6.0
 export function migrateExpansion(c) {
   if (!c) return;
-  migrateHeirlooms(c); ensureDna(c); migrateStocks(c); c.closet ||= []; c.outfit ||= {};
+  migrateHeirlooms(c); ensureDna(c); if (!canGetQiIllness(c)) clearQiIllness(c); migrateStocks(c); c.closet ||= []; c.outfit ||= {};
   if (c.sect && c.sectRank == null) { c.sectRank = c.sect === 'own' ? 4 : 0; c.contrib ??= 0; c.flags.sectJoined ??= G.world?.year; }
   for (const p of c.people || []) p.dna ||= npcDna(p.realm || 0);
   // award points for realms already reached

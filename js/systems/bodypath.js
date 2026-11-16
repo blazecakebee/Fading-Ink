@@ -12,6 +12,7 @@ import { traitMult } from './traits.js';
 const T = c => c.bodyPath.tier || 0;
 export function startPath(c, why) {
   c.path = 'body'; c.bodyPath = { tier: 0, prog: why === 'born' ? 30 : 0, wins: c.wins, gates: c.gatesCleared, since: c.age };
+  c.conditions = (c.conditions || []).filter(x => !['qi_deviation', 'corruption', 'meridian_block'].includes(x.id));
   Object.assign(c.qi, { known: false, realm: 0, stage: 1, qi: 0, manuals: [], techs: [], methods: ['basic'], meridians: 0 });
 }
 export const REJECT = { id: 'reject_qi', cat: 'mind', name: 'Reject your Qi forever (Severed Path)', icon: 'skull', minAge: 12, need: c => !onBodyPath(c) && c.qi.realm === 0 && knowsSevered(c), run: async c => {

@@ -1,7 +1,8 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.7.5';
+export const VERSION = '0.7.6';
 export const CHANGELOG = [
+  { v: '0.7.6', date: '2026-11-15', title: 'No Qi, no Qi sickness', notes: ['Qi-born ailments (Demonic Qi Corruption, Qi Deviation Sickness, Blocked Meridians) can now only strike people who have actually begun cultivating. Mortals and the Severed are immune — and any they already had fade away.'] },
   { v: '0.7.5', date: '2026-11-15', title: 'Bionic limbs', notes: ['A prosthetic arm or leg now replaces the whole limb, hand or foot included — no more "foot lost" under a bionic leg.', 'Artificial parts are shown in glowing blue on the body diagram, in the injury list and on your character.'] },
   { v: '0.7.4', date: '2026-11-15', title: 'Action phases & more cinematics', notes: [
     'Heavenly Tribulations are now played: steer a glowing orb (mouse, finger or WASD) through lightning strikes and storms, and touch the bright marks to strike back at the heart of the storm. Each phase has a name, a timer and openings where you choose to press the attack or catch your breath.',

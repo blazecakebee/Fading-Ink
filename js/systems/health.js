@@ -12,9 +12,14 @@ import { bonds } from './people.js';
 export const TRAINABLE = ['strength', 'battle', 'agility', 'smarts', 'charisma'];
 export const has = (c, id) => (c.conditions || []).some(x => x.id === id);
 
+// Qi-born ailments only strike people who actually cultivate Qi: not mortals, not the Severed.
+export const canGetQiIllness = c => c.path !== 'body' && (c.qi?.realm || 0) >= 1;
+export function clearQiIllness(c) { const before = (c.conditions || []).length; c.conditions = (c.conditions || []).filter(x => COND_BY_ID[x.id]?.kind !== 'qi'); return before - c.conditions.length; }
 export function addCondition(c, id, quiet) {
   c.conditions ||= []; if (has(c, id)) return false;
-  const C = COND_BY_ID[id]; c.conditions.push({ id, years: 0, sev: 1 });
+  const C = COND_BY_ID[id];
+  if (C.kind === 'qi' && !canGetQiIllness(c)) return false; // no cultivated Qi (or none at all) → nothing for Qi to go wrong with
+  c.conditions.push({ id, years: 0, sev: 1 });
   if (!quiet) ui.log(`I was diagnosed with ${C.name}.`, C.kind === 'mind' ? 'bad' : 'bad');
   return true;
 }
