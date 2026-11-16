@@ -21,7 +21,7 @@ export function legacyBirth(c) {
   const roll = kind => { const ids = Object.keys(OMENS).filter(id => OMENS[id].kind === kind); return pick(ids); };
   if (chance(OMEN_CHANCE)) c.omens.push(roll('blessing'));
   if (chance(OMEN_CHANCE)) c.omens.push(roll('curse'));
-  for (const id of c.omens) { const O = OMENS[id];
+  for (const id of c.omens) { const O = OMENS[id]; (META.omensFound ||= {})[id] = true; // discovered for the codex
     for (const [k, v] of Object.entries(O.stat || {})) c.stats[k] = clamp((c.stats[k] || 0) + v);
     if (id === 'nl_storm') c.flags.stormBorn = true;
     if (id === 'nl_spoon') { if (['destitute', 'poor'].includes(c.wealth)) c.wealth = 'middle'; c.money += Math.round(3000 * econ); }

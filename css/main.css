@@ -873,3 +873,4 @@ details.chron:not([open]) > summary h3::after { content: ' ▸'; }
 /* v0.9.11 birth omens */
 .omen-chip.blessing { --tc: #ffd36f; } .omen-chip.curse { --tc: #b04a6a; }
 .card.omen.blessing b { color: #ffd36f; } .card.omen.curse b { color: #d0607e; }
+.card.omen.locked { opacity: .55; } .card.omen.locked b { color: var(--muted); }

@@ -55,10 +55,13 @@ export function deathScreen() {
 // v0.9.11 the blessing shop is gone; omens are rolled at birth (read-only list here)
 function blessingShop() {
   const back = refundBlessings(); if (back) save();
-  const list = kind => Object.values(OMENS).filter(o => o.kind === kind);
+  const found = id => !!META.omensFound?.[id] || (G.char?.omens || []).includes(id);
+  const list = kind => Object.entries(OMENS).filter(([, o]) => o.kind === kind).map(([id, o]) => ({ id, ...o }));
   return h('details', { class: 'box', style: { marginTop: '14px' } }, h('summary', {}, h('h3', { style: { display: 'inline' } }, ic('gift', 'sm'), ' Birth omens')),
     h('div', { class: 'muted small' }, `Can't be bought. Every new life or heir has a ${Math.round(OMEN_CHANCE * 100)}% chance to be born with a blessing, and a separate ${Math.round(OMEN_CHANCE * 100)}% chance of a curse.`),
-    h('div', { class: 'grid2', style: { marginTop: '8px' } }, [...list('blessing'), ...list('curse')].map(o => h('div', { class: 'card omen ' + o.kind }, h('b', {}, (o.kind === 'blessing' ? '✦ ' : '✖ ') + o.name), h('div', { class: 'small muted' }, o.desc)))));
+    h('div', { class: 'muted small', style: { marginTop: '4px' } }, `Discovered: ${Object.keys(OMENS).filter(id => found(id)).length} / ${Object.keys(OMENS).length}. An omen's name and effect stay hidden until one of your lives is born with it.`),
+    h('div', { class: 'grid2', style: { marginTop: '8px' } }, [...list('blessing'), ...list('curse')].map(o => found(o.id) ? h('div', { class: 'card omen ' + o.kind }, h('b', {}, (o.kind === 'blessing' ? '✦ ' : '✖ ') + o.name), h('div', { class: 'small muted' }, o.desc))
+      : h('div', { class: 'card omen locked' }, h('b', {}, '??? ' + '▮'.repeat(Math.min(8, Math.ceil(o.name.length / 2)))), h('div', { class: 'small' }, h('i', { class: 'muted' }, `Undiscovered ${o.kind} — its name and effect are hidden.`))))));
 }
 
 // Skill tree: one column per branch, nodes indented under their parent with connecting lines
