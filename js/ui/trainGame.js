@@ -10,17 +10,30 @@ export const GAMES = {
   stride:  { title: 'Find your stride',  how: 'Tap LEFT and RIGHT alternately, in time with the pulse.' },
   kata:    { title: 'Follow the kata',   how: 'Watch the stances, then repeat them in order.' },
   react:   { title: 'Read the strike',   how: 'Tap the matching direction (or press WASD / arrow keys) before the strike lands. 4 strikes.' },
-  breath:  { title: 'Breathe with the Qi', how: 'Tap when the pulsing ring matches the gold circle. 3 breaths.' },
+  breath: { title: 'Follow the breath', how: 'Press and keep your finger on the glowing orb as it circles. Stay with it.' },
   trace:   { title: 'Trace the meridian', how: 'Tap each acupoint while it glows.' },
   order:   { title: 'Speed reading',     how: 'Tap the numbers in order, 1 to 6, as fast as you can.' },
   focus:   { title: 'Hold your focus',   how: 'Hold anywhere to lift the dot, let go to drop it. Stay in the gold band.' },
   stack:   { title: 'Stack the work',    how: 'Tap to drop each sliding block onto the stack. Line them up.' },
   pour:    { title: 'Pour the mould',    how: 'Hold to pour molten metal, let go at the gold line. 3 moulds.' },
   sneak:   { title: 'Don\'t get seen',   how: 'Hold to creep forward — but only while the eye is closed.' },
-  pins:    { title: 'Pick the lock',     how: 'Tap when the lit pin reaches the top. 4 pins.' },
+  pins: { title: 'Pick the lock', how: 'Drag each pin up to the gold shear line and let go right on it. 4 pins.' },
   crowd:   { title: 'Work the crowd',    how: 'Tap the wallets as they pass. Never tap a cop.' },
   glint:   { title: 'Spot the glint',    how: 'Watch where things sparkle, then tap all of those spots.' },
   bite:    { title: 'Wait for the bite', how: 'Tap the moment the float plunges under. Ignore the little twitches.' },
+  // v0.9.13 meditation, one game per cultivation method
+  m_turtle: { title: 'Turtle Breath', how: 'Feel the slow rhythm, then keep it going on your own once the pulse fades. Tap on each breath.' },
+  m_five: { title: 'Five Elements Cycle', how: 'Answer fast: which element feeds which? Wood → Fire → Earth → Metal → Water → Wood.' },
+  m_moon: { title: 'Moonlit Absorption', how: 'Swipe the clouds away from the moon and keep it clear.' },
+  m_fire: { title: 'Heart-Fire Refinement', how: 'Stoke the fire: tap as fast as you can before it gutters out.' },
+  m_thunder: { title: 'Thunder Body Tempering', how: 'Lightning marks a column before it strikes. Tap another column to step out of the way.' },
+  m_lotus:   { title: 'Lotus Heart Sutra',    how: 'Each petal opens slowly. Tap it only once it is fully open — never before.' },
+  m_sword: { title: 'Sword Intent', how: 'Swipe one clean cut along the dashed line. 3 cuts — match the angle.' },
+  m_star: { title: 'Starfall', how: 'Drag the bowl to catch falling stars.' },
+  m_dual: { title: 'Yin and Yang', how: 'Hold YIN while the dark side glows, YANG while the light side glows, both when both glow.' },
+  m_void:    { title: 'Void Stillness',       how: 'Press and hold, and do not move at all. Stillness is everything. Ignore what you see.' },
+  m_souls: { title: 'Myriad Souls', how: 'Drag the red-eyed vengeful souls into the cauldron. Leave the pale ones alone.' },
+  m_blood: { title: 'Blood Sea', how: 'Hold to draw blood-Qi. Let go before the heart bursts — it trembles when you are close. 3 draws.' },
   balance: { title: 'Keep your footing', how: 'The wind pushes you off balance. Tap the side the dot is drifting towards to push it back into the green.' },
 };
 const clamp01 = v => Math.max(0, Math.min(1, v));
@@ -103,14 +116,17 @@ const GAMEFNS = {
     on(window, 'keydown', e => { if (e.repeat) return; const k = e.key.startsWith('Arrow') ? e.key : WASD[e.key.toLowerCase()]; if (k) { e.preventDefault(); hit(k); } });
     later(next, 450);
   },
-  // meditation: a ring breathes in and out; tap when it matches the gold circle
-  breath({ stage, diff, done, loop, tapStage, flash, pips, el }) {
-    const zone = 0.1 + (1 - diff) * 0.2, speed = 0.45 + diff * 0.5, mark = pips(3); let t = Math.random() * 2, n = 0, sc = 0, center = rnd(0.35, 0.75);
-    const target = el('tg-target'), ring = el('tg-ring');
-    const place = () => { target.style.setProperty('--s', 0.25 + center * 0.7); target.style.setProperty('--w', zone); }; place();
-    const pos = () => 0.5 + 0.5 * Math.sin(t * speed * Math.PI);
-    tapStage(() => { const s = clamp01(1 - Math.abs(pos() - center) / (zone * 1.6)); sc += s; mark(n, s); flash(s >= 0.4); if (++n >= 3) return done(sc / 3); center = rnd(0.3, 0.8); place(); });
-    loop(dt => { t += dt; ring.style.setProperty('--s', 0.25 + pos() * 0.7); });
+  // basic meditation: keep your finger on an orb that circles and changes direction
+  breath({ stage, diff, done, on, loop, el, local }) {
+    const dur = 4.2, path = el('tg-path'), orb = el('tg-orb2'), bar = el('tg-timer'); bar.append(h('i'));
+    let held = false, px = -1, py = -1, a = Math.random() * 6, dir = 1, flip = rnd(1, 2), t = 0, good = 0;
+    const set = e => { [px, py] = local(e); };
+    on(stage, 'pointerdown', e => { e.preventDefault(); held = true; set(e); try { stage.setPointerCapture(e.pointerId); } catch (x) {} }); on(stage, 'pointermove', e => { if (held) set(e); });
+    on(window, 'pointerup', () => { held = false; }); on(window, 'pointercancel', () => { held = false; });
+    loop(dt => { t += dt; flip -= dt; if (flip <= 0) { dir *= -1; flip = rnd(0.9, 1.8) * (1.2 - diff * 0.4); } a += dir * dt * (0.9 + diff * 0.9);
+      const ox = 0.5 + Math.cos(a) * 0.3, oy = 0.5 + Math.sin(a) * 0.36; orb.style.left = ox * 100 + '%'; orb.style.top = oy * 100 + '%';
+      const near = held && Math.hypot((px - ox) * 1.8, py - oy) < 0.13 + (1 - diff) * 0.06; if (near) good += dt; orb.classList.toggle('in', near);
+      bar.firstChild.style.width = Math.max(0, 1 - t / dur) * 100 + '%'; if (t >= dur) { done(good / dur * 1.15); return false; } });
   },
   // meridians: acupoints light up one by one; tap each while lit
   async trace({ stage, diff, done, on, flash, pips, isDone }) {
@@ -175,13 +191,16 @@ const GAMEFNS = {
       if (x >= 1) { done(1 - Math.min(1, seen * 1.6) * 0.9 - Math.max(0, t - 5) * 0.08); return false; }
       if (t > 8) { done(x * 0.5 - seen); return false; } });
   },
-  // burglary: four pins bob up and down; tap when the lit one is at the top
-  pins({ stage, diff, done, loop, tapStage, flash, pips, el }) {
-    const n = 4, mark = pips(n); let k = 0, sc = 0, t = 0;
-    const P = Array.from({ length: n }, (_, i) => ({ e: el('tg-pin'), sp: (1.6 + i * 0.35) * (0.7 + diff * 0.5), ph: Math.random() * 6 }));
-    const cur = () => 0.5 + 0.5 * Math.sin(t * P[k].sp + P[k].ph);
-    tapStage(() => { if (k >= n) return; const s = clamp01((cur() - (0.55 + diff * 0.12)) / (0.45 - diff * 0.12)); sc += s; mark(k, s); flash(s >= 0.4); P[k].e.classList.add(s >= 0.4 ? 'set' : 'bent'); if (++k >= n) done(sc / n); });
-    loop(dt => { t += dt; P.forEach((p, i) => { const y = i < k ? (p.e.classList.contains('set') ? 1 : 0.2) : 0.5 + 0.5 * Math.sin(t * p.sp + p.ph); p.e.style.setProperty('--y', y); p.e.classList.toggle('lit', i === k); p.e.style.left = (14 + i * 22) + '%'; }); });
+  // burglary: drag each pin up to the shear line
+  pins({ stage, diff, done, on, flash, pips, el, local }) {
+    const n = 4, mark = pips(n), line = 0.72, tol = 0.07 + (1 - diff) * 0.05; let k = 0, sc = 0, y0 = 0, start = null;
+    const P = Array.from({ length: n }, (_, i) => { const e = el('tg-pin'); e.style.left = (14 + i * 22) + '%'; e.style.setProperty('--y', 0.15); return e; });
+    const mark2 = () => P.forEach((p, i) => p.classList.toggle('lit', i === k)); mark2();
+    on(stage, 'pointerdown', e => { e.preventDefault(); if (k >= n) return; start = local(e)[1]; y0 = 0.15; try { stage.setPointerCapture(e.pointerId); } catch (x) {} });
+    on(stage, 'pointermove', e => { if (start == null) return; const y = Math.max(0, Math.min(1, y0 + (start - local(e)[1]) * 1.3)); P[k].style.setProperty('--y', y); P[k].dataset.y = y; });
+    const up = () => { if (start == null) return; start = null; const y = +(P[k].dataset.y || 0.15), s = clamp01(1 - Math.abs(y - line) / tol * 0.7); sc += s; mark(k, s); flash(s >= 0.45);
+      if (s >= 0.45) { P[k].classList.add('set'); P[k].style.setProperty('--y', line); } else { P[k].classList.add('bent'); P[k].style.setProperty('--y', 0.15); } if (++k >= n) return done(sc / n); mark2(); };
+    on(window, 'pointerup', up); on(window, 'pointercancel', up);
   },
   // pickpocketing: wallets and cops stream past; tap wallets, never cops
   crowd({ stage, diff, done, on, loop, flash, el, local }) {
@@ -224,3 +243,136 @@ const GAMEFNS = {
   },
 };
 delete GAMEFNS.fishing;
+
+
+// ---------- v0.9.13 meditation, one game per cultivation method — each with its own mechanic
+Object.assign(GAMEFNS, {
+  // keep a slow rhythm from memory, with no cue
+  async m_turtle({ stage, diff, done, on, flash, pips, el, isDone }) {
+    const I = rnd(1.0, 1.3), n = 4, mark = pips(n), pulse = el('tg-pulse tg-slow'), note = el('tg-note', stage, 'Feel it…'); const taps = [];
+    for (let i = 0; i < 3; i++) { if (isDone()) return; pulse.classList.remove('beat'); void pulse.offsetWidth; pulse.classList.add('beat'); fx('click'); await wait(I * 1000); }
+    pulse.classList.add('gone'); note.textContent = 'Now keep the rhythm'; let last = performance.now() - I * 1000 * 0;
+    let k = 0; last = performance.now();
+    on(stage, 'pointerdown', e => { e.preventDefault(); const now = performance.now(), gap = (now - last) / 1000; last = now; const s = clamp01(1 - Math.abs(gap - I) / (I * (0.32 - diff * 0.12))); mark(k, s); flash(s >= 0.4); taps.push(s); if (++k >= n) done(taps.reduce((a, b) => a + b, 0) / n); });
+    on(window, 'keydown', e => { if (e.code === 'Space' && !e.repeat) { e.preventDefault(); stage.dispatchEvent(new PointerEvent('pointerdown')); } });
+  },
+  // a quick quiz on the generating cycle
+  m_five({ stage, diff, done, on, later, flash, pips, el }) {
+    const E = [['Wood', '🌿'], ['Fire', '🔥'], ['Earth', '⛰️'], ['Metal', '⚙️'], ['Water', '💧']], n = 5, mark = pips(n), lim = 2.6 - diff * 0.7;
+    const q = el('tg-quiz'), opts = el('tg-qopts'), bar = el('tg-timer'); bar.append(h('i')); let k = 0, sc = 0, timer = null;
+    const ask = () => { if (k >= n) return done(sc / n); const i = Math.floor(Math.random() * 5), back = Math.random() < 0.4, ans = back ? (i + 4) % 5 : (i + 1) % 5;
+      q.textContent = back ? `What feeds ${E[i][1]} ${E[i][0]}?` : `${E[i][1]} ${E[i][0]} feeds…?`;
+      const choices = [ans, ...[0, 1, 2, 3, 4].filter(x => x !== ans && x !== i).sort(() => Math.random() - 0.5).slice(0, 2)].sort(() => Math.random() - 0.5);
+      const t0 = performance.now(); const b = bar.firstChild; b.style.transition = 'none'; b.style.width = '100%'; void b.offsetWidth; b.style.transition = `width ${lim}s linear`; b.style.width = '0%';
+      opts.replaceChildren(...choices.map(c => { const btn = h('button', { class: 'tg-qopt' }, `${E[c][1]} ${E[c][0]}`); on(btn, 'pointerdown', e => { e.preventDefault(); clearTimeout(timer); const ok = c === ans, s = ok ? clamp01(1.15 - (performance.now() - t0) / 1000 / lim * 0.6) : 0; sc += s; mark(k, s); flash(ok); k++; later(ask, 250); }); return btn; }));
+      clearTimeout(timer); timer = later(() => { mark(k, 0); flash(false); k++; ask(); }, lim * 1000); };
+    later(ask, 300);
+  },
+  // wipe clouds away from the moon
+  m_moon({ stage, diff, done, on, loop, el, local }) {
+    const dur = 4.4, moon = el('tg-moon', stage, '🌕'), bar = el('tg-timer'); bar.append(h('i')); moon.style.left = '50%'; moon.style.top = '45%';
+    const C = Array.from({ length: 3 + (diff > 0.8 ? 1 : 0) }, () => ({ e: el('tg-cloud', stage, '☁️'), x: rnd(0.2, 0.8), y: rnd(0.3, 0.6), vx: 0, vy: 0 }));
+    let held = false, lx = 0, ly = 0, t = 0, clear = 0;
+    on(stage, 'pointerdown', e => { e.preventDefault(); held = true; [lx, ly] = local(e); try { stage.setPointerCapture(e.pointerId); } catch (x) {} });
+    on(stage, 'pointermove', e => { if (!held) return; const [x, y] = local(e), dx = x - lx, dy = y - ly; for (const c of C) if (Math.hypot((c.x - x) * 1.7, c.y - y) < 0.16) { c.vx += dx * 9; c.vy += dy * 9; } lx = x; ly = y; });
+    on(window, 'pointerup', () => { held = false; }); on(window, 'pointercancel', () => { held = false; });
+    loop(dt => { t += dt; let covered = false;
+      for (const c of C) { c.vx += (0.5 - c.x) * dt * (0.5 + diff * 0.7); c.vy += (0.45 - c.y) * dt * (0.5 + diff * 0.7); c.vx *= 0.94; c.vy *= 0.94; c.x += c.vx * dt; c.y += c.vy * dt; c.x = Math.max(-0.1, Math.min(1.1, c.x)); c.y = Math.max(0, Math.min(0.95, c.y)); c.e.style.left = c.x * 100 + '%'; c.e.style.top = c.y * 100 + '%'; if (Math.hypot((c.x - 0.5) * 1.7, c.y - 0.45) < 0.14) covered = true; }
+      if (!covered) clear += dt; moon.classList.toggle('dim', covered); bar.firstChild.style.width = Math.max(0, 1 - t / dur) * 100 + '%'; if (t >= dur) { done(clear / dur * 1.25 - 0.1); return false; } });
+  },
+  // mash to stoke the fire
+  m_fire({ stage, diff, done, loop, tapStage, el }) {
+    const dur = 3.2, need = Math.round(16 + diff * 8), col = el('tg-col tg-firecol'), fill = el('tg-heatfill', col), f = el('tg-flame', col, '🔥'), bar = el('tg-timer'); bar.append(h('i')); let taps = 0, t = 0;
+    tapStage(() => { taps++; f.classList.remove('puff'); void f.offsetWidth; f.classList.add('puff'); });
+    loop(dt => { t += dt; const v = Math.min(1, taps / need); fill.style.height = v * 100 + '%'; f.style.bottom = v * 88 + '%'; bar.firstChild.style.width = Math.max(0, 1 - t / dur) * 100 + '%'; if (t >= dur) { done(taps / need); return false; } });
+  },
+  // dodge lightning between three columns
+  async m_thunder({ stage, diff, done, on, flash, pips, isDone }) {
+    const n = 5, mark = pips(n), cols = [0, 1, 2].map(() => { const b = h('button', { class: 'tg-bolt' }); stage.append(b); return b; }); let me = 1, sc = 0;
+    const body = h('div', { class: 'tg-me2' }, '🧘'); stage.append(body); const place = () => { body.style.left = (me * 33.3 + 16.6) + '%'; }; place();
+    cols.forEach((b, i) => on(b, 'pointerdown', e => { e.preventDefault(); me = i; place(); }));
+    on(window, 'keydown', e => { if (e.key === 'ArrowLeft' || e.key === 'a') { me = Math.max(0, me - 1); place(); } if (e.key === 'ArrowRight' || e.key === 'd') { me = Math.min(2, me + 1); place(); } });
+    for (let k = 0; k < n; k++) { if (isDone()) return; await wait(rnd(250, 500)); const hits = [Math.floor(Math.random() * 3)]; if (diff > 0.75 && Math.random() < 0.45) hits.push((hits[0] + 1 + Math.floor(Math.random() * 2)) % 3);
+      hits.forEach(i => cols[i].classList.add('spark')); await wait(1000 - diff * 380); hits.forEach(i => { cols[i].classList.remove('spark'); cols[i].classList.add('struck'); });
+      const ok = !hits.includes(me); sc += ok ? 1 : 0; mark(k, ok ? 1 : 0); flash(ok); fx(ok ? 'click' : 'heavy'); await wait(260); hits.forEach(i => cols[i].classList.remove('struck')); }
+    done(sc / n);
+  },
+  // lotus: patience — tap each petal only once it has fully opened
+  m_lotus({ stage, diff, done, on, loop, flash, pips }) {
+    const n = 5, mark = pips(n); let k = 0, sc = 0, open = 0, t = 0; const speed = 0.45 + diff * 0.35;
+    const P = Array.from({ length: n }, (_, i) => { const a = i / n * Math.PI * 2 - Math.PI / 2, b = h('button', { class: 'tg-petal', style: { left: (50 + Math.cos(a) * 26) + '%', top: (50 + Math.sin(a) * 30) + '%', transform: `translate(-50%,-50%) rotate(${a + Math.PI / 2}rad)` } }); stage.append(b); return b; });
+    P.forEach((b, i) => on(b, 'pointerdown', e => { e.preventDefault(); if (i !== k) return flash(false); const s = open >= 1 ? clamp01(1.1 - t * 0.6) : open * 0.3; sc += s; mark(k, s); flash(open >= 1); b.classList.add('done'); k++; open = 0; t = 0; if (k >= n) done(sc / n); }));
+    loop(dt => { if (k >= n) return false; open = Math.min(1, open + dt * speed); if (open >= 1) t += dt; P[k].style.setProperty('--o', open); P[k].classList.toggle('full', open >= 1); if (t > 1.8) { mark(k, 0); P[k].classList.add('done'); k++; open = 0; t = 0; if (k >= n) { done(sc / n); return false; } } });
+  },
+  // one precise swipe along a line
+  m_sword({ stage, diff, done, on, later, flash, pips, el, local }) {
+    later(() => done(sc / n), 14000);
+    const n = 3, mark = pips(n), guide = el('tg-guide'), trail = el('tg-trail'); let k = 0, sc = 0, ang = 0, cx = 0.5, cy = 0.5, s0 = null;
+    const setLine = () => { ang = rnd(-1.2, 1.2); cx = rnd(0.35, 0.65); cy = rnd(0.35, 0.65); guide.style.left = cx * 100 + '%'; guide.style.top = cy * 100 + '%'; guide.style.transform = `translate(-50%,-50%) rotate(${ang}rad)`; }; setLine();
+    on(stage, 'pointerdown', e => { e.preventDefault(); s0 = local(e); try { stage.setPointerCapture(e.pointerId); } catch (x) {} });
+    const up = e => { if (!s0) return; const s1 = local(e), r = stage.getBoundingClientRect(), dx = (s1[0] - s0[0]) * r.width, dy = (s1[1] - s0[1]) * r.height, len = Math.hypot(dx, dy); const st = s0; s0 = null;
+      if (len < r.width * 0.25) { mark(k, 0); flash(false); if (++k >= n) return done(sc / n); return setTimeout(setLine, 300); } // a tap isn't a cut let a = Math.atan2(dy, dx); let da = Math.abs(((a - ang) % Math.PI + Math.PI * 1.5) % Math.PI - Math.PI / 2);
+      const mx = (st[0] + s1[0]) / 2, my = (st[1] + s1[1]) / 2, off = Math.abs(-(mx - cx) * Math.sin(ang) * r.width + (my - cy) * Math.cos(ang) * r.height) / r.height;
+      const s = clamp01(1 - da / (0.28 + (1 - diff) * 0.15) * 0.8 - off * 1.8); sc += s; mark(k, s); flash(s >= 0.45); trail.style.cssText = `left:${mx * 100}%;top:${my * 100}%;width:${len}px;transform:translate(-50%,-50%) rotate(${a}rad)`; trail.classList.remove('show'); void trail.offsetWidth; trail.classList.add('show');
+      if (++k >= n) return done(sc / n); setTimeout(setLine, 300); };
+    on(window, 'pointerup', up); on(window, 'pointercancel', () => { s0 = null; });
+  },
+  // drag a bowl to catch falling stars
+  m_star({ stage, diff, done, on, loop, el, local }) {
+    const bowl = el('tg-bowl', stage, '🥣'); let bx = 0.5, t = 0, spawn = 0.3, got = 0, total = 0, held = false; const items = [], dur = 4.6, keys = {};
+    const move = e => { bx = Math.max(0.06, Math.min(0.94, local(e)[0])); };
+    on(stage, 'pointerdown', e => { e.preventDefault(); held = true; move(e); try { stage.setPointerCapture(e.pointerId); } catch (x) {} }); on(stage, 'pointermove', e => { if (held || e.pointerType === 'mouse') move(e); });
+    on(window, 'pointerup', () => { held = false; }); on(window, 'keydown', e => { keys[e.key] = true; }); on(window, 'keyup', e => { keys[e.key] = false; });
+    loop(dt => { t += dt; spawn -= dt; if (keys.ArrowLeft || keys.a) bx = Math.max(0.06, bx - dt * 1.2); if (keys.ArrowRight || keys.d) bx = Math.min(0.94, bx + dt * 1.2); bowl.style.left = bx * 100 + '%';
+      if (spawn <= 0 && t < dur - 0.9) { items.push({ e: el('tg-faller', stage, '⭐'), x: rnd(0.08, 0.92), y: -0.05, sp: rnd(0.5, 0.75) * (0.8 + diff * 0.45) }); total++; spawn = rnd(0.45, 0.8); }
+      for (const it of items) { if (it.done) continue; it.y += it.sp * dt; it.e.style.left = it.x * 100 + '%'; it.e.style.top = it.y * 100 + '%';
+        if (it.y > 0.82) { it.done = true; if (Math.abs(it.x - bx) < 0.1 + (1 - diff) * 0.04) { got++; it.e.classList.add('gone'); fx('click'); } else it.e.classList.add('lost'); } }
+      if (t >= dur) { done(total ? got / total : 0.5); return false; } });
+  },
+  // hold one or both sides as yin and yang glow
+  m_dual({ stage, diff, done, on, loop, el }) {
+    const dur = 4.4, Y = h('button', { class: 'tg-yy yin' }, '☯ YIN'), G = h('button', { class: 'tg-yy yang' }, 'YANG ☯'); stage.append(h('div', { class: 'tg-feet' }, Y, G)); const bar = el('tg-timer'); bar.append(h('i'));
+    const hold = { L: new Set(), R: new Set() }, kb = { L: false, R: false }; let want = 'L', next = 0.9, t = 0, good = 0;
+    const bind = (b, side) => { on(b, 'pointerdown', e => { e.preventDefault(); hold[side].add(e.pointerId); try { b.setPointerCapture(e.pointerId); } catch (x) {} }); on(b, 'pointerup', e => hold[side].delete(e.pointerId)); on(b, 'pointercancel', e => hold[side].delete(e.pointerId)); };
+    bind(Y, 'L'); bind(G, 'R');
+    on(window, 'keydown', e => { if (e.key === 'a' || e.key === 'ArrowLeft') kb.L = true; if (e.key === 'd' || e.key === 'ArrowRight') kb.R = true; }); on(window, 'keyup', e => { if (e.key === 'a' || e.key === 'ArrowLeft') kb.L = false; if (e.key === 'd' || e.key === 'ArrowRight') kb.R = false; });
+    loop(dt => { t += dt; next -= dt; if (next <= 0) { const opts = diff > 0.6 ? ['L', 'R', 'B'] : ['L', 'R']; want = opts.filter(x => x !== want)[Math.floor(Math.random() * (opts.length - 1))]; next = rnd(0.7, 1.1) * (1.2 - diff * 0.35); }
+      Y.classList.toggle('glow', want === 'L' || want === 'B'); G.classList.toggle('glow', want === 'R' || want === 'B');
+      const L = hold.L.size > 0 || kb.L, R = hold.R.size > 0 || kb.R, ok = want === 'B' ? L && R : want === 'L' ? L && !R : R && !L; if (ok) good += dt; Y.classList.toggle('on', L); G.classList.toggle('on', R);
+      bar.firstChild.style.width = Math.max(0, 1 - t / dur) * 100 + '%'; if (t >= dur) { done(good / (dur - 0.5) * 1.1); return false; } });
+  },
+  // stillness: hold and don't move while distractions flash
+  m_void({ stage, diff, done, on, loop, el }) {
+    const dur = 4, dot = el('tg-voiddot'), bar = el('tg-timer'), lure = el('tg-lure'); bar.append(h('i'));
+    let held = false, t = 0, still = 0, x0 = null, y0 = null, broke = 0, started = false;
+    on(stage, 'pointerdown', e => { e.preventDefault(); held = true; started = true; x0 = e.clientX; y0 = e.clientY; });
+    on(window, 'pointermove', e => { if (held && x0 != null && Math.hypot(e.clientX - x0, e.clientY - y0) > 14 - diff * 6) { broke++; x0 = e.clientX; y0 = e.clientY; stage.classList.add('miss'); setTimeout(() => stage.classList.remove('miss'), 150); } });
+    on(window, 'pointerup', () => { if (held) broke++; held = false; }); on(window, 'pointercancel', () => { held = false; });
+    on(window, 'keydown', e => { if (e.code === 'Space') { e.preventDefault(); if (!held) { held = true; started = true; } } }); on(window, 'keyup', e => { if (e.code === 'Space') { held = false; broke++; } });
+    const LURES = ['👁️', '🔔', '🦋', '💭', '🕯️', '🐦'];
+    loop(dt => { if (!started) return; t += dt; if (held) still += dt; dot.classList.toggle('in', held);
+      if (Math.random() < dt * (1.2 + diff)) { lure.textContent = LURES[Math.floor(Math.random() * LURES.length)]; lure.style.left = rnd(10, 85) + '%'; lure.style.top = rnd(10, 80) + '%'; lure.classList.remove('pop'); void lure.offsetWidth; lure.classList.add('pop'); }
+      bar.firstChild.style.width = Math.max(0, 1 - t / dur) * 100 + '%'; if (t >= dur) { done(still / dur - broke * 0.12); return false; } });
+  },
+  // drag vengeful souls into the cauldron
+  m_souls({ stage, diff, done, on, loop, flash, el, local }) {
+    const pot = el('tg-pot', stage, '🏺'); let t = 0, spawn = 0.1, got = 0, sin = 0, evil = 0, drag = null; const items = [], dur = 5;
+    on(stage, 'pointerdown', e => { e.preventDefault(); const [px, py] = local(e); drag = items.filter(it => !it.gone).sort((a, b) => Math.hypot(a.x - px, a.y - py) - Math.hypot(b.x - px, b.y - py))[0]; if (drag && Math.hypot((drag.x - px) * 1.7, drag.y - py) > 0.16) drag = null; try { stage.setPointerCapture(e.pointerId); } catch (x) {} });
+    on(stage, 'pointermove', e => { if (!drag) return; [drag.x, drag.y] = local(e); });
+    const up = () => { if (!drag) return; const d = drag; drag = null; if (Math.hypot((d.x - 0.5) * 1.7, d.y - 0.85) < 0.18) { d.gone = true; d.e.classList.add('gone'); if (d.evil) { got++; flash(true); } else { sin++; flash(false); } } };
+    on(window, 'pointerup', up); on(window, 'pointercancel', up);
+    loop(dt => { t += dt; spawn -= dt; if (spawn <= 0 && t < dur - 1.2 && items.filter(i => !i.gone).length < 5) { const ev = Math.random() < 0.6; const it = { e: el('tg-soul' + (ev ? ' evil' : ''), stage, ev ? '👹' : '👻'), x: rnd(0.1, 0.9), y: rnd(0.1, 0.45), ph: Math.random() * 6, evil: ev }; items.push(it); if (ev) evil++; spawn = rnd(0.5, 0.9); }
+      for (const it of items) { if (it !== drag && !it.gone) { it.x += Math.sin(t * (1.4 + diff) + it.ph) * dt * 0.18; it.y += Math.cos(t * 1.1 + it.ph) * dt * 0.08; } it.e.style.left = it.x * 100 + '%'; it.e.style.top = it.y * 100 + '%'; }
+      if (t >= dur) { done(Math.min(1, got / Math.max(2, Math.min(evil, 4))) - sin * 0.3); return false; } });
+  },
+  // push your luck: draw as much as you dare, release before the heart bursts
+  m_blood({ stage, diff, done, on, loop, flash, pips, el }) {
+    const n = 3, mark = pips(n), vial = el('tg-mould tg-vial'), fill = el('tg-metal tg-blood', vial), heart = el('tg-heart', stage, '❤️'); let k = 0, sc = 0, v = 0, held = false, limit = rnd(0.6, 0.95), burst = false;
+    const reset = () => { v = 0; limit = rnd(0.55, 0.95); burst = false; fill.style.height = '0%'; heart.textContent = '❤️'; };
+    const release = () => { if (!held) return; held = false; if (burst) return; const s = clamp01(v / limit * 1.05); sc += s; mark(k, s); flash(s >= 0.6); if (++k >= n) return done(sc / n); setTimeout(reset, 300); };
+    on(stage, 'pointerdown', e => { e.preventDefault(); if (k < n && !burst) held = true; }); on(window, 'pointerup', release); on(window, 'pointercancel', release);
+    on(window, 'keydown', e => { if (e.code === 'Space' && !e.repeat) { e.preventDefault(); if (k < n && !burst) held = true; } }); on(window, 'keyup', e => { if (e.code === 'Space') release(); });
+    loop(dt => { if (held && !burst) { v += dt * (0.3 + diff * 0.15); fill.style.height = Math.min(1, v) * 100 + '%'; const near = v / limit; heart.style.transform = `translate(-50%,0) scale(${1 + Math.max(0, near - 0.6) * 0.6}) rotate(${(Math.random() - 0.5) * Math.max(0, near - 0.65) * 40}deg)`;
+        if (v >= limit) { burst = true; held = false; heart.textContent = '💥'; mark(k, 0); flash(false); fx('heavy'); if (++k >= n) { done(sc / n); return false; } setTimeout(reset, 500); } } });
+  },
+});

@@ -12,6 +12,7 @@ import { moodFace, TRAINABLE, decayRate } from '../systems/health.js';
 import { COND_BY_ID, condTip } from '../data/conditions.js';
 import * as LIC from '../systems/license.js';
 import * as PRX from '../systems/practice.js';
+import { emblemSvg } from './sectEmblem.js';
 import { playTrain } from './trainGame.js';
 import { ITEMS } from '../data/items.js';
 import { METHODS } from '../data/realms.js';
@@ -75,7 +76,7 @@ export async function runActivity(a, el, opt = {}) {
   fx('click');
   // v0.9.8 practice: optional micro-minigame, then a 4-tier outcome (peak / solid / sloppy / mishap)
   const PID = a.practice || a.id, PR = !free && (!a.canPractice || a.canPractice(c)) && PRX.practiceFor(PID); let roll = null, psnap = null;
-  if (PR) { const score = opt.score !== undefined ? opt.score : await playTrain(PR.kind, PRX.difficulty(c, PID), a.name);
+  if (PR) { const score = opt.score !== undefined ? opt.score : await playTrain(PRX.gameKind(c, PID), PRX.difficulty(c, PID), a.name);
     if (PR.scoreOnly) c._mg = score; else { roll = PRX.rollTier(c, PID, score); a._roll = roll; psnap = { ...c.stats, qi: c.qi.qi, grades: c.edu?.grades, perf: c.job?.perf }; } }
   let res; try { res = await a.run(c); } finally { delete c._mg; }
   if (res == null) { render(); return; } // cancelled / couldn't afford → no cost
@@ -114,7 +115,7 @@ function topbar() {
   const c = G.char, cty = country(c);
   $('#topbar').replaceChildren(
     h('div', { class: 'who' }, h('div', { class: 'mini' }, portraitFor(c, 64)),
-      h('div', {}, h('div', { class: 'name display' }, flagEl(c.country, country(c).name), ' ', fullName(c)), h('div', { class: 'sub' }, `${c.qi.realm || onBodyPath(c) ? realmName(c) : 'Human'} · ${c.gender === 'F' ? 'Female' : 'Male'} · Age ${c.age} · ${lifeStage(c.age)}`), c.ownSect ? h('div', { class: 'clan' }, `👑 ${c.gender === 'F' ? 'Matriarch' : 'Patriarch'} of the ${c.ownSect.clan} Clan · ${c.ownSect.name}`) : null)),
+      h('div', {}, h('div', { class: 'name display' }, flagEl(c.country, country(c).name), ' ', fullName(c)), h('div', { class: 'sub' }, `${c.qi.realm || onBodyPath(c) ? realmName(c) : 'Human'} · ${c.gender === 'F' ? 'Female' : 'Male'} · Age ${c.age} · ${lifeStage(c.age)}`), c.ownSect ? h('div', { class: 'clan' }, c.ownSect.emblem ? emblemSvg(c.ownSect.emblem, 18) : '👑', ` ${c.gender === 'F' ? 'Matriarch' : 'Patriarch'} of the ${c.ownSect.clan} Clan · ${c.ownSect.name}`) : null)),
     h('div', { class: 'center' }, h('div', {}, h('b', {}, `Year ${G.world.year}`), ' · ', h('span', { class: 'era' }, G.world.era)),
       h('div', { class: 'where' }, '📍 ', `${c.city}, ${cty.name}`)),
     h('div', { class: 'right' }, h('div', {}, icon('market', 'sm'), ' ', h('span', { class: 'money' }, fmtMoney(c, c.money)), ' ', h('span', { class: 'muted', title: `Born into a ${WEALTH.find(w => w.id === c.wealth).name.toLowerCase()} family` }, wealthLabel(c))),
@@ -241,7 +242,7 @@ async function runMany(list, el) { // runs a list of activities in order while a
   const c = G.char, snap = { ...c.stats, qi: c.qi.qi, money: c.money }, at = el?.getBoundingClientRect?.(); let done = 0;
   const scores = {}; // one minigame per distinct action; its score counts for every repeat in the batch
   for (const a of list) { if (c.actions <= 0 || !c.alive) break; if (a.need && !a.need(c)) continue; const id = a.practice || a.id, P = PRX.practiceFor(id);
-    if (P && !(id in scores) && (!a.canPractice || a.canPractice(c))) scores[id] = await playTrain(P.kind, PRX.difficulty(c, id), `${a.name} ×${list.filter(x => x.id === a.id).length}`);
+    if (P && !(id in scores) && (!a.canPractice || a.canPractice(c))) scores[id] = await playTrain(PRX.gameKind(c, id), PRX.difficulty(c, id), `${a.name} ×${list.filter(x => x.id === a.id).length}`);
     await runActivity(a, null, P ? { score: scores[id] } : {}); done++; }
   gainPopups(c, snap, at); if (done) toast(`Did ${done} action${done > 1 ? 's' : ''}.`);
 }
@@ -378,12 +379,12 @@ export const TABS = {
       h('h3', { class: 'display', style: { margin: '18px 0 8px' } }, 'Items that help'),
       h('div', { class: 'box' }, helpful, h('div', { class: 'muted small', style: { marginTop: '6px' } }, 'Craft them in Crafting & Gear, find them in Gates, or get them from friends and sects.')),
       h('div', { class: 'grid2', style: { marginTop: '14px' } },
-        h('div', { class: 'card' }, h('h4', {}, 'Sect / Gang'), c.sect ? h('div', {}, sectName(c), c.ownSect ? h('div', { class: 'muted small' }, `Founded by you · ${c.ownSect.disciples} disciples · +10% Qi · yearly tithes`) : null) : h('span', { class: 'muted' }, 'Unaffiliated.')),
+        h('div', { class: 'card' }, h('h4', {}, 'Sect / Gang'), c.sect ? h('div', {}, c.ownSect?.emblem ? emblemSvg(c.ownSect.emblem, 28) : null, ' ', sectName(c), c.ownSect ? h('div', { class: 'muted small' }, `Founded by you · ${c.ownSect.disciples} disciples · +10% Qi · yearly tithes`) : null) : h('span', { class: 'muted' }, 'Unaffiliated.')),
         !c.ownSect ? h('div', { class: 'card' }, h('h4', {}, '👑 Found your own sect'), h('div', { class: 'muted small' }, 'Become the head of a new clan. Your surname becomes the clan name, passed to your children like a royal house. Disciples join every year and pay tithes.'),
           fr.missing.length ? h('div', { class: 'small bad', style: { marginTop: '6px' } }, 'Needs: ' + fr.missing.join(', ')) : null,
           h('button', { class: 'btn', style: { marginTop: '8px' }, disabled: !!fr.missing.length || c.actions <= 0, onclick: async () => {
-            const v = await prompt({ title: 'Found your sect', icon: 'crown', text: `Cost: ${fmtMoney(c, fr.cost)}. Choose wisely — this name will outlive you.`, fields: [{ key: 'name', label: 'Sect name', placeholder: 'e.g. Azure Lotus Sect', max: 32 }, { key: 'clan', label: 'Clan surname (your new last name)', placeholder: 'e.g. Long', max: 16 }] });
-            if (v) runActivity({ id: 'found_sect', cat: 'cultivation', run: cc => foundSect(cc, v.name, v.clan) }); } }, 'Found sect (⚡1)')) : null,
+            const SE = await import('./sectEmblem.js'); const v = await SE.designSect({ text: `Cost: ${fmtMoney(c, fr.cost)}. Choose wisely — this name and emblem will outlive you.` });
+            if (v) runActivity({ id: 'found_sect', cat: 'cultivation', run: cc => foundSect(cc, v.name, v.clan, v.emblem) }); } }, 'Found sect (⚡1)')) : null,
       ),
       h('h3', { class: 'display', style: { margin: '18px 0 8px' } }, 'Path of Ascension'), realmLadder(c),
     ];

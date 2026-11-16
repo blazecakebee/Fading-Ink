@@ -1,5 +1,6 @@
 // Tabs added in v0.6.0: Bloodline (genetics tree + heirlooms) and Sect & Guild (missions, ranks, disciples, exchange).
 import { G } from '../core/state.js';
+import * as SE from './sectEmblem.js';
 import { h, icon } from './dom.js';
 import { choice, toast } from './modal.js';
 import { portraitFor } from './portrait.js';
@@ -115,7 +116,9 @@ export function factionsTab() {
   const nav = h('div', { class: 'fac-tabs' }, tabs.map(([k, v, ic]) => h('button', { class: sub === k ? 'on' : '', onclick: () => { G.ui.facTab = k; R.render(); } }, icon(ic, 'sm'), v, k === 'missions' ? h('span', { class: 'n' }, B.sect.filter(m => !m.done).length) : null)));
   const out = [h('h2', { class: 'display' }, 'Sect & Guild'), nav];
   const sectHero = () => { const nx = F.nextRank(c), dis = c.disciples || [];
-    return facHero(own ? '宗' : '門', F.sectLabel(c), own ? `Founded at age ${c.ownSect.founded}` : 'Your sect', F.rankName(c), null,
+    const redesign = own ? h('button', { class: 'btn ghost mini', style: { marginTop: '6px' }, onclick: async () => { const v = await SE.designSect({ emblem: c.ownSect.emblem, askNames: false, title: 'Redesign your sect', okLabel: 'Save' }); if (v) { c.ownSect.emblem = v.emblem; R.render(); } } }, c.ownSect.emblem ? '🎨 Redesign emblem & robes' : '🎨 Design an emblem') : null;
+    const em = own && c.ownSect.emblem; const robe = em ? SE.ROBES[em.robe] : null;
+    return facHero(em ? SE.emblemSvg(em, 52) : own ? '宗' : '門', F.sectLabel(c), own ? `Founded at age ${c.ownSect.founded}${robe ? ` · disciples wear ${robe[0].toLowerCase()} robes` : ''}${em?.motto ? ` · “${em.motto}”` : ''}` : 'Your sect', F.rankName(c), em ? em.fg : null, redesign,
       h('div', { class: 'fac-tiles' }, own ? tile('people', 'Members', c.ownSect.disciples) : tile('star', 'Contribution', c.contrib || 0), tile('education', 'Disciples', `${dis.length}/${F.discipleSlots(c)}`), tile('gates', 'Missions left', B.sect.filter(m => !m.done).length), tile('bell', 'Fame', (c.fame || 0).toLocaleString())),
       nx ? h('div', { class: 'fac-next' }, progress(c.contrib || 0, nx.R.contrib, `Next rank: ${nx.R.name}`), nx.ok ? h('button', { class: 'btn', onclick: () => R.run({ id: 'promote', cost: 'free', run: cc => F.promote(cc) }) }, 'Request promotion') : h('div', { class: 'muted small' }, 'Needs ', nx.why.join(' · '))) : null); };
   const guildHero = () => { const g = c.guild, nx = F.guildNext(c);

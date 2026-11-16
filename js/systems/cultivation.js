@@ -165,10 +165,10 @@ export function foundReq(c) {
   return { cost, missing: out };
 }
 // Founding a sect makes you the head of a new clan: your surname becomes the clan name, like a royal house.
-export function foundSect(c, name, clan) {
+export function foundSect(c, name, clan, emblem) {
   const { cost, missing } = foundReq(c); if (missing.length) return null;
   money(c, -cost); c.flags.birthLast ||= c.last; c.last = clan;
-  c.ownSect = { name, clan, founded: c.age, disciples: 3 }; c.sect = 'own'; c.sectRank = 4;
+  c.ownSect = { name, clan, founded: c.age, disciples: 3, emblem: emblem || null }; c.sect = 'own'; c.sectRank = 4;
   if (!c.qi.manuals.includes('breathing')) c.qi.manuals.push('breathing');
   return { text: `I founded the ${name}. From today I am ${c.first} ${clan}, ${c.gender === 'F' ? 'Matriarch' : 'Patriarch'} of the ${clan} Clan.`, cls: 'qi', big: true };
 }

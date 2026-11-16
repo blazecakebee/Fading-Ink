@@ -6,7 +6,9 @@ import { ui } from '../core/bus.js';
 import { ri, pick, chance, clamp } from '../core/rng.js';
 import { stat } from './life.js';
 import { ensureBody, hitBody } from './body.js';
-import { qiCap } from './cultivation.js';
+import { qiCap, method } from './cultivation.js';
+export const METHOD_GAME = { basic: 'breath', turtle: 'm_turtle', five_elements: 'm_five', moonlit: 'm_moon', heart_fire: 'm_fire', thunder: 'm_thunder', lotus: 'm_lotus', sword_intent: 'm_sword', starfall: 'm_star', dual: 'm_dual', void: 'm_void', myriad_souls: 'm_souls', blood_sea: 'm_blood' };
+export const gameKind = (c, id) => { const P = PRACTICE[id]; return P ? (P.kindFor ? P.kindFor(c) : P.kind) : null; };
 
 // kind = minigame, cat = what goes wrong, risk = base mishap chance
 export const PRACTICE = {
@@ -18,7 +20,7 @@ export const PRACTICE = {
   library:       { kind: 'order',   cat: 'mind',   risk: 0.02 },
   study:         { kind: 'focus',   cat: 'mind',   risk: 0.03 },
   work_hard:     { kind: 'stack',   cat: 'mind',   risk: 0.04 },
-  meditate:      { kind: 'breath',  cat: 'qi',     risk: 0.04 },
+  meditate:      { kind: 'breath',  cat: 'qi',     risk: 0.04, kindFor: c => METHOD_GAME[method(c).id] || 'breath' }, // v0.9.13 each method has its own game
   meridian:      { kind: 'trace',   cat: 'qi',     risk: 0.08 },
   hike:          { kind: 'balance', cat: 'body',   risk: 0.05 },
   coop_gym:      { kind: 'lift',    cat: 'body',   risk: 0.04, coop: true },   // same as the gym, on purpose

@@ -874,3 +874,49 @@ details.chron:not([open]) > summary h3::after { content: ' ▸'; }
 .omen-chip.blessing { --tc: #ffd36f; } .omen-chip.curse { --tc: #b04a6a; }
 .card.omen.blessing b { color: #ffd36f; } .card.omen.curse b { color: #d0607e; }
 .card.omen.locked { opacity: .55; } .card.omen.locked b { color: var(--muted); }
+/* v0.9.13 meditation minigames (one per cultivation method) */
+.tg-path { position: absolute; left: 20%; right: 20%; top: 14%; bottom: 14%; border-radius: 50%; border: 1px dashed #7fe8ff44; pointer-events: none; }
+.tg-orb2 { position: absolute; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%; background: radial-gradient(circle, #e8fdff, #7fe8ff 45%, #7fe8ff00 72%); pointer-events: none; transition: filter .15s; } .tg-orb2.in { filter: drop-shadow(0 0 14px #5fd38a) hue-rotate(-60deg); }
+.tg-pulse.tg-slow { top: 30%; width: 70px; height: 70px; margin-left: -35px; } .tg-pulse.beat { animation: tgBeat .9s ease-out; } .tg-pulse.gone { opacity: 0 !important; }
+@keyframes tgBeat { from { transform: scale(1.4); opacity: 1; } to { transform: scale(.7); opacity: .25; } }
+.tg-note { position: absolute; bottom: 14px; color: var(--muted); font-size: .85rem; pointer-events: none; }
+.tg-quiz { position: absolute; top: 22%; font-weight: 800; font-size: 1.05rem; text-align: center; padding: 0 10px; } .tg-qopts { position: absolute; bottom: 12px; left: 8px; right: 8px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.tg-qopt { height: 54px; border-radius: 12px; border: 1px solid #ffffff22; background: #ffffff0d; color: #fff; font-weight: 700; font-size: .85rem; }
+.tg-moon { position: absolute; transform: translate(-50%, -50%); font-size: 2.8rem; transition: filter .2s; pointer-events: none; } .tg-moon.dim { filter: brightness(.35); }
+.tg-cloud { position: absolute; transform: translate(-50%, -50%); font-size: 3rem; pointer-events: none; opacity: .92; }
+.tg-heatfill { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 12px; background: linear-gradient(0deg, #ff3a2a, #ffb02e); opacity: .7; }
+.tg-flame { position: absolute; left: 50%; transform: translateX(-50%); font-size: 1.5rem; } .tg-flame.puff { animation: tgPuff .15s; } @keyframes tgPuff { 50% { transform: translateX(-50%) scale(1.35); } }
+.tg-bolt { position: relative; flex: 1; height: 100%; border: none; border-right: 1px solid #ffffff10; background: transparent; } .tg-thunder-wrap { display: flex; }
+.tg-stage.tg-m_thunder { display: flex; } .tg-bolt.spark { background: linear-gradient(#b18cff33, transparent); animation: tgWarn .25s infinite; } .tg-bolt.struck { background: linear-gradient(#fff, #b18cff 40%, transparent); }
+@keyframes tgWarn { 50% { background: #b18cff22; } }
+.tg-me2 { position: absolute; bottom: 10px; transform: translateX(-50%); font-size: 2rem; pointer-events: none; transition: left .12s; }
+.tg-petal { position: absolute; width: 38px; height: 62px; border-radius: 50% 50% 50% 50% / 70% 70% 30% 30%; border: 1px solid #ff9ac455; background: rgba(255, 154, 196, calc(.08 + var(--o, 0) * .5)); } .tg-petal.full { box-shadow: 0 0 16px #ff9ac4; border-color: #ff9ac4; } .tg-petal.done { background: #5fd38a55; border-color: #5fd38a; }
+.tg-guide { position: absolute; width: 70%; height: 0; border-top: 3px dashed #e0e6ffaa; pointer-events: none; }
+.tg-trail { position: absolute; height: 3px; background: #fff; box-shadow: 0 0 12px #e0e6ff; opacity: 0; pointer-events: none; } .tg-trail.show { animation: tgTrail .45s; } @keyframes tgTrail { from { opacity: 1; } to { opacity: 0; } }
+.tg-bowl { position: absolute; bottom: 6px; transform: translateX(-50%); font-size: 2.2rem; pointer-events: none; }
+.tg-faller { position: absolute; transform: translate(-50%, -50%); font-size: 1.6rem; pointer-events: none; } .tg-faller.gone { opacity: 0; transition: opacity .2s; } .tg-faller.lost { opacity: .2; }
+.tg-yy { height: 70px; border-radius: 14px; border: 1px solid #ffffff22; font-weight: 800; } .tg-yy.yin { background: #111; color: #ccc; } .tg-yy.yang { background: #e8e8e8; color: #222; }
+.tg-yy.glow { box-shadow: 0 0 0 3px #ffd36f, 0 0 18px #ffd36f88; } .tg-yy.on { transform: scale(.96); filter: brightness(1.3); }
+.tg-voiddot { width: 26px; height: 26px; border-radius: 50%; background: #ffffff22; box-shadow: 0 0 0 10px #ffffff08; transition: all .3s; } .tg-voiddot.in { background: #9a7aff; box-shadow: 0 0 0 26px #9a7aff22, 0 0 30px #9a7aff; }
+.tg-lure { position: absolute; font-size: 1.8rem; opacity: 0; pointer-events: none; } .tg-lure.pop { animation: tgLure .8s; } @keyframes tgLure { 20% { opacity: 1; } 100% { opacity: 0; transform: scale(1.3); } }
+.tg-pot { position: absolute; left: 50%; top: 85%; transform: translate(-50%, -50%); font-size: 2.6rem; pointer-events: none; }
+.tg-soul { position: absolute; transform: translate(-50%, -50%); font-size: 1.8rem; pointer-events: none; } .tg-soul.evil { filter: drop-shadow(0 0 6px #ff3a2a); } .tg-soul.gone { opacity: 0; transform: translate(-50%, 0) scale(.3); transition: all .3s; }
+.tg-vial { width: 64px; height: 110px; margin-top: 16px; } .tg-blood { background: linear-gradient(#ff6a6a, #8a0a1a); box-shadow: 0 0 16px #ff3a3a; }
+.tg-heart { position: absolute; left: 22%; top: 30%; font-size: 2.4rem; transform: translate(-50%, 0); pointer-events: none; }
+/* v0.9.13 sect emblem designer */
+.modal.se-modal { width: min(720px, 96vw); max-height: 92vh; overflow-y: auto; }
+.se-top { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 10px; }
+.se-show { display: grid; justify-items: center; gap: 6px; min-width: 140px; } .se-preview { filter: drop-shadow(0 6px 14px #000a); }
+.se-look { display: flex; align-items: center; gap: 6px; } .se-robe { width: 18px; height: 26px; border-radius: 5px 5px 2px 2px; border: 1px solid #ffffff44; }
+.se-motto { font-style: italic; font-size: .82rem; color: var(--muted); max-width: 160px; text-align: center; }
+.se-names { flex: 1; min-width: 220px; display: grid; gap: 6px; }
+.se-row { display: grid; grid-template-columns: 100px 1fr; gap: 8px; align-items: start; margin: 6px 0; } .se-lbl { font-size: .8rem; color: var(--muted); padding-top: 6px; }
+.se-opts { display: flex; flex-wrap: wrap; gap: 5px; }
+.se-opt { min-width: 30px; height: 30px; padding: 0 8px; border-radius: 8px; border: 1px solid #ffffff22; background: #ffffff0a; color: var(--text); font-size: .8rem; cursor: pointer; }
+.se-opt[data-k=bg], .se-opt[data-k=fg] { width: 26px; min-width: 26px; height: 26px; padding: 0; border-radius: 50%; }
+.se-opt[data-k=glyph] { font-family: serif; font-size: 1.05rem; }
+.se-opt[data-k=robe]::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: var(--rc); margin-right: 5px; vertical-align: -1px; }
+.se-opt.on { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 50%, transparent); }
+.clan .sect-emblem { vertical-align: -4px; }
+@media (max-width: 520px) { .se-row { grid-template-columns: 1fr; } .se-lbl { padding-top: 0; } }
+.fac-emblem:has(.sect-emblem) { background: none; border: none; width: auto; height: auto; padding: 0; } .fac-emblem .sect-emblem { width: 64px; height: 64px; filter: drop-shadow(0 4px 10px #0009); }
