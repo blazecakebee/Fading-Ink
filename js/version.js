@@ -1,7 +1,8 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.6.6';
+export const VERSION = '0.6.7';
 export const CHANGELOG = [
+  { v: '0.6.7', date: '2026-11-15', title: 'Self-healing loader', notes: ['If your browser keeps a mix of old and new game files after an update (GitHub Pages caches files for ~10 minutes), the game now notices it can\'t start, re-downloads everything fresh and reloads by itself.', 'If something still stops the game from starting, a box now shows the exact error and a "Clear cache & retry" button instead of a blank screen.'] },
   { v: '0.6.6', date: '2026-11-15', title: 'Starter guide & fitting mirror', notes: ['A short starter guide explains what Fading Ink is and how everything works the first time you play. Reopen it any time from Settings.', 'Wardrobe & Armory: a fitting mirror shows your character wearing any clothes or holding any weapon/armour before you buy — just hover or tap an item.', 'Every clothing item now has its own pixel icon in its colour, and Armory gear shows its icon too.'] },
   { v: '0.6.5', date: '2026-11-15', title: 'The Severed Path', notes: [
     'A whole new progression line for those who reject Qi. From age 12 (and while at Golden Core or below) you can tear your Qi out forever — or be born Heaven-Severed (a rare Legendary trait) with none at all.',

@@ -101,4 +101,4 @@ async function boot() {
   setInterval(() => { if (G.char && document.getElementById('app').style.display !== 'none') save(); }, 15000);
   startUpdateChecks(entries => { if (entries.length) openChangelog(entries, true); });
 }
-boot();
+boot().then(() => { window.__fiBooted = true; }).catch(e => { console.error(e); window.__fiBootError = e; throw e; });
