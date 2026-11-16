@@ -42,10 +42,13 @@ import { flagEl } from './flags.js';
 import { svgMap, osmLink } from './worldMap.js';
 import { net, hostRoom, joinRoom, leave, sendChat, doCoopAction, COOP_ACTIONS, coopTick, voteInfo, voteAgeUp, inCoopRoom } from '../net/coop.js';
 
+// v0.9.0 grouped, collapsible drawers (Life stays on top, always visible)
 export const NAV = [
-  ['Your Life', [['life', 'Life', 'life'], ['status', 'Status', 'robe'], ['character', 'Character', 'character'], ['skills', 'Skills & Traits', 'skills'], ['health', 'Health', 'doctor'], ['inventory', 'Inventory', 'bag'], ['cultivation', 'Cultivation', 'cultivation'], ['crafting', 'Crafting & Gear', 'anvil'], ['gates', 'Dungeons & Gates', 'gates'], ['bloodline', 'Bloodline', 'legacy']]],
-  ['People & Places', [['people', 'People', 'people'], ['factions', 'Sect & Guild', 'crown'], ['career', 'Career', 'career'], ['education', 'Education', 'education'], ['assets', 'Assets & Market', 'assets'], ['world', 'World', 'world']]],
-  ['Your Story', [['chronicle', 'Chronicle', 'study'], ['legacy', 'Legacy & Family', 'legacy'], ['coop', 'Co-op', 'people'], ['achievements', 'Achievements', 'trophy'], ['updates', 'Update Log', 'letter'], ['settings', 'Settings', 'settings']]],
+  ['Self & Body', [['life', 'Life', 'life'], ['status', 'Status', 'robe'], ['character', 'Character', 'character'], ['health', 'Health', 'doctor'], ['bloodline', 'Bloodline', 'legacy'], ['wardrobe', 'Wardrobe & Armory', 'robe']]],
+  ['Progression', [['skills', 'Skills & Traits', 'skills'], ['cultivation', 'Cultivation', 'cultivation'], ['severed', 'Severed Path', 'fist'], ['crafting', 'Crafting & Gear', 'anvil']]],
+  ['World & Social', [['people', 'People', 'people'], ['factions', 'Sect & Guild', 'crown'], ['world', 'World', 'world'], ['chronicle', 'Chronicle', 'study'], ['legacy', 'Legacy & Family', 'legacy'], ['coop', 'Co-op', 'people']]],
+  ['Economy & Action', [['gates', 'Dungeons & Gates', 'gates'], ['inventory', 'Inventory', 'bag'], ['career', 'Career', 'career'], ['education', 'Education', 'education'], ['assets', 'Assets & Market', 'assets'], ['market', 'Stock Market', 'stocks']]],
+  ['Game', [['achievements', 'Achievements', 'trophy'], ['updates', 'Update Log', 'letter'], ['settings', 'Settings', 'settings']]],
 ];
 
 // ---------- chronicle logging (used through bus.ui.log)
@@ -57,8 +60,9 @@ export function logLine(text, cls = '') {
 }
 
 // ---------- action runner: spends budget, handles repeat-FX rule
-export async function runActivity(a) {
+export async function runActivity(a, el) {
   const c = G.char; if (!c.alive) return;
+  const snap = { ...c.stats, qi: c.qi.qi, money: c.money }, at = el?.getBoundingClientRect?.(); if (el) { el.classList.remove('act-pop'); void el.offsetWidth; el.classList.add('act-pop'); }
   const cost = a.cost === 's' ? 'social' : 'actions';
   const free = a.cost === 'free';
   if (!free && c[cost] <= 0) return toast('No actions left this year. Age up!');
@@ -79,10 +83,21 @@ export async function runActivity(a) {
   checkEarned(c);
   // subtle feedback only the first time / on milestones / big moments, so grinding stays quiet
   if (r.big || [1, 10, 25, 50, 100].includes(n)) fx(r.big ? 'milestone' : 'action');
+  if (a.person) a.person.talks = (a.person.talks || 0) + 1;
+  gainPopups(c, snap, at);
   save(); render();
   if (!c.alive) import('./legacyPanel.js').then(m => m.deathScreen());
 }
 
+// v0.9.0 floating +gains rising from the button you pressed
+const GAIN_LBL = { health: 'Health', happiness: 'Happy', stress: 'Stress', smarts: 'Smarts', looks: 'Looks', strength: 'Str', battle: 'Battle', agility: 'Agi', charisma: 'Cha', luck: 'Luck', qi: 'Qi', money: '' };
+export function gainPopups(c, snap, at, mult = 1) {
+  if (!at || S().reduceMotion) return; const layer = document.getElementById('fx') || document.body; let i = 0;
+  for (const k of Object.keys(GAIN_LBL)) { const now = k === 'qi' ? c.qi.qi : k === 'money' ? c.money : c.stats[k], d = Math.round((now ?? 0) - (snap[k] ?? 0)); if (!d) continue;
+    const good = k === 'stress' ? d < 0 : d > 0, txt = k === 'money' ? `${d > 0 ? '+' : '-'}${fmtMoney(c, Math.abs(d))}` : `${d > 0 ? '+' : ''}${d} ${GAIN_LBL[k]}`;
+    const n = h('div', { class: 'gain-pop ' + (good ? 'good' : 'bad') }, txt); n.style.left = (at.left + at.width / 2) + 'px'; n.style.top = (at.top - 6 - i * 22) + 'px'; n.style.animationDelay = (i * 70) + 'ms';
+    layer.append(n); setTimeout(() => n.remove(), 1600 + i * 70); if (++i >= 5) break; }
+}
 // ---------- top + age bar
 function topbar() {
   const c = G.char, cty = country(c);
@@ -100,14 +115,14 @@ function agebar() {
   const pips = (n, max, cls) => h('span', { class: 'pips' }, Array.from({ length: max }, (_, i) => h('i', { class: 'pip ' + cls + (i >= n ? ' used' : '') })));
   $('#agebar').replaceChildren(
     h('span', { class: 'age-title display' }, `AGE ${c.age}`), h('span', { class: 'muted' }, '· ' + lifeStage(c.age)),
-    h('span', { class: 'hint' }, c.alive ? 'Use your actions, then age up when you\'re ready.' : 'This life has ended.'),
+    c.alive ? '' : h('span', { class: 'hint' }, 'This life has ended.'),
     h('span', { class: 'budget' }, 'Actions ', h('b', {}, `${c.actions}/${c.maxActions || ACTIONS_PER_YEAR}`), pips(c.actions, c.maxActions || ACTIONS_PER_YEAR, ''), '  Social ', h('b', {}, `${c.social}/${c.maxSocial || SOCIAL_PER_YEAR}`), pips(c.social, c.maxSocial || SOCIAL_PER_YEAR, 'social')),
     ageBtn(c));
 }
 // In a co-op room the button becomes a vote: shows who's ready and the countdown.
 function ageBtn(c) {
   const v = voteInfo();
-  if (!v) return h('button', { id: 'ageup', disabled: !c.alive, onclick: onAgeUp }, 'AGE UP ▶ ', c.age + 1);
+  if (!v) return h('button', { id: 'ageup', class: c.alive && c.actions <= 0 ? 'ready-pulse' : '', disabled: !c.alive, onclick: onAgeUp }, 'AGE UP ▶ ', c.age + 1);
   return h('button', { id: 'ageup', class: 'voting' + (v.mine ? ' ready' : ''), disabled: v.mine, title: `Waiting for: ${v.waiting.join(', ')}`, onclick: onAgeUp },
     v.mine ? `READY ${v.yes}/${v.total} · ${v.left}s` : `AGE UP ▶ ${c.age + 1}`, h('small', { style: { display: 'block', fontSize: '11px', opacity: 0.85 } }, v.mine ? `waiting for ${v.waiting.join(', ')}` : `${v.yes}/${v.total} ready · ${v.left}s left`));
 }
@@ -137,9 +152,12 @@ function sidebar() {
   const badge = id => id === 'coop' && net.status === 'reconnecting' ? '…' : id === 'coop' && net.status === 'online' ? net.peers.size + 1 : id === 'gates' && c.gates.length ? c.gates.length : id === 'cultivation' && c.qi.realm && c.qi.qi >= qiCap(c) ? '!' : null;
   const curLabel = NAV.flatMap(([, it]) => it).find(([id]) => id === G.ui.tab)?.[1] || 'Menu';
   $('#sidebar').classList.toggle('open', !!G.ui.navOpen);
-  $('#sidebar').replaceChildren(h('button', { class: 'nav-toggle', onclick: () => { fx('click'); G.ui.navOpen = !G.ui.navOpen; render(); } }, h('span', {}, '☰ ', curLabel), h('span', { class: 'muted' }, G.ui.navOpen ? 'Close ▴' : 'All tabs ▾')), ...NAV.flatMap(([g, items]) => [h('div', { class: 'nav-group' }, g),
-    ...items.filter(([id]) => (id !== 'cultivation' || (!onBodyPath(c) && (c.qi.known || META.bestRealm > 0))) && (id !== 'severed' || canSeeSevered(c))).map(([id, label, ic]) => h('button', { class: 'nav-btn' + (G.ui.tab === id ? ' active' : ''), title: label, onclick: () => { fx('click'); G.ui.tab = id; G.ui.navOpen = false; render(); window.innerWidth <= 760 && document.getElementById('center').scrollIntoView({ behavior: 'smooth' }); } },
-      icon(ic), h('span', { class: 'lbl' }, label), badge(id) ? h('span', { class: 'badge' }, badge(id)) : null))]));
+  const shut = (META.settings.navShut ||= { Game: true }), vis = it => it.filter(([id]) => (id !== 'cultivation' || (!onBodyPath(c) && (c.qi.known || META.bestRealm > 0))) && (id !== 'severed' || canSeeSevered(c)));
+  $('#sidebar').replaceChildren(h('button', { class: 'nav-toggle', onclick: () => { fx('click'); G.ui.navOpen = !G.ui.navOpen; render(); } }, h('span', {}, '☰ ', curLabel), h('span', { class: 'muted' }, G.ui.navOpen ? 'Close ▴' : 'All tabs ▾')), ...NAV.flatMap(([g, items]) => { const its = vis(items), here = its.some(([id]) => id === G.ui.tab), closed = shut[g] && !here;
+    const b = its.reduce((n, [id]) => n + (badge(id) ? 1 : 0), 0);
+    return [h('button', { class: 'nav-group' + (closed ? ' shut' : ''), onclick: () => { fx('click'); shut[g] = !shut[g]; save(); render(); } }, h('span', {}, g), closed && b ? h('span', { class: 'badge' }, b) : null, h('span', { class: 'chev' }, closed ? '▸' : '▾')),
+    ...(closed ? [] : its.filter(([id]) => (id !== 'cultivation' || (!onBodyPath(c) && (c.qi.known || META.bestRealm > 0))) && (id !== 'severed' || canSeeSevered(c))).map(([id, label, ic]) => h('button', { class: 'nav-btn' + (G.ui.tab === id ? ' active' : ''), title: label, onclick: () => { fx('click'); G.ui.tab = id; G.ui.navOpen = false; render(); window.innerWidth <= 760 && document.getElementById('center').scrollIntoView({ behavior: 'smooth' }); } },
+      icon(ic), h('span', { class: 'lbl' }, label), badge(id) ? h('span', { class: 'badge' }, badge(id)) : null)))]; }));
 }
 
 // ---------- right column
@@ -158,14 +176,12 @@ function rightCol() {
         ['combat', 'Power', power(c).toFixed(1)], ['trophy', 'Fights won', c.wins], ['gates', 'Gates', c.gatesCleared],
         ['market', 'Gold', fmtMoney(c, c.money)], ['bell', 'Fame', (c.fame || 0).toLocaleString()]].map(([ic, k, v]) => h('div', {}, icon(ic, 'sm'), k, h('b', {}, v))))),
     (c.conditions || []).length ? h('div', { class: 'box' }, h('h3', {}, 'Conditions'), c.conditions.map(x => h('span', { class: 'chip', style: { '--tc': 'var(--bad)', cursor: 'pointer' }, onclick: () => { G.ui.tab = 'health'; render(); } }, COND_BY_ID[x.id].name))) : null,
-    h('div', { class: 'box' }, h('h3', {}, 'Your Traits ', h('small', { class: 'muted', style: { fontSize: '.8rem' } }, 'hover for details')),
-      c.traits.length ? c.traits.map(traitChip) : h('span', { class: 'muted' }, 'None yet.')),
-    h('div', { class: 'box' }, h('h3', {}, 'Personality ', h('small', { class: 'muted', style: { fontSize: '.8rem' } }, `${(c.temper || []).length}/${MAX_TEMPER}`)),
-      (c.temper || []).length ? c.temper.map(temperChip) : h('span', { class: 'muted' }, 'Still forming.')),
+    h('div', { class: 'box' }, h('h3', {}, 'Traits'), c.traits.length || (c.temper || []).length ? [...c.traits.map(traitChip), ...(c.temper || []).map(temperChip)] : h('span', { class: 'muted' }, 'None yet.')),
   ];
   if (META.settings.showChronicle !== false) {
     const lines = c.log.slice(-6).reverse().flatMap(y => [h('div', { class: 'yr' }, `Age ${y.age}`), ...y.lines.map(l => h('div', { class: l.c }, l.t))]);
-    out.push(h('div', { class: 'box' }, h('h3', {}, 'Chronicle of This Life'), h('div', { class: 'chronicle feed' }, lines)));
+    const dd = h('details', { class: 'box chron', open: G.ui.chronOpen ?? true }, h('summary', {}, h('h3', {}, 'Chronicle')), h('div', { class: 'chronicle feed' }, lines)); dd.addEventListener('toggle', () => { G.ui.chronOpen = dd.open; });
+    out.push(dd);
   }
   $('#right').replaceChildren(...out.filter(Boolean));
 }
@@ -194,25 +210,61 @@ export const gpa = g => Math.max(0, Math.min(4, (g - 50) / 10)).toFixed(2);
 const gpaText = g => { const v = +gpa(g); const L = v >= 3.7 ? 'A' : v >= 3.3 ? 'A-' : v >= 3 ? 'B+' : v >= 2.7 ? 'B' : v >= 2.3 ? 'B-' : v >= 2 ? 'C' : v >= 1 ? 'D' : 'F'; return `${v.toFixed(2)} / 4.0 (${L}) — the higher the better`; };
 // effective (usable) stat, with the trained value shown when injuries hold it back
 const effShow = (c, k) => { const e = eff(c, k), b = c.stats[k] ?? 0; return e < b ? h('span', { 'data-tip': `Trained ${b}, but your body only lets you use ${e}. ${statLimits(c, k).map(([n, x]) => `${n} ${Math.round(x * 100)}%`).join(', ')}`, style: { color: 'var(--bad, #ff7a6a)' } }, `${e}`, h('small', { class: 'muted' }, ` /${b}`)) : b; };
+// v0.9.0 People: favourites + most-seen contacts, one tap away
+function innerCircle(c) {
+  const live = c.people.filter(p => p.alive && p.role !== 'Enemy'), fav = live.filter(p => p.fav);
+  const frequent = live.filter(p => !p.fav && p.talks).sort((a, b) => b.talks - a.talks).slice(0, Math.max(0, 6 - fav.length)).slice(0, 3);
+  const list = [...fav, ...frequent]; if (!list.length) return h('div', { class: 'muted small', style: { margin: '6px 0' } }, 'Tap ☆ on anyone to keep them in your Inner Circle.');
+  return h('div', { class: 'inner-circle' }, h('div', { class: 'muted small' }, 'Inner Circle'), h('div', { class: 'ic-row' }, list.map(p => h('button', { class: 'ic-person', title: `${p.role} · ${p.close}%`, onclick: () => personModal(p) }, h('div', { class: 'pframe' }, portraitFor(p, 40)), h('span', {}, p.first, p.fav ? ' ★' : '')))));
+}
+// ---------- v0.9.0 Life tab helpers: pins, repeatable routine, batch
+const RISKY = ['crime', 'adventure'];
+// actions safe to repeat automatically (no prompts, no fights)
+const REPEATABLE = ['gym', 'run', 'sports', 'combat_drills', 'meditate', 'study', 'library', 'walk', 'journal', 'work_hard', 'gather', 'fishing', 'alchemy_texts', 'body_condition', 'body_endure', 'pill', 'social_media', 'play_toys', 'cloud_watch'];
+const availActs = c => ACTIVITIES.filter(a => c.age >= (a.minAge ?? 0) && c.age <= (a.maxAge ?? 999) && (!a.need || a.need(c)) && !(a.cat === 'cultivation' && (!c.qi.known || onBodyPath(c))));
+function actBtn(a) {
+  const c = G.char, pins = (META.settings.pins ||= []), pinned = pins.includes(a.id);
+  return h('button', { class: 'act' + (RISKY.includes(a.cat) ? ' risky' : ''), disabled: (a.cost === 's' ? c.social : c.actions) <= 0, onclick: e => runActivity(a, e.currentTarget) },
+    icon(a.icon), h('span', {}, a.name, c.counts[a.id] ? h('span', { class: 'meta' }, `done ${c.counts[a.id]}×`) : null),
+    h('span', { class: 'pin' + (pinned ? ' on' : ''), title: pinned ? 'Unpin' : 'Pin to the top', onclick: e => { e.stopPropagation(); if (pinned) META.settings.pins = pins.filter(x => x !== a.id); else if (pins.length < 6) pins.push(a.id); else return toast('You can pin up to 6 actions.'); save(); render(); } }, pinned ? '★' : '☆'),
+    h('span', { class: 'cost' }, a.cost === 's' ? '💬1' : '⚡1'));
+}
+async function runMany(list, el) { // runs a list of activities in order while actions last, with one combined popup
+  const c = G.char, snap = { ...c.stats, qi: c.qi.qi, money: c.money }, at = el?.getBoundingClientRect?.(); let done = 0;
+  for (const a of list) { if (c.actions <= 0 || !c.alive) break; if (a.need && !a.need(c)) continue; await runActivity(a); done++; }
+  gainPopups(c, snap, at); if (done) toast(`Did ${done} action${done > 1 ? 's' : ''}.`);
+}
+function quickBar(c) {
+  if (!c.alive) return null; const av = availActs(c), pins = (META.settings.pins || []).map(id => av.find(a => a.id === id)).filter(Boolean);
+  const top = av.filter(a => REPEATABLE.includes(a.id) && c.counts[a.id]).sort((x, y) => c.counts[y.id] - c.counts[x.id]).slice(0, 3);
+  const rep = av.filter(a => REPEATABLE.includes(a.id)); G.ui.batch = rep.find(a => a.id === G.ui.batch?.id) ? G.ui.batch : { id: top[0]?.id || rep[0]?.id, n: 1 };
+  const n = Math.max(1, Math.min(G.ui.batch.n || 1, c.actions || 1));
+  return h('div', { class: 'quickbar' },
+    pins.length ? h('div', { class: 'acts pinned' }, pins.map(actBtn)) : h('div', { class: 'muted small' }, 'Tip: tap ☆ on any action to pin it here.'),
+    h('div', { class: 'qb-row' },
+      top.length ? h('button', { class: 'btn ghost mini', disabled: c.actions <= 0, title: top.map(a => a.name).join(', '), onclick: e => { const seq = []; while (seq.length < c.actions) seq.push(...top); runMany(seq.slice(0, c.actions), e.currentTarget); } }, `↻ Repeat routine: ${top.map(a => a.name.replace(/ \(.*\)$/, '')).join(', ')}`) : null,
+      rep.length ? h('span', { class: 'batch' }, h('select', { onchange: e => { G.ui.batch = { id: e.target.value, n }; render(); } }, rep.map(a => h('option', { value: a.id, selected: a.id === G.ui.batch.id }, a.name))),
+        h('input', { type: 'range', min: 1, max: Math.max(1, c.actions), value: n, disabled: c.actions <= 1, oninput: e => { G.ui.batch.n = +e.target.value; e.target.nextSibling.textContent = `×${e.target.value}`; } }), h('b', {}, `×${n}`),
+        h('button', { class: 'btn mini', disabled: c.actions <= 0, onclick: e => { const a = rep.find(x => x.id === G.ui.batch.id); runMany(Array(Math.min(G.ui.batch.n || 1, c.actions)).fill(a), e.currentTarget); } }, 'Do it')) : null));
+}
 export const TABS = {
   life() {
     const c = G.char, cur = c.log[c.log.length - 1] || { lines: [] };
     const flavor = c.age === 0 ? 'A new story begins in faded ink.' : c.prison ? 'Cold walls. Counting days.' : pick(['The city hums. Somewhere, a Gate whispers.', 'Another year written into the ledger.', 'The ink of your life is still wet.']);
     const card = h('div', { class: 'year-card' }, h('h2', { class: 'display' }, `AGE ${c.age}`, h('small', {}, '· ' + lifeStage(c.age))),
       h('div', { class: 'feed' }, cur.lines.length ? cur.lines.map((l, i) => h('p', { class: l.c + (i >= seenLines(c, cur) ? ' fresh' : '') }, l.t)) : h('p', { class: 'muted' }, flavor)),
-      h('div', { class: 'budget-line' }, h('span', {}, '⚡ ', h('b', {}, c.actions), ' actions left'), h('span', {}, '💬 ', h('b', {}, c.social), ' social left (People tab)'), h('span', {}, 'then press ', h('b', {}, 'AGE UP'))));
+    );
     if (!c.alive) return [card, h('div', { class: 'row', style: { marginTop: '16px' } }, h('button', { class: 'btn', onclick: () => import('./legacyPanel.js').then(m => m.deathScreen()) }, 'Continue your legacy'))];
     const cats = CATEGORIES.map(cat => {
       const acts = ACTIVITIES.filter(a => a.cat === cat.id && c.age >= (a.minAge ?? 0) && c.age <= (a.maxAge ?? 999) && (!a.need || a.need(c)));
       if (cat.id === 'cultivation' && (!c.qi.known || onBodyPath(c))) return null;
       if (!acts.length) return null;
-      const d = h('details', { class: 'cat', open: G.ui.openCats[cat.id] ?? META.settings.autoOpenCats }, h('summary', {}, icon(cat.icon), cat.name, h('span', { class: 'n' }, `${acts.length} activit${acts.length === 1 ? 'y' : 'ies'}`)),
-        h('div', { class: 'acts' }, acts.map(a => h('button', { class: 'act', disabled: (a.cost === 's' ? c.social : c.actions) <= 0, onclick: () => runActivity(a) },
-          icon(a.icon), h('span', {}, a.name, c.counts[a.id] ? h('span', { class: 'meta' }, `done ${c.counts[a.id]}×`) : null), h('span', { class: 'cost' }, a.cost === 's' ? '💬1' : '⚡1')))));
+      const d = h('details', { class: 'cat' + (RISKY.includes(cat.id) ? ' risky' : ''), open: G.ui.openCats[cat.id] ?? META.settings.autoOpenCats }, h('summary', {}, icon(cat.icon), cat.name, h('span', { class: 'n' }, `${acts.length} activit${acts.length === 1 ? 'y' : 'ies'}`)),
+        h('div', { class: 'acts' }, acts.map(actBtn)));
       d.addEventListener('toggle', () => { G.ui.openCats[cat.id] = d.open; });
       return d;
     }).filter(Boolean);
-    return [card, h('div', { class: 'section-title display' }, 'What do you do this year?', h('span', { class: 'count' }, `${c.actions} actions left`)), ...cats];
+    return [card, quickBar(c), h('div', { class: 'section-title display' }, 'What do you do this year?', h('span', { class: 'count' }, `${c.actions} actions left`)), ...cats];
   },
 
   character() {
@@ -331,9 +383,10 @@ export const TABS = {
     const gSym = p => h('span', { class: 'gsym ' + (p.gender === 'F' ? 'f' : 'm'), title: p.gender === 'F' ? 'Female' : 'Male' }, p.gender === 'F' ? ' ♀' : ' ♂');
     const bl = bondList(c), best = bonds(c).best;
     return [h('h2', { class: 'display' }, 'People'), h('p', { class: 'muted' }, `Social actions left: ${c.social}/${c.maxSocial || SOCIAL_PER_YEAR}. Click someone to interact. Socialising trains Charisma; people at 75%+ may gift you things or teach you skills, recipes and cultivation methods.`),
+      innerCircle(c),
       h('div', { class: 'box' }, h('h3', {}, 'Bonds'), bl.length ? bl.map(b => h('div', { style: { margin: '4px 0' } }, h('b', {}, `${b.label}: ${b.who.first}`), h('span', { class: 'muted' }, ' — ' + b.perks.join(' · ')))) : h('div', { class: 'muted' }, 'Get a friend to 80% closeness to make them your Best Friend, or a partner to 50%+, to unlock training, study, Qi and salary bonuses.')),
       ...groups.map(([g, f, cls]) => { const ps = c.people.filter(f); if (!ps.length) return null;
-        return [h('h3', { class: 'display grp-h ' + cls, style: { margin: '16px 0 8px' } }, g), h('div', { class: 'grid2' }, ps.map(p => h('div', { class: `card person grp-${cls}` + (p.alive ? '' : ' dead'), onclick: () => personModal(p) },
+        return [h('h3', { class: 'display grp-h ' + cls, style: { margin: '16px 0 8px' } }, g), h('div', { class: 'grid2' }, ps.map(p => h('div', { class: `card person grp-${cls}` + (p.alive ? '' : ' dead'), onclick: () => personModal(p) }, p.alive ? h('button', { class: 'fav' + (p.fav ? ' on' : ''), title: p.fav ? 'Remove from Inner Circle' : 'Add to Inner Circle', onclick: e => { e.stopPropagation(); p.fav = !p.fav; fx('click'); save(); render(); } }, p.fav ? '★' : '☆') : null,
           h('div', { class: 'pframe' }, portraitFor(p, 52)), h('div', { style: { flex: 1 } }, h('b', {}, best === p ? '★ ' : '', `${p.first} ${p.last}`, gSym(p), p.coop ? h('span', { class: 'online' + (p.online ? ' on' : ''), title: p.online ? 'Player online' : 'Player offline' }, p.online ? ' ● player' : ' ○ player') : null), h('div', { class: 'rel' }, `${p.role} · ${p.age}${p.alive ? '' : ' · deceased'} · ${relLabel(p)}`), p.coop ? null : (ensurePersona(p), h('div', { class: 'rel persona' }, p.persona.map(t => p.known.includes(t) ? PERSONAS[t].name : '???').join(' · '))),
             h('div', { class: 'bar' }, h('i', { style: { width: p.close + '%', '--c': 'var(--grp)' } }))))))]; })];
   },

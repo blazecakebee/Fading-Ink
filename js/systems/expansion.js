@@ -159,11 +159,8 @@ export async function installExpansion() {
   { const base = TABS.gates; TABS.gates = () => [...[base()].flat(), P.huntsPanel()]; }
   { const base = TABS.cultivation; const QB = await import('../ui/qiBadge.js'); TABS.cultivation = () => { const out = [base()].flat(); return G.char?.qi?.known ? [...out.slice(0, 1), QB.qiPanel(G.char), ...out.slice(1)] : out; }; }
   P.bindPanels(render, runActivity);
-  const P2 = await import('../ui/panels2.js'); const { NAV } = await import('../ui/render.js');
+  const P2 = await import('../ui/panels2.js'); // (Severed Path, Wardrobe and Stock Market are part of the grouped NAV since v0.9.0)
   TABS.market = P2.marketTab; TABS.wardrobe = P2.wardrobeTab; TABS.severed = P2.bodyPathTab; P2.bindPanels2(render, runActivity);
-  if (!NAV[0][1].some(x => x[0] === 'severed')) NAV[0][1].splice(7, 0, ['severed', 'Severed Path', 'fist']);
-  if (!NAV[0][1].some(x => x[0] === 'wardrobe')) NAV[0][1].push(['wardrobe', 'Wardrobe & Armory', 'robe']);
-  if (!NAV[1][1].some(x => x[0] === 'market')) NAV[1][1].splice(5, 0, ['market', 'Stock Market', 'stocks']);
   if (!META.shuffleSet) { META.shuffleSet = true; META.settings.station = 'shuffle'; }
   const fx0 = ui.fx;
   ui.fx = (kind, o = {}) => {

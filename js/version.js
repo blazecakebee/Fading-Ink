@@ -1,7 +1,15 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.8.9';
+export const VERSION = '0.9.0';
 export const CHANGELOG = [
+  { v: '0.9.0', date: '2026-11-16', title: 'A cleaner screen', notes: [
+    'Sidebar: tabs are grouped into collapsible drawers (Self & Body, Progression, World & Social, Economy & Action, Game). They remember whether they\'re open, and a closed drawer shows a badge if something inside needs you.',
+    'Life tab: pin up to 6 actions (☆) to a quick bar at the top. "Repeat routine" re-runs your most-used actions until you\'re out of actions, and the batch slider does one action several times in one go. Risky actions (crime, adventure) are marked in red.',
+    'Every action now pops its icon and floats your gains (+2 Strength, +Qi, +money…) up from the button you pressed.',
+    'People: star (☆) anyone to keep them in your Inner Circle at the top of the tab, next to the people you see most.',
+    'The action bar stays at the top as you scroll, and AGE UP pulses once your actions are spent.',
+    'Less clutter: Traits and Personality share one box, the Chronicle can be folded away, the duplicate action counters are gone, and pop-up windows blur the game behind them. Buttons press and lift as you use them.',
+  ] },
   { v: '0.8.9', date: '2026-11-16', title: 'Start-up fix', notes: [
     'Fixed: the game could fail to start ("could not start… error") for players using an ad or tracker blocker. A new file\'s name looked like a tracking script and was being blocked. It has been renamed.',
     'If the game ever fails to start, the error box now names the file that failed and waits longer on slow connections before giving up.',
