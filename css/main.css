@@ -835,3 +835,36 @@ details.chron:not([open]) > summary h3::after { content: ' ▸'; }
 .co-chip.hp { width: 60px; height: 8px; padding: 0; overflow: hidden; } .co-chip.hp i { display: block; height: 100%; background: #5fd38a; }
 .co-chip.bad { color: var(--bad, #e05555); } .co-chip.res.synergy, .co-chip.res.resonance { color: #5fd38a; } .co-chip.res.clash { color: #e05555; } .co-chip.res.neutral { color: #7fe8ff; }
 .co-acts { display: flex; flex-wrap: wrap; gap: 6px; }
+/* v0.9.9 minigames: touch-first */
+.tg-stage, .arena-cv, .mg, .mg-area, .br-board, .br-cards, .fb-glyphs, .fb-slots { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+.tg-wrap { padding: 12px; } .tg-box { width: min(460px, 100%); }
+.tg-stage { height: clamp(150px, 34vh, 210px); }
+.tg-head { min-height: 26px; } .tg-prog { display: flex; gap: 5px; } .tg-prog i { width: 10px; height: 10px; border-radius: 50%; background: #ffffff1c; } .tg-prog .g { background: #5fd38a; } .tg-prog .o { background: #ffb02e; } .tg-prog .b { background: #e05555; }
+.tg-stage button { touch-action: none; -webkit-tap-highlight-color: transparent; }
+/* aim */ .tg-ball { position: absolute; transform: translate(-50%, -50%); font-size: clamp(2rem, 9vw, 2.6rem); pointer-events: none; filter: drop-shadow(0 4px 6px #0008); }
+/* stride */ .tg-pulse { position: absolute; top: 18%; left: 50%; width: 46px; height: 46px; margin-left: -23px; border-radius: 50%; background: radial-gradient(circle, #ffd36f, #ffd36f22 70%); }
+.tg-feet { position: absolute; bottom: 10px; left: 10px; right: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tg-foot { height: 64px; border-radius: 12px; border: 1px solid #ffffff22; background: #ffffff0d; color: #fff; font-weight: 800; letter-spacing: .1em; font-size: .9rem; } .tg-foot.next { border-color: #ffd36f; background: #ffd36f1c; }
+/* kata */ .tg-stances { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: 92%; } .tg-stance { height: 72px; font-size: 2rem; border-radius: 14px; border: 1px solid #ffffff22; background: #ffffff0a; } .tg-stance.lit { background: #ffd36f44; border-color: #ffd36f; box-shadow: 0 0 18px #ffd36f88; transform: scale(1.06); } .tg-stance:disabled { opacity: 1; }
+/* react */ .tg-pads { gap: 10px; } .tg-pad { width: 56px; height: 48px; font-size: 1.4rem; }
+/* trace */ .tg-body { position: absolute; left: 50%; top: 6%; bottom: 6%; width: 34%; transform: translateX(-50%); border-radius: 40% 40% 30% 30%; border: 1px dashed #7fe8ff44; pointer-events: none; }
+.tg-node { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; border: 2px solid #7fe8ff55; background: #0b1020; z-index: 1; } .tg-node.lit { background: radial-gradient(circle, #7fe8ff, #7fe8ff33); border-color: #7fe8ff; box-shadow: 0 0 18px #7fe8ff; } .tg-node.done { background: #5fd38a; border-color: #5fd38a; }
+/* order */ .tg-num { position: absolute; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 12px; border: 1px solid #ffffff2a; background: #ffffff10; color: #fff; font-size: 1.2rem; font-weight: 800; } .tg-num.done { opacity: .2; }
+/* stack */ .tg-base, .tg-block { position: absolute; height: 22px; border-radius: 5px; } .tg-base { bottom: 18px; background: #5a6370; } .tg-block { background: linear-gradient(#ffd36f, #c9a23a); } .tg-block.set { background: linear-gradient(#9ad0ff, #4f86c9); }
+/* pour */ .tg-mould { position: relative; width: 90px; height: 120px; border: 3px solid #8a93a3; border-top: none; border-radius: 0 0 14px 14px; overflow: hidden; margin-top: 18px; }
+.tg-metal { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(#fff4b0, #ff8a3d 40%, #c0391a); box-shadow: 0 0 20px #ff8a3d; }
+.tg-line { position: absolute; left: -4px; right: -4px; height: 3px; background: #ffd36f; box-shadow: 0 0 8px #ffd36f; z-index: 1; }
+.tg-stream { position: absolute; top: 0; left: 50%; width: 8px; height: 26px; margin-left: -4px; background: linear-gradient(#fff4b0, #ff8a3d); border-radius: 4px; opacity: 0; } .tg-stream.on { opacity: 1; height: 40%; transition: height .15s; }
+/* sneak */ .tg-eye { position: absolute; top: 12%; font-size: 2.4rem; transition: transform .15s; } .tg-eye.open { transform: scale(1.25); filter: drop-shadow(0 0 10px #e05555); }
+.tg-lane, .tg-street { position: absolute; left: 6%; right: 6%; bottom: 22%; height: 46px; border-bottom: 2px solid #ffffff22; } .tg-me, .tg-goal { position: absolute; bottom: 2px; font-size: 1.9rem; } .tg-goal { right: 0; }
+/* pins */ .tg-pin { position: absolute; bottom: 14%; width: 26px; height: 60%; margin-left: -13px; border-radius: 6px; background: linear-gradient(0deg, #ffffff10 0, #ffffff10 calc(var(--y, .5) * 70%), #c9ced8 calc(var(--y, .5) * 70%), #8a93a3 100%); border: 1px solid #ffffff1c; }
+.tg-pin.lit { border-color: #ffd36f; box-shadow: 0 0 12px #ffd36f88; } .tg-pin.set { border-color: #5fd38a; } .tg-pin.bent { border-color: #e05555; }
+.tg-stage.tg-pins::before { content: ''; position: absolute; top: 14%; left: 8%; right: 8%; height: 3px; background: #ffd36f88; }
+/* crowd */ .tg-walker { position: absolute; bottom: 4px; font-size: 2.1rem; transform: translateX(-50%); pointer-events: none; } .tg-walker.gone { opacity: 0; transform: translate(-50%, -20px); transition: all .25s; }
+/* glint */ .tg-field { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 92%; } .tg-grass { height: 40px; border-radius: 10px; border: 1px solid #6fd36f33; background: #1a2a1a; font-size: 1.2rem; } .tg-grass.lit { background: #fff4b0; box-shadow: 0 0 16px #fff4b0; } .tg-grass.done { background: #2a4a2a; } .tg-grass.bad { background: #3a2a2a; } .tg-grass:disabled { opacity: 1; }
+/* bite */ .tg-water { position: absolute; left: 0; right: 0; bottom: 0; height: 55%; background: linear-gradient(#1f4a7a, #0b1a33); }
+.tg-float { position: absolute; left: 50%; top: -18px; font-size: 1.8rem; transform: translateX(-50%); transition: top .12s; } .tg-float.twitch { top: -10px; } .tg-float.dunk { top: 12px; filter: brightness(.6); } .tg-float.caught { top: -60px; } .tg-float.splash { top: -26px; }
+/* balance */ .tg-beam { position: relative; width: 88%; height: 14px; border-radius: 99px; background: #ffffff10; } .tg-safe { position: absolute; top: 0; bottom: 0; background: #5fd38a33; border-radius: 99px; }
+.tg-bdot { position: absolute; top: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; background: #e05555; box-shadow: 0 0 10px #e05555; z-index: 1; } .tg-bdot.in { background: #5fd38a; box-shadow: 0 0 10px #5fd38a; }
+.tg-sides { position: absolute; bottom: 10px; left: 14px; right: 14px; display: flex; justify-content: space-between; color: var(--muted); font-size: .8rem; pointer-events: none; }
+@media (max-width: 480px) { .tg-info { font-size: .8rem; } .tg-head b { font-size: 1rem; } .br-card { min-width: 0; flex: 1 1 30%; } .br-card .n { font-size: .7rem; } }

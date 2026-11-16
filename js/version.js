@@ -1,7 +1,13 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.8';
+export const VERSION = '0.9.9';
 export const CHANGELOG = [
+  { v: '0.9.9', date: '2026-11-16', title: 'A Game for Every Action', notes: [
+    'Every training-type action now has its own minigame: gym (power bar), running (left/right stride on the beat), sports (tap the bouncing ball), martial arts (repeat the kata), fight drills (read the strike), meditation (breathing ring), opening meridians (tap glowing acupoints), library (tap 1–6 in order), school study (hold your focus), working harder (stack the blocks), hiking (keep your balance in the wind) and crafting (pour molten metal to the line).',
+    'Crime and the outdoors have games too: shoplifting (creep while the eye is shut), pickpocketing (grab wallets, never cops), burglary (set the lock pins), gathering (remember where things sparkled) and fishing (strike on the real bite, not the twitches). Your score changes your odds of getting caught, what you find, and what you catch.',
+    'No more skipping: the Quick train toggle and the boss Auto-resolve button are gone. Repeat routine and batch play one game per action and use your score for every repeat.',
+    'All minigames are built for phones: big tap targets, hold-to-play works with a finger, no keyboard needed, and long presses no longer open menus or select text. The keyboard still works on PC.',
+  ] },
   { v: '0.9.8', date: '2026-11-16', title: 'Every Session Counts', notes: [
     'TRAINING MINIGAMES: training, studying, meditating, opening meridians, working harder and crafting now play a short 3–5 second minigame. Timing bars for the gym and sports, a pace bar for running, a breathing ring for Qi, strike-reading arrows for martial arts and drills, a focus band for study and work, and a furnace you keep in the gold heat band for crafting. Keyboard (Space or arrows) or tap.',
     'Every session rolls an outcome: Peak flow (big bonus, sometimes extra stats), Solid, Sloppy (half gains) or Mishap (real injuries on your body, Qi backlash or Qi Deviation, or stress). Each tier has its own pool of descriptions.',

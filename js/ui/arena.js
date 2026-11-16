@@ -67,7 +67,7 @@ export function arena(o) {
     const line = document.createElement('div'); line.className = 'arena-line';
     const btns = document.createElement('div'); btns.className = 'arena-btns';
     const auto = document.createElement('button'); auto.className = 'btn ghost mini'; auto.textContent = 'Auto-resolve';
-    btns.append(auto); root.append(h2(o.title), hud, cv, line, btns); document.body.append(root);
+    root.append(h2(o.title), hud, cv, line, btns); document.body.append(root);
     requestAnimationFrame(() => root.classList.add('on'));
     const ctx = cv.getContext('2d');
     const me = { x: W / 2, y: H * 0.75, tx: W / 2, ty: H * 0.75, inv: 0 };

@@ -10,18 +10,26 @@ import { qiCap } from './cultivation.js';
 
 // kind = minigame, cat = what goes wrong, risk = base mishap chance
 export const PRACTICE = {
-  gym:           { kind: 'timing', cat: 'body',   risk: 0.05, verb: 'lift' },
-  run:           { kind: 'pace',   cat: 'body',   risk: 0.04, verb: 'run' },
-  sports:        { kind: 'timing', cat: 'body',   risk: 0.05, verb: 'play' },
-  martial:       { kind: 'react',  cat: 'combat', risk: 0.06, verb: 'drill' },
-  combat_drills: { kind: 'react',  cat: 'combat', risk: 0.02, verb: 'study' },
-  library:       { kind: 'focus',  cat: 'mind',   risk: 0.02, verb: 'study' },
-  meditate:      { kind: 'breath', cat: 'qi',     risk: 0.04, verb: 'meditate' },
-  meridian:      { kind: 'breath', cat: 'qi',     risk: 0.08, verb: 'open' },
-  study:         { kind: 'focus',  cat: 'mind',   risk: 0.03, verb: 'study' },
-  work_hard:     { kind: 'focus',  cat: 'mind',   risk: 0.04, verb: 'work' },
-  coop_gym:      { kind: 'timing', cat: 'body',   risk: 0.04, verb: 'lift', coop: true },
-  coop_train:    { kind: 'breath', cat: 'qi',     risk: 0.05, verb: 'circulate', coop: true },
+  gym:           { kind: 'lift',    cat: 'body',   risk: 0.05 },
+  run:           { kind: 'stride',  cat: 'body',   risk: 0.04 },
+  sports:        { kind: 'aim',     cat: 'body',   risk: 0.05 },
+  martial:       { kind: 'kata',    cat: 'combat', risk: 0.06 },
+  combat_drills: { kind: 'react',   cat: 'combat', risk: 0.02 },
+  library:       { kind: 'order',   cat: 'mind',   risk: 0.02 },
+  study:         { kind: 'focus',   cat: 'mind',   risk: 0.03 },
+  work_hard:     { kind: 'stack',   cat: 'mind',   risk: 0.04 },
+  meditate:      { kind: 'breath',  cat: 'qi',     risk: 0.04 },
+  meridian:      { kind: 'trace',   cat: 'qi',     risk: 0.08 },
+  hike:          { kind: 'balance', cat: 'body',   risk: 0.05 },
+  coop_gym:      { kind: 'lift',    cat: 'body',   risk: 0.04, coop: true },   // same as the gym, on purpose
+  coop_train:    { kind: 'breath',  cat: 'qi',     risk: 0.05, coop: true },   // same as meditation, on purpose
+  // score-only: the game feeds the action's own odds (getting caught, finds, catches, craft quality)
+  shoplift:      { kind: 'sneak',   scoreOnly: true },
+  pickpocket:    { kind: 'crowd',   scoreOnly: true },
+  burglary:      { kind: 'pins',    scoreOnly: true },
+  gather:        { kind: 'glint',   scoreOnly: true },
+  fishing:       { kind: 'bite',    scoreOnly: true },
+  craft:         { kind: 'pour',    scoreOnly: true },
 };
 export const practiceFor = id => PRACTICE[id] || null;
 const TRACK = ['strength', 'agility', 'battle', 'smarts', 'charisma'];
@@ -34,7 +42,7 @@ export const masteryLabel = m => m >= 1 ? 'Mastered' : m >= 0.66 ? 'Adept' : m >
 export const difficulty = (c, id) => clamp(1 - mastery(c, id) * 0.55, 0.45, 1); // never trivial
 export const fatigueMult = (c, id) => Math.pow(0.85, Math.max(0, reps(c, id) - 2));
 export function risk(c, id) {
-  const P = PRACTICE[id]; if (!P) return 0; const s = c.stats;
+  const P = PRACTICE[id]; if (!P || P.scoreOnly) return 0; const s = c.stats;
   let r = P.risk + 0.035 * Math.max(0, reps(c, id) - 1);
   if (s.health < 40) r += 0.07; else if (s.health < 60) r += 0.03;
   if (s.stress > 70) r += 0.04;

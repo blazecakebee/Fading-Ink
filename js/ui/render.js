@@ -73,15 +73,14 @@ export async function runActivity(a, el, opt = {}) {
   if (c.prison && a.cat !== 'mind' && a.cat !== 'training' && a.cat !== 'prison') return toast('You are in prison.');
   fx('click');
   // v0.9.8 practice: optional micro-minigame, then a 4-tier outcome (peak / solid / sloppy / mishap)
-  const PR = !free && (!a.canPractice || a.canPractice(c)) && PRX.practiceFor(a.practice || a.id); let roll = null, psnap = null;
-  if (PR) { const manual = !opt.auto && META.settings.trainGames !== false;
-    const score = manual ? await playTrain(PR.kind, PRX.difficulty(c, a.practice || a.id), a.name) : null;
-    roll = PRX.rollTier(c, a.practice || a.id, score); a._roll = roll; psnap = { ...c.stats, qi: c.qi.qi, grades: c.edu?.grades, perf: c.job?.perf }; }
-  const res = await a.run(c);
+  const PID = a.practice || a.id, PR = !free && (!a.canPractice || a.canPractice(c)) && PRX.practiceFor(PID); let roll = null, psnap = null;
+  if (PR) { const score = opt.score !== undefined ? opt.score : await playTrain(PR.kind, PRX.difficulty(c, PID), a.name);
+    if (PR.scoreOnly) c._mg = score; else { roll = PRX.rollTier(c, PID, score); a._roll = roll; psnap = { ...c.stats, qi: c.qi.qi, grades: c.edu?.grades, perf: c.job?.perf }; } }
+  let res; try { res = await a.run(c); } finally { delete c._mg; }
   if (res == null) { render(); return; } // cancelled / couldn't afford → no cost
   const r = typeof res === 'string' ? { text: res } : res;
   if (a.name && !free) c.doing = { t: a.name, at: Date.now() };
-  if (PR && roll) { const o = PRX.applyPractice(c, a.practice || a.id, psnap, roll); r.text = r.text.replace(/\s*(Strength|Agility|Battle Knowledge|Battle|Smarts|Charisma) \+\d+\.?/g, '').replace(/\s*\+[\d,]+ Qi\.?/g, '') + ' ' + o.text; if (o.cls && r.cls !== 'qi') r.cls = o.cls; if (o.big) r.big = true; if (o.tier === 'peak') fx('milestone'); else if (o.tier === 'mishap') fx('heavy'); }
+  if (PR && roll) { const o = PRX.applyPractice(c, PID, psnap, roll); r.text = r.text.replace(/\s*(Strength|Agility|Battle Knowledge|Battle|Smarts|Charisma) \+\d+\.?/g, '').replace(/\s*\+[\d,]+ Qi\.?/g, '') + ' ' + o.text; if (o.cls && r.cls !== 'qi') r.cls = o.cls; if (o.big) r.big = true; if (o.tier === 'peak') fx('milestone'); else if (o.tier === 'mishap') fx('heavy'); }
   if (!free) { c[cost]--; c.usedThisYear = (c.usedThisYear || 0) + 1; }
   if (!free && traitVal(c, 'refund') && chance(traitVal(c, 'refund'))) { c[cost]++; r.text += ' (D̷U̷P̷L̷I̷C̷A̷T̷E̷D̷ — action refunded)'; }
   c.counts[a.id] = (c.counts[a.id] || 0) + 1; const n = c.counts[a.id];
@@ -232,13 +231,16 @@ const availActs = c => ACTIVITIES.filter(a => c.age >= (a.minAge ?? 0) && c.age 
 function actBtn(a) {
   const c = G.char, pins = (META.settings.pins ||= []), pinned = pins.includes(a.id);
   return h('button', { class: 'act' + (RISKY.includes(a.cat) ? ' risky' : ''), disabled: (a.cost === 's' ? c.social : c.actions) <= 0, onclick: e => runActivity(a, e.currentTarget) },
-    icon(a.icon), h('span', {}, a.name, PRX.practiceFor(a.id) ? h('span', { class: 'meta' }, `${PRX.masteryLabel(PRX.mastery(c, a.id))} · `, h('b', { class: 'risk' + (PRX.risk(c, a.id) >= 0.12 ? ' hi' : ''), 'data-tip': 'Chance this goes wrong (injury, backlash or strain). Rises when you repeat it in one year, or train hurt, stressed or sick. Mastery lowers it.' }, `${Math.round(PRX.risk(c, a.id) * 100)}% risk`), PRX.reps(c, a.id) >= 2 ? h('span', { class: 'tired', 'data-tip': 'You\'ve done this a lot this year: each extra session gives less.' }, ' · tired') : null) : c.counts[a.id] ? h('span', { class: 'meta' }, `done ${c.counts[a.id]}×`) : null),
+    icon(a.icon), h('span', {}, a.name, PRX.practiceFor(a.id) && !PRX.practiceFor(a.id).scoreOnly ? h('span', { class: 'meta' }, `${PRX.masteryLabel(PRX.mastery(c, a.id))} · `, h('b', { class: 'risk' + (PRX.risk(c, a.id) >= 0.12 ? ' hi' : ''), 'data-tip': 'Chance this goes wrong (injury, backlash or strain). Rises when you repeat it in one year, or train hurt, stressed or sick. Mastery lowers it.' }, `${Math.round(PRX.risk(c, a.id) * 100)}% risk`), PRX.reps(c, a.id) >= 2 ? h('span', { class: 'tired', 'data-tip': 'You\'ve done this a lot this year: each extra session gives less.' }, ' · tired') : null) : c.counts[a.id] ? h('span', { class: 'meta' }, `done ${c.counts[a.id]}×`) : null),
     h('span', { class: 'pin' + (pinned ? ' on' : ''), title: pinned ? 'Unpin' : 'Pin to the top', onclick: e => { e.stopPropagation(); if (pinned) META.settings.pins = pins.filter(x => x !== a.id); else if (pins.length < 4) pins.push(a.id); else return toast('You can pin up to 4 actions.'); save(); render(); } }, pinned ? '★' : '☆'),
     h('span', { class: 'cost' }, a.cost === 's' ? '💬1' : '⚡1'));
 }
 async function runMany(list, el) { // runs a list of activities in order while actions last, with one combined popup
   const c = G.char, snap = { ...c.stats, qi: c.qi.qi, money: c.money }, at = el?.getBoundingClientRect?.(); let done = 0;
-  for (const a of list) { if (c.actions <= 0 || !c.alive) break; if (a.need && !a.need(c)) continue; await runActivity(a, null, { auto: true }); done++; }
+  const scores = {}; // one minigame per distinct action; its score counts for every repeat in the batch
+  for (const a of list) { if (c.actions <= 0 || !c.alive) break; if (a.need && !a.need(c)) continue; const id = a.practice || a.id, P = PRX.practiceFor(id);
+    if (P && !(id in scores) && (!a.canPractice || a.canPractice(c))) scores[id] = await playTrain(P.kind, PRX.difficulty(c, id), `${a.name} ×${list.filter(x => x.id === a.id).length}`);
+    await runActivity(a, null, P ? { score: scores[id] } : {}); done++; }
   gainPopups(c, snap, at); if (done) toast(`Did ${done} action${done > 1 ? 's' : ''}.`);
 }
 function quickBar(c) {
@@ -249,7 +251,6 @@ function quickBar(c) {
   return h('div', { class: 'quickbar' },
     pins.length ? h('div', { class: 'acts pinned' }, pins.slice(0, 4).map(actBtn)) : h('div', { class: 'muted small' }, 'Tap ☆ on any action to pin it here (up to 4).'),
     h('div', { class: 'qb-row' },
-      h('button', { class: 'btn ghost mini tg-toggle' + (META.settings.trainGames !== false ? ' on' : ''), 'data-tip': 'On: training plays a 3–5 second minigame. Good play means bigger gains, rare breakthroughs and fewer injuries. Off (Quick train): no minigame, safe average results with a lower ceiling. Repeat routine and batch always use Quick train.', onclick: () => { META.settings.trainGames = META.settings.trainGames === false; save(); render(); } }, META.settings.trainGames !== false ? '🎯 Minigames: on' : '⏩ Quick train'),
       top.length ? h('button', { class: 'btn ghost mini', disabled: c.actions <= 0, title: top.map(a => a.name).join(', '), onclick: e => { const seq = []; while (seq.length < c.actions) seq.push(...top); runMany(seq.slice(0, c.actions), e.currentTarget); } }, `↻ Repeat routine: ${top.map(a => a.name.replace(/ \(.*\)$/, '')).join(', ')}`) : null,
       rep.length ? h('span', { class: 'batch' }, h('select', { onchange: e => { G.ui.batch = { id: e.target.value, n }; render(); } }, rep.map(a => h('option', { value: a.id, selected: a.id === G.ui.batch.id }, a.name))),
         h('input', { type: 'range', class: 'range', style: { '--p': `${c.actions > 1 ? (n - 1) / (c.actions - 1) * 100 : 100}%` }, min: 1, max: Math.max(1, c.actions), value: n, disabled: c.actions <= 1, oninput: e => { G.ui.batch.n = +e.target.value; e.target.style.setProperty('--p', `${(e.target.value - 1) / Math.max(1, c.actions - 1) * 100}%`); e.target.nextSibling.textContent = `×${e.target.value}`; } }), h('b', { class: 'batch-n' }, `×${n}`),

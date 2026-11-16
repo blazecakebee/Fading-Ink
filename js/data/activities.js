@@ -140,21 +140,25 @@ export const ACTIVITIES = [
       if (c.qi.known && chance(0.12)) { addItem(c, 'qi_pill'); return { text: 'I found a spirit herb under a waterfall and refined it into a Qi pill.', cls: 'qi' }; }
       return 'Mist rolled over the peaks.'; } },
   { id: 'gather', cat: 'adventure', name: 'Gather materials', icon: 'herb', minAge: 10, run: c => {
-      const found = []; const n = Math.round(ri(1, 2) * traitMult(c, 'gather'));
+      const found = [], sc = c._mg ?? 0.5, m = 0.6 + sc * 0.8; const n = Math.round(ri(1, 2) * traitMult(c, 'gather')) + (sc >= 0.85 ? 1 : 0);
       if (n) { addItem(c, 'spirit_herb', n); found.push(`${n} Spirit Herb`); }
-      if (chance(0.45)) { addItem(c, 'iron_ore'); found.push('an Iron Ingot (from an old mine)'); }
-      if (chance(0.12)) { addItem(c, 'spirit_stone'); found.push('a Spirit Stone'); }
-      if (chance(0.03 * c.stats.luck / 50)) { addItem(c, 'ginseng'); found.push('a THOUSAND-YEAR GINSENG'); }
+      if (chance(0.45 * m)) { addItem(c, 'iron_ore'); found.push('an Iron Ingot (from an old mine)'); }
+      if (chance(0.12 * m)) { addItem(c, 'spirit_stone'); found.push('a Spirit Stone'); }
+      if (chance(0.03 * m * c.stats.luck / 50)) { addItem(c, 'ginseng'); found.push('a THOUSAND-YEAR GINSENG'); }
       return { text: `I foraged the hills and found ${found.join(', ') || 'nothing useful'}.`, cls: found.length ? 'good' : '' }; } },
-  { id: 'fishing', cat: 'adventure', name: 'Go fishing', icon: 'fishing', minAge: 6, run: c => { stat(c, 'stress', -8); return chance(0.3) ? `I caught a ${pick(['huge carp', 'golden koi', 'boot'])}.` : 'Nothing bit.'; } },
+  { id: 'fishing', cat: 'adventure', name: 'Go fishing', icon: 'fishing', minAge: 6, run: c => { stat(c, 'stress', -8); const sc = c._mg ?? 0.4;
+      if (sc >= 0.9 && chance(0.35)) { stat(c, 'happiness', 8); const m = Math.round(ri(40, 160) * wage(c)); money(c, m); return { text: `Perfect strike! I landed a golden koi and sold it to a collector for ${fmtMoney(c, m)}.`, cls: 'good', big: true }; }
+      if (chance(0.1 + sc * 0.6)) { stat(c, 'happiness', 4); return { text: `I caught a ${pick(['huge carp', 'fat catfish', 'silver trout', 'river eel', 'pike with an attitude', 'perch'])}.`, cls: 'good' }; }
+      return sc < 0.2 && chance(0.4) ? 'I struck too early, lost the bait and nearly fell in.' : pick(['Nothing bit.', 'I caught a boot.', 'Something big snapped my line.', 'Just weeds and a beautiful sunset.']); } },
   { id: 'gate', cat: 'adventure', name: 'Enter a Gate', icon: 'gates', minAge: 14, need: c => c.gates.length > 0, run: async c => { ui.openTab?.('gates'); return null; } },
 ];
 
 async function crime(c, risk, loot, text, years) {
   const L = await import('../systems/law.js'); // v0.8.7: heat + country policing + standoffs
-  if (chance(L.caughtChance(c, risk))) return L.standoff(c, years, text);
-  L.addHeat(c, Math.round(risk * 40));
-  const g = Math.round(ri(...loot) * wage(c)); money(c, g); c.flags.crimeWin = true; return { text: `${text}. Got away with ${fmtMoney(c, g)}.${(c.heat || 0) >= 45 ? ' (The Federal Authorities are looking into me.)' : ''}`, cls: 'good' };
+  const sc = c._mg; // v0.9.9 the minigame: clean work halves your odds of getting caught, a botch makes it far likelier
+  if (chance(L.caughtChance(c, risk) * (sc == null ? 1 : 1.5 - sc))) return L.standoff(c, years, text);
+  L.addHeat(c, Math.round(risk * 40 * (sc == null ? 1 : 1.3 - sc * 0.6)));
+  const g = Math.round(ri(...loot) * wage(c) * (sc == null ? 1 : 0.7 + sc * 0.6)); money(c, g); c.flags.crimeWin = true; return { text: `${text}. Got away with ${fmtMoney(c, g)}.${(c.heat || 0) >= 45 ? ' (The Federal Authorities are looking into me.)' : ''}`, cls: 'good' };
 }
 
 // Social actions (cost a Social point) — used from the People tab.
