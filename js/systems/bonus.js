@@ -13,6 +13,7 @@ export function sources(c) {
   if (!c) return [];
   const out = attuned(c).map(x => HEIRLOOMS[x.id]);
   const d = c.dna; if (d) for (const id of [...(d.base || []), ...(d.awakened || [])]) { const g = GENE(id); if (g) out.push(g); }
+  for (const d of c.divine || []) if (d.mods) out.push(d.mods); // divine blessings & god-shards
   if (c.flags?.stormBorn) out.push({ breakthrough: 0.03 });
   const st = outfitStyle(c); if (st) out.push({ social: 1 + Math.min(15, st) / 100 });
   const lib = c.ownSect?.halls?.library; if (lib) out.push({ qi: 1 + lib * 0.04 });

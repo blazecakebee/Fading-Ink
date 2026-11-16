@@ -11,7 +11,7 @@ import { traitMult } from './traits.js';
 
 const T = c => c.bodyPath.tier || 0;
 export function startPath(c, why) {
-  c.path = 'body'; c.bodyPath = { tier: 0, prog: why === 'born' ? 30 : 0, wins: c.wins, gates: c.gatesCleared, since: c.age };
+  c.path = 'body'; c.bodyPath = { v2: true, tier: 0, prog: why === 'born' ? 30 : 0, wins: c.wins, gates: c.gatesCleared, since: c.age };
   c.conditions = (c.conditions || []).filter(x => !['qi_deviation', 'corruption', 'meridian_block'].includes(x.id));
   Object.assign(c.qi, { known: false, realm: 0, stage: 1, qi: 0, manuals: [], techs: [], methods: ['basic'], meridians: 0 });
 }
@@ -43,7 +43,7 @@ export const BODY_ACTS = [
       return { text: `I killed a spirit beast with my bare hands. Tempering +${p}.`, cls: 'good' }; } },
   { id: 'body_trial', cat: 'training', name: 'Face your Body Trial (Severed)', icon: 'trophy', minAge: 12, need: c => onBodyPath(c) && T(c) < BODY_TIERS.length - 1 && c.bodyPath.prog >= bodyTier(c).need, run: async c => {
       const next = BODY_TIERS[T(c) + 1];
-      const e = ENEMIES.find(x => x.id === ['stone_golem', 'tiger_beast', 'yaoguai', 'yaoguai', 'young_dragon', 'sword_saint', 'void_wraith', 'heavenly_demon', 'ancient_qilin', 'fallen_immortal'][T(c)]) || ENEMIES[1];
+      const e = ENEMIES.find(x => x.id === ['stone_golem', 'tiger_beast', 'yaoguai', 'yaoguai', 'young_dragon', 'sword_saint', 'void_wraith', 'heavenly_demon', 'ancient_qilin', 'ancient_qilin', 'fallen_immortal', 'fallen_immortal', 'fallen_immortal'][T(c)]) || ENEMIES[1];
       ui.log(`My body screams that it is ready. I seek out a ${e.name} to test it.`, 'qi');
       let def = { ...e, realm: next.eq, name: `Trial · ${e.name}` };
       if (ui.bossPhase) def = await ui.bossPhase(c, def, e, T(c) >= 5);
@@ -54,6 +54,8 @@ export const BODY_ACTS = [
       ui.cinematic?.({ motif: 'glyph', glyph: next.glyph, color: next.color, lines: ['No Qi. No heaven\'s blessing. Only you.', next.eq >= 6 ? 'Cultivators who once looked down on you now look away.' : 'Your body breaks its old limits.'], title: next.name, sub: 'The Severed Path', sound: 'ascend', hold: 2 });
       return { text: `BODY TRIAL PASSED! My body has become ${next.name}. (Counts as ${next.eq ? 'a realm ' + next.eq + ' cultivator' : 'mortal'} in a fight.)`, cls: 'big', big: true }; } },
 ];
+// saves from before v0.7.8: the old top tier (9) is now tier 12
+export function migrateBody(c) { if (c.bodyPath && !c.bodyPath.v2) { if (c.bodyPath.tier >= 9) c.bodyPath.tier = 12; c.bodyPath.v2 = true; } }
 // yearly: fights and Gates temper you too; the body heals like a beast's; Qi stays severed
 export function bodyYear(c) {
   if (!onBodyPath(c)) return;

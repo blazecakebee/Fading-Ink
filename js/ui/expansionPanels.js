@@ -52,7 +52,7 @@ export function bloodlineTab() {
     hl.length ? h('div', { class: 'grid2' }, hl.map(x => { const H = HEIRLOOMS[x.id], T = HEIRLOOM_TIERS[H.tier];
       return h('div', { class: 'card heir-card', style: { '--hc': T.color } }, h('div', { class: 'row' }, icon(H.icon, 'lg'), h('div', {}, h('b', { style: { color: T.color } }, H.name), h('div', { class: 'muted small' }, `${T.name}${att.includes(x) ? ' · attuned' : ' · dormant'}`))),
         h('div', { class: 'small', style: { marginTop: '6px' } }, H.desc), h('div', { class: 'muted small' }, `First owned by ${x.found || 'an ancestor'}${x.gens ? ` · ${x.gens} generation${x.gens > 1 ? 's' : ''} in the family` : ''}`)); }))
-      : card(h('span', { class: 'muted' }, 'Your family owns no heirlooms yet.'))];
+      : card(h('span', { class: 'muted' }, 'Your family owns no heirlooms yet.')), divinePanel()];
 }
 
 // ---------------- Sect & Guild tab
@@ -128,4 +128,25 @@ export function factionsTab() {
     }
   }
   return out;
+}
+
+// ---------------- End-game hunts (shown under Dungeons & Gates) and divine favour
+import * as EG from '../systems/endgame.js';
+export function huntsPanel() {
+  const c = G.char, cur = c.hunt && EG.HUNT[c.hunt.id];
+  return h('div', { style: { marginTop: '18px' } }, h('h3', { class: 'display' }, 'End-game Hunts'),
+    h('p', { class: 'muted small' }, 'Legendary monsters, hunted over several years — one stage a year, 2 actions each. Losing a stage can kill you. Finishing pays a fortune, treasures, an heirloom, Awakening points and Legacy.'),
+    cur ? h('div', { class: 'card', style: { borderColor: cur.color } }, h('b', { style: { color: cur.color } }, cur.name), h('div', { class: 'muted small' }, `Stage ${c.hunt.stage + 1} / ${cur.stages.length}: ${cur.stages[c.hunt.stage]}${c.hunt.last === G.world.year ? ' — you already fought this year' : ''}`),
+      h('div', { class: 'row', style: { marginTop: '8px', gap: '6px' } }, h('button', { class: 'btn', disabled: !EG.canRunStage(c) || !c.alive, onclick: () => R.run({ id: 'hunt_stage', cat: 'adventure', run: cc => EG.huntStage(cc) }) }, '⚡⚡ Face this year\'s stage'),
+        h('button', { class: 'btn ghost', onclick: () => R.run({ id: 'hunt_quit', cost: 'free', run: cc => EG.abandonHunt(cc) }) }, 'Abandon'))) : null,
+    h('div', { class: 'grid2' }, EG.HUNTS.map(H => { const open = EG.huntOpen(c, H), done = (c.huntsDone || []).includes(H.id);
+      return h('div', { class: 'card', style: { opacity: open ? 1 : 0.55, borderColor: done ? H.color : '' } }, h('b', { style: { color: H.color } }, H.name), h('div', { class: 'muted small' }, H.desc),
+        h('div', { class: 'small', style: { marginTop: '4px' } }, `${H.stages.length} stages · foes around ${REALMS[H.realm].name} · pays ~${fmtMoney(c, H.pay * 0.6)}+`),
+        done ? h('div', { class: 'small', style: { color: H.color } }, '✓ Slain this life') : !open ? h('div', { class: 'small muted' }, `Needs ${REALMS[H.minEq].name} (or the matching body tier)`) :
+          h('button', { class: 'btn mini', style: { marginTop: '6px' }, disabled: !!c.hunt || !c.alive || c.age < 18, onclick: () => R.run({ id: 'hunt_start', cost: 'free', run: cc => EG.startHunt(cc, H.id) }) }, 'Take up the hunt')); })));
+}
+export function divinePanel() {
+  const c = G.char; if (!(c.divine || []).length) return null;
+  return h('div', {}, h('h3', { class: 'display', style: { margin: '18px 0 6px' } }, 'Divine favour'), h('div', { class: 'grid2' }, c.divine.map(d => { const g = EG.GOD[d.god];
+    return h('div', { class: 'card heir-card', style: { '--hc': g.color } }, h('b', { style: { color: g.color } }, `${d.kind === 'blessing' ? 'Blessing' : 'Shard of power'}: ${g.name}`), h('div', { class: 'muted small' }, g.title), h('div', { class: 'small' }, d.kind === 'blessing' ? g.blessTxt : g.shardTxt)); })));
 }

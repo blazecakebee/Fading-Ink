@@ -1,3 +1,4 @@
+// v0.7.8: 13 tiers. The Unbound now stands level with Immortal Ascension.
 // The Severed Path: reject Qi entirely and temper the body until it rivals cultivators.
 // Each tier counts as a cultivation realm (eq) for power, stat caps, presence, Gates and the Guild —
 // but the body path gives far less lifespan, no Qi arts, no meditation and no sects that teach Qi.
@@ -11,7 +12,10 @@ export const BODY_TIERS = [
   { id: 'b6', glyph: '磐', name: 'Unbreakable Body', eq: 6, cap: 300, life: 14, power: 13, need: 1300, color: '#ffb02e' },
   { id: 'b7', glyph: '逆', name: 'Heaven-Defying Body', eq: 7, cap: 340, life: 16, power: 19, need: 1800, color: '#ff4f4f' },
   { id: 'b8', glyph: '破', name: 'Sky-Breaker Body', eq: 8, cap: 390, life: 18, power: 27, need: 2600, color: '#ff4fd8' },
-  { id: 'b9', glyph: '無', name: 'The Unbound', eq: 10, cap: 470, life: 22, power: 46, need: Infinity, color: '#ffffff' },
+  { id: 'b9', glyph: '渡', name: 'Void-Walker Body', eq: 9, cap: 420, life: 18, power: 34, need: 3400, color: '#8fa8ff' },
+  { id: 'b10', glyph: '擔', name: 'World-Bearing Body', eq: 10, cap: 450, life: 20, power: 44, need: 4400, color: '#6fe0d0' },
+  { id: 'b11', glyph: '霸', name: 'Titan Sovereign', eq: 11, cap: 500, life: 22, power: 58, need: 5800, color: '#ffd36f' },
+  { id: 'b12', glyph: '無', name: 'The Unbound', eq: 12, cap: 600, life: 25, power: 118, need: Infinity, color: '#ffffff' },
 ];
 // signature techniques, unlocked by tier (they scale fully with the body's power, unlike ordinary punches)
 export const BODY_MOVES = {
@@ -19,5 +23,6 @@ export const BODY_MOVES = {
   bone_crush:       { tier: 2, icon: 'fist', name: 'Bone Crusher', cost: 10, dmg: [16, 24], acc: 0.88, stat: 'strength', body: true, pierce: true, info: 'Ignores Guard and Iron Skin.' },
   mountain_breaker: { tier: 3, icon: 'hammer', name: 'Mountain Breaker', cost: 14, dmg: [24, 36], acc: 0.8, stat: 'strength', body: true, stun: 0.25, info: 'A blow that can split stone. May stun.' },
   blood_rush:       { tier: 5, icon: 'heart', name: 'Blood Rush', cost: -20, dmg: [0, 0], acc: 1, guard: true, info: 'Force your heart to race: recover stamina and brace.' },
+  heaven_splitter:  { tier: 9, icon: 'lightning', name: 'Heaven Splitter', cost: 26, dmg: [70, 100], acc: 0.8, stat: 'strength', body: true, pierce: true, info: 'A blow that splits clouds. Ignores defences.' },
   unbound_strike:   { tier: 6, icon: 'star', name: 'Unbound Strike', cost: 22, dmg: [44, 64], acc: 0.85, stat: 'strength', body: true, pierce: true, stun: 0.3, info: 'Everything you are in one strike. Ignores defences, may stun.' },
 };

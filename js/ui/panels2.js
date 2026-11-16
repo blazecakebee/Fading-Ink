@@ -136,7 +136,7 @@ export function bodyPathTab() {
       : h('div', { class: 'year-card' }, h('b', {}, 'You still carry Qi.'), h('div', { class: 'muted small' }, c.age < 12 ? 'At 12 you may choose to reject it (Mind & Body activities).' : 'You can reject it forever from the Mind & Body activities. Once you cut it, you can never cultivate — and once you begin cultivating, this path closes for good.')),
     h('div', { class: 'grid2', style: { marginTop: '12px' } },
       h('div', { class: 'card' }, h('h4', {}, 'Strengths'), h('div', { class: 'small' }, '• Stat caps and combat power rise with each tier, like realms.', h('br'), '• Immune to the presence of stronger cultivators.', h('br'), '• +15% damage against Qi users and spirits — they can\'t sense you.', h('br'), '• Signature techniques that scale with your whole body.', h('br'), '• Heal faster every year.')),
-      h('div', { class: 'card' }, h('h4', {}, 'Costs'), h('div', { class: 'small' }, '• No meditation, breakthroughs, Qi arts or Qi medicine — ever.', h('br'), '• Lifespan grows only a little (about +100 years at the very top).', h('br'), '• Qi sects won\'t keep you (the Iron Fist Syndicate will).'))),
+      h('div', { class: 'card' }, h('h4', {}, 'Costs'), h('div', { class: 'small' }, '• No meditation, breakthroughs, Qi arts or Qi medicine — ever.', h('br'), '• Lifespan grows only a little (about +170 years at the very top).', h('br'), '• Qi sects won\'t keep you (the Iron Fist Syndicate will).'))),
     h('h3', { class: 'display', style: { margin: '14px 0 6px' } }, 'Techniques'), h('div', { class: 'card' }, moves),
-    h('h3', { class: 'display', style: { margin: '14px 0 6px' } }, 'The nine tiers'), ladder];
+    h('h3', { class: 'display', style: { margin: '14px 0 6px' } }, `The ${BODY_TIERS.length - 1} tiers`), ladder];
 }
