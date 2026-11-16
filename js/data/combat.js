@@ -112,5 +112,5 @@ export const hasRank = (t, rank) => t.ranks.split(/\s+/).flatMap(x => ['SS', 'SS
 export function makeGate(rank) {
   const types = GATE_TYPES.filter(t => hasRank(t, rank));
   const t = types[Math.floor(Math.random() * types.length)];
-  return { rank, type: t.id, years: 1 + Math.floor(Math.random() * 4) };
+  return { rank, type: t.id, years: 2 + Math.floor(Math.random() * 4) }; // v0.9.19 fewer Gates, but each stays open longer
 }

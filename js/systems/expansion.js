@@ -85,7 +85,7 @@ ACTIVITIES.push(
 
 // ---- events
 const gs = EVENTS.find(e => e.id === 'gate_spawn');
-if (gs) { Object.defineProperty(gs, 'w', { get: () => newsMult('gate_surge') ? 12 : 5 }); gs.run = c => { spawnGate(c); }; }
+if (gs) { Object.defineProperty(gs, 'w', { get: () => newsMult('gate_surge') ? 8 : 2 }); gs.run = c => { spawnGate(c); }; }
 EVENTS.push(GOD_EVENT, SACRIFICE_EVENT, ...DARK_EVENTS, ...SEVERED_EVENTS, ...FORTUNE_EVENTS,
   { id: 'ruins', cond: c => c.age >= 16, w: 0.25, run: async c => {
       const v = await ui.choice({ title: 'Collapsed Ruins', icon: 'chest', text: 'A landslide has exposed the corner of an ancient storehouse. Something glints under the rubble.', options: [{ label: 'Dig carefully', value: 'dig' }, { label: 'Leave it', value: false }] });
@@ -131,6 +131,8 @@ HOOKS.yearStart.push(c => { if (c.alive && Math.random() < 0.7) ui.log(ambientLi
 HOOKS.yearStart.push(c => { newsYear(c); portfolioYear(c); birthYear(c, haveChild); });
 HOOKS.yearEnd.push(async c => { if (c.alive) { trainersYear(c); jobsYear(c); gigYear(c); appearanceYear(c); addictionYear(c); if (!c.alive) return; temperYear(c, ui, stat); legacyYear(c); renownYear(c); await lawYear(c); if (!c.alive) return; if (inOtherworld(c)) await otherworldYear(c); if (!c.alive) return; if (!isFinite(c.qi.qi) || isNaN(c.qi.qi)) c.qi.qi = (await import('./cultivation.js')).qiCap(c); if (c.qi.realm >= 1 && !c.qiType && !onBodyPathQ(c)) awakenQi(c); } });
 HOOKS.birth.push(c => { rollTemper(c); legacyBirth(c); c.birthSex = c.gender; sexualityOf(c); ui.log(`Personality: ${c.temper.map(id => TEMPER[id].name).join(', ')}.`); });
+// v0.9.19 school life: marks drift, clubs, awards, report card
+HOOKS.yearEnd.push(async c => { if (c.alive) (await import('./school.js')).schoolLife(c); });
 // v0.9.15 the people in your life react, ask, drift and pay you back (runs after the year's other events)
 HOOKS.yearEnd.push(async c => { if (c.alive) await (await import('./social.js')).socialYear(c); });
 // v0.9.4 Gate breaches: one rupture a year is fought out on the city wall

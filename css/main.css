@@ -943,3 +943,15 @@ details.chron:not([open]) > summary h3::after { content: ' ▸'; }
 .mo-banner.big { border-color: #ffd36f; box-shadow: 0 0 30px #ffd36f44, 0 12px 40px #000a; } .mo-banner.big small { color: #ffd36f; }
 body.mo-shake #center { animation: brShake .35s; }
 @media (max-width: 760px) { .mo-banner { top: 64px; } }
+/* v0.9.19 workload meter */
+.wl-chip { position: relative; display: inline-flex; align-items: center; gap: 6px; margin-right: 10px; padding: 2px 10px; border-radius: 99px; border: 1px solid color-mix(in srgb, var(--wc) 60%, transparent); color: var(--wc); font-weight: 700; font-size: .78rem; overflow: hidden; cursor: help; }
+.wl-chip i { position: absolute; left: 0; top: 0; bottom: 0; background: color-mix(in srgb, var(--wc) 18%, transparent); pointer-events: none; }
+.wl-chip.over, .wl-chip.crush { animation: wlPulse 1.6s ease-in-out infinite; } @keyframes wlPulse { 50% { box-shadow: 0 0 10px color-mix(in srgb, var(--wc) 50%, transparent); } }
+/* v0.9.19 education */
+.ed-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; }
+.ed-tile { padding: 10px 12px; border-radius: 12px; background: var(--panel2); border: 1px solid var(--border-soft); } .ed-tile small { display: block; color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; } .ed-tile b { font-size: 1.05rem; }
+.ed-mate { cursor: pointer; } .ed-clubs { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+.ed-club { display: flex; flex-direction: column; gap: 6px; } .ed-club.on { border-color: var(--accent) !important; background: color-mix(in srgb, var(--accent) 8%, var(--panel)); } .ed-club .btn { align-self: flex-start; } .ed-emoji { font-size: 1.5rem; }
+.ed-chart { display: flex; align-items: flex-end; gap: 8px; height: 120px; padding: 8px 10px 0; border-radius: 12px; background: var(--panel2); border: 1px solid var(--border-soft); }
+.ed-bar { flex: 1; max-width: 46px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; cursor: help; } .ed-bar i { width: 100%; border-radius: 6px 6px 0 0; background: var(--gc); opacity: .85; } .ed-bar small { font-size: .7rem; color: var(--muted); padding: 2px 0; }
+.ed-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 4px 14px; margin-top: 10px; }

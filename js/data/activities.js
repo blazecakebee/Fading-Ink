@@ -1,4 +1,5 @@
 import { eff } from '../systems/body.js';
+import { studyGain, gpaOf } from '../systems/school.js';
 // Activities the player can spend Actions on. cost: 'a' = Action, 's' = Social Action.
 // run(c) returns a string (chronicle text) or {text, cls, big}. Returning null means "cancelled, refund".
 import { ui } from '../core/bus.js';
@@ -96,7 +97,7 @@ export const ACTIVITIES = [
       return 'I wrote until the ink ran faint.'; } },
 
   // ---- SCHOOL
-  { id: 'study', cat: 'school', name: 'Study harder', icon: 'education', minAge: 6, need: c => !!c.edu.school, run: c => { c.edu.grades = clamp(c.edu.grades + Math.round(ri(4, 9) * study(c))); stat(c, 'smarts', 2); stat(c, 'stress', 4); return `I studied late into the night. Grades: ${c.edu.grades}%.`; } },
+  { id: 'study', cat: 'school', name: 'Study harder', icon: 'education', minAge: 6, need: c => !!c.edu.school, run: c => { c.edu.grades = clamp(c.edu.grades + studyGain(c, ri(4, 9) * study(c))); stat(c, 'smarts', 2); stat(c, 'stress', 4); return `I studied late into the night. GPA ${gpaOf(c.edu.grades).toFixed(2)}.`; } },
   { id: 'skip', cat: 'school', name: 'Skip class', icon: 'beer', minAge: 10, need: c => !!c.edu.school, run: c => { c.edu.grades = clamp(c.edu.grades - 6); stat(c, 'happiness', 6); return chance(0.3) ? { text: 'I skipped class and got caught. Detention.', cls: 'bad' } : 'I skipped class and spent the day at the arcade.'; } },
   { id: 'university', cat: 'school', name: 'Apply to university', icon: 'education', minAge: 18, maxAge: 60, need: c => c.edu.level === 1 && c.edu.school !== 'University', run: async c => {
       if (c.edu.grades < 55 && eff(c, 'smarts') < 60) return { text: 'My university application was rejected.', cls: 'bad' };

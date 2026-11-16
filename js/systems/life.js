@@ -1,5 +1,6 @@
 // Character creation, yearly aging loop, death, and generational inheritance.
 import { onBodyPath, bodyTier } from './path.js';
+import { workloadYear } from './workload.js';
 import { maybeBreach } from './breach.js';
 import { HARD } from '../core/hard.js';
 import { spared } from './fortune.js';
@@ -197,6 +198,7 @@ let lastAgeClicks = [];
 export async function ageUp() {
   const c = G.char; if (!c || !c.alive) return;
   if (c.fableRun) { ui.toast('You are inside a Fable. Time is frozen until you finish it (Fables tab).'); return; }
+  workloadYear(c, stat); // v0.9.19 the year's workload turns into stress
   // GLITCHED: spam detection
   const now = performance.now(); lastAgeClicks = lastAgeClicks.filter(t => now - t < 1000); lastAgeClicks.push(now);
   if (lastAgeClicks.length >= 5) earnTrait(c, 'duplicate');
@@ -293,7 +295,7 @@ function educationYear(c) {
     e.uniYears++;
     if (e.uniYears >= 4) { e.level = 2; e.school = null; ui.log(`I graduated from university with a degree in ${e.major}!`, 'big'); ui.fx('milestone'); }
   }
-  if (e.school) { e.grades = clamp(e.grades + ri(-6, 3) + Math.round((c.stats.smarts - 50) / 20)); (c.lastTrained ||= {}).smarts = c.age; } // school keeps your mind in use
+  if (e.school) (c.lastTrained ||= {}).smarts = c.age; // school keeps your mind in use (marks drift in school.js)
 }
 
 export function lifespan(c) {

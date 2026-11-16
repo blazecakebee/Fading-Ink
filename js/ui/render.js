@@ -12,6 +12,8 @@ import { moodFace, TRAINABLE, decayRate } from '../systems/health.js';
 import { COND_BY_ID, condTip } from '../data/conditions.js';
 import * as LIC from '../systems/license.js';
 import * as PRX from '../systems/practice.js';
+import * as SCH from '../systems/school.js';
+import * as WL from '../systems/workload.js';
 import { lineIcon, moment } from './lineFx.js';
 import { emblemSvg } from './sectEmblem.js';
 import { playTrain } from './trainGame.js';
@@ -85,7 +87,7 @@ export async function runActivity(a, el, opt = {}) {
   const r = typeof res === 'string' ? { text: res } : res;
   if (a.name && !free) c.doing = { t: a.name, at: Date.now() };
   if (PR && roll) { const o = PRX.applyPractice(c, PID, psnap, roll); r.text = r.text.replace(/\s*(Strength|Agility|Battle Knowledge|Battle|Smarts|Charisma) \+\d+\.?/g, '').replace(/\s*\+[\d,]+ Qi\.?/g, '') + ' ' + o.text; if (o.cls && r.cls !== 'qi') r.cls = o.cls; if (o.big) r.big = true; if (o.tier === 'peak') fx('milestone'); else if (o.tier === 'mishap') fx('heavy'); }
-  if (!free) { c[cost]--; c.usedThisYear = (c.usedThisYear || 0) + 1; }
+  if (!free) { c[cost]--; c.usedThisYear = (c.usedThisYear || 0) + 1; WL.addActLoad(c, a); }
   if (!free && traitVal(c, 'refund') && chance(traitVal(c, 'refund'))) { c[cost]++; r.text += ' (D̷U̷P̷L̷I̷C̷A̷T̷E̷D̷ — action refunded)'; }
   c.counts[a.id] = (c.counts[a.id] || 0) + 1; const n = c.counts[a.id];
   if (a.id !== 'meditate' && c.qi.fatigue) c.qi.fatigue = Math.max(0, c.qi.fatigue - 0.5);
@@ -217,8 +219,8 @@ export function traitChip(id) {
 const seen = { key: null, n: 0 };
 function seenLines(c, cur) { const k = c.id + ':' + cur.age; const n = seen.key === k ? seen.n : 0; seen.key = k; seen.n = cur.lines.length; return n; }
 // GPA on a 4.0 scale from the 0-100 grade average (90+ = A = 4.0)
-export const gpa = g => Math.max(0, Math.min(4, (g - 50) / 10)).toFixed(2);
-const gpaText = g => { const v = +gpa(g); const L = v >= 3.7 ? 'A' : v >= 3.3 ? 'A-' : v >= 3 ? 'B+' : v >= 2.7 ? 'B' : v >= 2.3 ? 'B-' : v >= 2 ? 'C' : v >= 1 ? 'D' : 'F'; return `${v.toFixed(2)} / 4.0 (${L}) — the higher the better`; };
+export const gpa = g => SCH.gpaOf(g).toFixed(2);
+const gpaText = g => { const v = +gpa(g); const L = SCH.letter(v); return `${v.toFixed(2)} / 4.0 (${L}) — the higher the better`; };
 // effective (usable) stat, with the trained value shown when injuries hold it back
 const effShow = (c, k) => { const e = eff(c, k), b = c.stats[k] ?? 0; return e < b ? h('span', { 'data-tip': `Trained ${b}, but your body only lets you use ${e}. ${statLimits(c, k).map(([n, x]) => `${n} ${Math.round(x * 100)}%`).join(', ')}`, style: { color: 'var(--bad, #ff7a6a)' } }, `${e}`, h('small', { class: 'muted' }, ` /${b}`)) : b; };
 // v0.9.0 People: favourites + most-seen contacts, one tap away
@@ -275,6 +277,14 @@ function licenseBox(c) {
         act('test', `Take the driving test · ${fmtMoney(c, F.test)} (⚡1)`, cc => LIC.practicalTest(cc), c.age < LIC.LICENSE_AGE.test || c.money < F.test))] : null,
     st === 'full' ? h('div', { class: 'muted small' }, 'You can buy cars and take driving jobs. Drunk driving or prison will get it suspended.') : null);
 }
+// v0.9.19 workload meter: commitments + how hard you push this year → stress at year end
+function workloadChip(c) {
+  if (c.age < 6) return null; const L = WL.totalLoad(c), lv = WL.loadLevel(L), C = WL.commitments(c), pr = WL.projected(c);
+  const tip = [...C.map(([l, v]) => `• ${l}: ${v}`), `• This year's actions: ${(c.yearLoad || 0) >= 0 ? '' : ''}${(c.yearLoad || 0).toFixed(1)}`, `Total ${L.toFixed(1)} / ${WL.CAPACITY} you can carry.`,
+    pr ? `At year end: about +${pr} Stress${c.busyStreak ? ` (worse after ${c.busyStreak} hard year${c.busyStreak > 1 ? 's' : ''} in a row)` : ''}.` : 'No strain this year.', 'Rest (walks, journaling, fishing, a vacation) lowers it. Jobs, side gigs, school, a sect and young kids all add up.'].join('\n');
+  const el = h('span', { class: 'wl-chip ' + lv.id, tabindex: 0, 'data-tip-title': `Workload: ${lv.name}`, 'data-tip': tip }, h('i', { style: { width: Math.min(100, L / (WL.CAPACITY + 8) * 100) + '%' } }), `Workload: ${lv.name}`);
+  el.style.setProperty('--wc', lv.color); return el;
+}
 export const TABS = {
   // v0.9.2 Story stage: the last years scroll like a chronicle; actions live in a compact dock below
   life() {
@@ -297,7 +307,7 @@ export const TABS = {
     const dock = h('div', { class: 'dock' }, cats.map(({ cat, acts }) => h('button', { class: 'dock-chip' + (open?.cat.id === cat.id ? ' on' : '') + (RISKY.includes(cat.id) ? ' risky' : ''), onclick: () => { fx('click'); G.ui.dock = G.ui.dock === cat.id ? null : cat.id; render(); } }, icon(cat.icon, 'sm'), cat.name, h('span', { class: 'n' }, acts.length))));
     const panel = open ? h('div', { class: 'dock-panel' + (RISKY.includes(open.cat.id) ? ' risky' : '') }, h('div', { class: 'row', style: { justifyContent: 'space-between' } }, h('b', {}, icon(open.cat.icon, 'sm'), ' ', open.cat.name), h('button', { class: 'btn ghost mini', onclick: () => { G.ui.dock = null; render(); } }, 'Close ✕')),
       h('div', { class: 'acts' }, open.acts.map(actBtn))) : null;
-    return [stage, h('div', { class: 'year-bar' }, h('span', { class: 'display' }, `This year`), h('span', { class: 'muted small' }, `${c.actions} action${c.actions === 1 ? '' : 's'} · ${c.social} social left`)), quickBar(c), dock, panel];
+    return [stage, h('div', { class: 'year-bar' }, h('span', { class: 'display' }, `This year`), h('span', { class: 'muted small' }, workloadChip(c), `${c.actions} action${c.actions === 1 ? '' : 's'} · ${c.social} social left`)), quickBar(c), dock, panel];
   },
 
   character() {
@@ -448,12 +458,38 @@ export const TABS = {
           ok ? h('span', { class: 'muted small' }, `${Math.round(J.hireChance(c, j) * 100)}% chance`) : h('span', { class: 'muted small' }, 'Not qualified'))); }))];
   },
 
-  education() {
-    const c = G.char, e = c.edu;
+  education() { // v0.9.19 full school life
+    const c = G.char, e = c.edu; if (e.school) SCH.ensureSchool(c);
     const acts = ACTIVITIES.filter(a => a.cat === 'school' && c.age >= (a.minAge || 0) && (!a.need || a.need(c)));
-    return [h('h2', { class: 'display' }, 'Education'), h('table', { class: 'kv', style: { marginTop: '10px' } },
-      [['Currently', (e.school || 'Not enrolled') + (e.private && e.school ? ' (private)' : '') + (e.scholarship && e.school ? ' · 🎓 scholarship' : '')], ['Highest', EDUCATION[e.level]], ['GPA', e.school || e.level ? gpaText(e.grades) : '—'], ['Major', e.major || '—'], ['University year', e.school === 'University' ? e.uniYears + 1 + ' / 4' : '—']].map(([k, v]) => h('tr', {}, h('td', {}, k), h('td', {}, v)))),
-      h('div', { class: 'row', style: { marginTop: '12px' } }, acts.map(a => h('button', { class: 'btn', disabled: c.actions <= 0 || !c.alive, onclick: () => runActivity(a) }, icon(a.icon, 'sm'), ' ', a.name)))];
+    const busy = !c.alive || c.prison || c.actions <= 0, g = SCH.gpaOf(e.grades), R = e.school ? SCH.rank(c) : null, T = e.school && e.teacher;
+    const tile = (k, v, sub) => h('div', { class: 'ed-tile' }, h('small', {}, k), h('b', {}, v), sub ? h('div', { class: 'muted small' }, sub) : null);
+    const recs = (e.records || []).slice(-10);
+    const out = [h('h2', { class: 'display' }, 'Education'),
+      h('div', { class: 'ed-tiles' }, tile('Currently', e.school ? (e.school + (e.private ? ' · private' : '')) : 'Not enrolled', e.scholarship && e.school ? '🎓 On a scholarship' : null), tile('Highest', EDUCATION[e.level]),
+        tile('GPA', e.school || e.level ? `${g.toFixed(2)} (${SCH.letter(g)})` : '—', e.school ? `Your natural level: ${SCH.gpaOf(SCH.natural(c)).toFixed(2)}` : null),
+        R ? tile('Class rank', `#${R.r} of ${R.n}`, R.r <= Math.ceil(R.n * 0.1) ? 'Top 10%' : R.r > R.n * 0.75 ? 'Bottom quarter' : null) : null, e.major ? tile('Major', e.major, e.school === 'University' ? `Year ${e.uniYears + 1} of 4` : null) : null)];
+    if (e.school) {
+      out.push(h('p', { class: 'muted small' }, 'Marks drift back toward your natural level each year (set by your Smarts, stress, teacher and school). Studying pushes you above it, but every extra point is harder to earn: a real 4.0 takes near-perfect marks.'));
+      out.push(h('div', { class: 'grid2', style: { marginTop: '10px' } },
+        h('div', { class: 'card' }, h('h4', {}, '🧑‍🏫 Your teacher'), h('div', {}, h('b', {}, `${T.gender === 'F' ? 'Ms' : 'Mr'} ${T.first} ${T.last}`), h('span', { class: 'muted small' }, ` · ${T.subject}`)), h('div', { class: 'muted small' }, T.desc), h('div', { class: 'small' }, `Rapport: ${T.close}%${T.close >= 70 ? ' — they believe in you (+marks)' : ''}`),
+          h('button', { class: 'btn mini', style: { marginTop: '6px' }, disabled: busy, onclick: e2 => runActivity({ id: 'ask_teacher', cat: 'school', name: 'Ask the teacher for help', run: cc => SCH.askTeacher(cc) }, e2.currentTarget) }, 'Ask for extra help (⚡1)')),
+        h('div', { class: 'card' }, h('h4', {}, '🎓 Scholarship'), h('div', { class: 'muted small' }, 'Judged on GPA, Smarts, clubs and awards. Poorer students get a little extra consideration. One application a year.'), h('div', { class: 'small' }, `Your odds: ${Math.round(SCH.scholarshipOdds(c) * 100)}%`),
+          e.scholarship ? h('div', { class: 'small good' }, 'You already have one.') : h('button', { class: 'btn mini', style: { marginTop: '6px' }, disabled: busy || e.schYear === G.world.year, onclick: e2 => runActivity({ id: 'scholarship', cat: 'school', name: 'Apply for a scholarship', run: cc => SCH.applyScholarship(cc) }, e2.currentTarget) }, e.schYear === G.world.year ? 'Applied this year' : 'Apply (⚡1)'))));
+      const cm = SCH.classmates(c).sort((a, b) => (b.grade ?? 0) - (a.grade ?? 0));
+      out.push(h('h3', { class: 'display', style: { margin: '16px 0 8px' } }, `Classmates (${cm.length} you know)`), h('div', { class: 'grid3' }, cm.map(p => h('div', { class: 'card person ed-mate', onclick: () => personModal(p) }, h('div', { class: 'pframe' }, portraitFor(p, 40)),
+        h('div', {}, h('b', {}, p.first + ' ' + p.last), h('div', { class: 'rel' }, `${relLabel(p)} · ${p.close}%`), h('div', { class: 'muted small' }, `GPA ${SCH.gpaOf(p.grade ?? 60).toFixed(2)} ${(p.grade ?? 60) > e.grades ? '· ahead of you' : '· behind you'}`))))));
+      const clubs = Object.entries(SCH.CLUBS).filter(([, K]) => c.age >= K.minAge), mine = e.clubs || [];
+      out.push(h('h3', { class: 'display', style: { margin: '16px 0 8px' } }, `Clubs (${mine.length}/${SCH.MAX_CLUBS})`), h('p', { class: 'muted small' }, 'Clubs run all year: free to join, they add to your workload. Sports can injure you; academic clubs lift your marks; all of them look good on a scholarship application.'),
+        h('div', { class: 'ed-clubs' }, clubs.map(([id, K]) => { const on = mine.includes(id);
+          return h('div', { class: 'card ed-club' + (on ? ' on' : '') }, h('div', { class: 'row', style: { gap: '8px' } }, h('span', { class: 'ed-emoji' }, K.emoji), h('div', { style: { flex: 1 } }, h('b', {}, K.name), h('div', { class: 'muted small' }, `${K.kind} · ${Object.entries(K.eff).map(([k, v]) => `${v > 0 ? '+' : ''}${v} ${k}`).join(', ')}${K.grades ? `, +${K.grades} marks` : ''}${K.risk ? ' · injury risk' : ''}`))),
+            on ? h('button', { class: 'btn ghost mini', onclick: () => { SCH.leaveClub(c, id); logLine(`I quit the ${K.name.toLowerCase()}.`); render(); } }, 'Leave') : h('button', { class: 'btn mini', disabled: mine.length >= SCH.MAX_CLUBS || !c.alive, onclick: () => { const r = SCH.joinClub(c, id); if (r) logLine(r.text, r.cls); fx('click'); render(); } }, 'Join')); })));
+    }
+    out.push(h('h3', { class: 'display', style: { margin: '16px 0 8px' } }, 'Report card'),
+      recs.length ? h('div', { class: 'ed-chart' }, recs.map(r => { const el = h('div', { class: 'ed-bar', 'data-tip-title': `Age ${r.age}`, 'data-tip': `${r.school}\nGPA ${r.gpa.toFixed(2)} (${SCH.letter(r.gpa)})\nRank #${r.rank} of ${r.of}` }, h('i', { style: { height: Math.max(4, r.gpa / 4 * 100) + '%' } }), h('small', {}, r.age)); el.style.setProperty('--gc', r.gpa >= 3.5 ? '#5fd38a' : r.gpa >= 2.5 ? '#9ad0ff' : r.gpa >= 1.5 ? '#ffb02e' : '#e05555'); return el; })) : h('p', { class: 'muted small' }, 'No report cards yet.'),
+      h('div', { class: 'ed-stats small' }, [['Times studied hard', c.counts.study || 0], ['Classes skipped', c.counts.skip || 0], ['Teacher help sessions', c.counts.ask_teacher || 0], ['Scholarship applications', c.counts.scholarship || 0], ['Clubs', (e.clubs || []).map(id => SCH.CLUBS[id]?.name).join(', ') || 'none']].map(([k, v]) => h('div', {}, h('span', { class: 'muted' }, k + ': '), h('b', {}, v)))),
+      (e.awards || []).length ? h('div', { class: 'box', style: { marginTop: '10px' } }, h('h3', {}, '🏅 Awards'), e.awards.slice(-12).map(a => h('div', { class: 'small' }, '• ' + a))) : null,
+      acts.length ? h('div', { class: 'row', style: { marginTop: '12px' } }, acts.map(a => h('button', { class: 'btn', disabled: busy, onclick: e2 => runActivity(a, e2.currentTarget) }, icon(a.icon, 'sm'), ' ', a.name))) : null);
+    return out;
   },
 
   assets() {

@@ -1,7 +1,16 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.18';
+export const VERSION = '0.9.19';
 export const CHANGELOG = [
+  { v: '0.9.19', date: '2026-11-16', title: 'Too Much on My Plate', notes: [
+    'WORKLOAD: everything you commit to adds up — a full-time job, side gigs, school or university, running a sect, sect and Guild duties, raising young children, teaching disciples, an ongoing Hunt, an addiction — plus how hard you push your actions each year. Rest (walks, journaling, fishing, hiking, a vacation) takes load off.',
+    'Past what a person can carry, every year ends with stress and lost happiness; a Crushing load also costs Health. It gets worse the more hard years you string together, and a light year lets you recover. A workload meter (Light / Steady / Busy / Overloaded / Crushing) above your actions shows exactly what is weighing on you and how much stress is coming.',
+    'EDUCATION overhaul: the Education tab now shows your teacher (with their own style and your rapport), the classmates you know and how their marks compare, your class rank, a report card of your GPA year by year, school stats and awards.',
+    'Join up to 2 clubs: football, basketball, track, swimming, outdoor & hiking, scouts, chess, science, debate, drama, band or art. Each has yearly effects; sports can injure you, academic clubs lift your marks, teams can win championships, and clubs add to your workload.',
+    'Apply for a scholarship once a year: odds come from your GPA, Smarts, clubs and awards (shown before you apply). Ask your teacher for extra help to raise your marks and rapport.',
+    'GPA is much harder: marks drift back toward your natural level each year (Smarts, stress, teacher, school), studying has diminishing returns, and a 4.0 now needs near-perfect marks (95+).',
+    'Gates open much less often: at most one new Gate a year from the usual drift (often none), Gate surges add one instead of two, and the random "Gate tears open" event is rarer. Each Gate now stays open 2–5 years, so you still have time to clear them.',
+  ] },
   { v: '0.9.18', date: '2026-11-16', title: 'Little Moments', notes: [
     'Your life story now shows a fitting icon next to each line: a basketball when you play basketball, a fishing rod when you fish, a thermometer when you get sick, a ring at a wedding, a speech bubble when someone talks to you, and dozens more.',
     'Small moment alerts: when something notable happens — you fall ill, get hurt, lose someone, get married, have a baby, break through, get promoted, gain a trait — the screen edge briefly glows (red for bad, green for good, gold for big) and a little banner tells you what happened. Tap it to dismiss. They never cover cinematics, fights or minigames, and at most a few show per year. Turn them off in Settings ("Small alerts for good & bad moments").',

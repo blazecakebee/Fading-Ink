@@ -40,7 +40,7 @@ export function rollNews(c) {
 export function newsYear(c) {
   const n = rollNews(c);
   n.lines.forEach(t => ui.log(`News: ${t}`, 'world'));
-  if (n.id === 'gate_surge' && c.age >= 10) { for (let i = 0; i < ri(1, 2); i++) spawnGate(c, true); }
+  if (n.id === 'gate_surge' && c.age >= 10) spawnGate(c, true);
   if (n.id === 'beast_tide' && c.age >= 6) {
     const safe = c.qi.realm >= 3 || c.assets.some(a => a.type === 'house');
     if (!safe) { stat(c, 'health', -ri(4, 10)); stat(c, 'stress', 8); ui.log('The Beast Tide reached our district. We barely got out.', 'bad'); }
@@ -61,14 +61,14 @@ export function spawnGate(c, quiet) {
   return g;
 }
 // Make sure a Gate near your level exists every year or two once you're old enough
+// v0.9.19 Gates are rarer: at most ONE new Gate a year from here (often none), but they stay open longer.
 export function ensureMatchingGate(c) {
   if (c.age < 14) return;
   let idx = 0; GATE_RANKS.forEach((r, i) => { if (r.realm <= effRealm(c)) idx = i; });
   const near = c.gates.some(g => Math.abs(GATE_RANKS.findIndex(r => r.rank === g.rank) - idx) <= 1);
-  if (!near && chance(0.5)) spawnGate(c, true);
-  // v0.8.7: stronger cultivators see more Gates, and the small ones never disappear
-  const want = 2 + Math.floor(effRealm(c) / 3);
-  for (let i = 0; i < 3 && c.gates.length < want; i++) if (chance(0.55)) { const low = c.gates.some(g => GATE_RANKS.findIndex(r => r.rank === g.rank) <= Math.max(0, idx - 3));
+  if (!near) { if (chance(0.3)) spawnGate(c, true); return; }
+  const want = 1 + Math.floor(effRealm(c) / 4);
+  if (c.gates.length < want && chance(0.15)) { const low = c.gates.some(g => GATE_RANKS.findIndex(r => r.rank === g.rank) <= Math.max(0, idx - 3));
     const R = !low && idx >= 3 ? GATE_RANKS[ri(0, Math.max(0, idx - 3))] : rankFor(c); const g = makeGate(R.rank); c.gates.push(g); ui.log(`A ${R.rank}-rank ${GATE_TYPES.find(t => t.id === g.type).name} tore open near ${c.city}.`, 'qi'); }
 }
 export const newsMult = id => G.world?.news?.year === G.world?.year && G.world.news.id === id;
