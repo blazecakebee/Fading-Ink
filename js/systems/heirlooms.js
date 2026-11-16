@@ -16,7 +16,7 @@ export function rollTier(c) {
 export function makeHeirloom(c, tier, how) {
   tier ||= rollTier(c);
   const own = new Set(heirloomsOf(c).map(x => x.id));
-  const pool = Object.entries(HEIRLOOMS).filter(([id, h]) => h.tier === tier && id !== 'notes' && !own.has(id));
+  const pool = Object.entries(HEIRLOOMS).filter(([id, h]) => h.tier === tier && id !== 'notes' && !h.fable && !own.has(id));
   if (!pool.length) return null;
   const [id] = pick(pool);
   return { id, tier, found: `${c.first} ${c.last}`, year: G.world?.year, how: how || 'found', gens: 0 };

@@ -139,7 +139,7 @@ export function qiHeal(c) {
   c.conditions = (c.conditions || []).filter(x => x.id !== 'blindness' || (partEff(c, 'eye_l') === 0 && partEff(c, 'eye_r') === 0));
   return { text: `I guided Qi through my wounds. ${healed ? `${healed} injur${healed === 1 ? 'y' : 'ies'} mended` : 'My body is whole'}${scars ? `, but ${scars} healed as scar${scars > 1 ? 's' : ''} — my Qi was too weak` : ''}.${regrown ? ` My ${regrown.toLowerCase()} GREW BACK!` : ''}`, cls: regrown ? 'qi' : 'good', big: !!regrown };
 }
-export function prostheticOptions(c, id) { const k = kindOf(id); return k ? [k, k + '2'].map(x => ({ id: x, ...PROSTHETICS[x] })) : []; }
+export function prostheticOptions(c, id) { const k = kindOf(id); return k ? [k, k + '2', ...(c.flags?.fableSmith ? [k + '3'] : [])].filter(x => PROSTHETICS[x]).map(x => ({ id: x, ...PROSTHETICS[x] })) : []; }
 export function fitProsthetic(c, id, pid, price) {
   if (c.money < price) return null; c.money -= price; c.body.parts[id].prosthetic = pid; c.flags.prosthetic = true;
   return { text: `I was fitted with a ${PROSTHETICS[pid].name.toLowerCase()} for my missing ${PART_BY_ID[id].name.toLowerCase()}.`, cls: 'good' };

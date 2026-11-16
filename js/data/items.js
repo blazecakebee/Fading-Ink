@@ -56,6 +56,11 @@ export const ITEMS = {
   beast_hide:      { name: 'Beast Hide Armour', icon: 'claw', type: 'gear', slot: 'armor', stats: { hp: 30, agi: 2 }, desc: '+30 HP, +2 Agility.' },
   jade_scale:      { name: 'Jade Scale Armour', icon: 'scalevest', type: 'gear', slot: 'armor', stats: { hp: 60, qi: 0.05 }, desc: '+60 HP, +5% Qi gain.' },
   void_mantle:     { name: 'Void Mantle', icon: 'robe', type: 'gear', slot: 'armor', stats: { hp: 120, agi: 8 }, desc: '+120 HP, +8 Agility.' },
+  // v0.9.4 Fable-only gear: only earned by finishing Fable Quests
+  fable_locket: { name: "Bride's Lantern Locket", icon: 'lantern', type: 'gear', slot: 'necklace', fable: true, stats: { qi: 0.14, luck: 8, hp: 30 }, color: '#ff9d5c', desc: 'Fable gear. +14% Qi gain, +8 Luck, +30 HP.' },
+  fable_robe:   { name: 'Robe of Drowned Pages', icon: 'robe', type: 'gear', slot: 'armor', fable: true, stats: { hp: 220, agi: 12, qi: 0.1 }, desc: 'Fable gear. +220 HP, +12 Agility, +10% Qi gain.' },
+  fable_sword:  { name: 'Oathkeeper', icon: 'broadsword', type: 'gear', slot: 'weapon', fable: true, stats: { dmg: 1.3, agi: 6, qi: 0.1 }, desc: 'Fable gear. +130% damage, +6 Agility, +10% Qi gain.' },
+  fable_ring:   { name: 'Ring of the Paid Debt', icon: 'ring', type: 'gear', slot: 'ring', fable: true, stats: { dmg: 0.16, luck: 10, qi: 0.06 }, color: '#d8d0ff', desc: 'Fable gear. +16% damage, +10 Luck, +6% Qi gain.' },
   celestial_armor: { name: 'Celestial Armour', icon: 'shield', type: 'gear', slot: 'armor', stats: { hp: 180, agi: 10 }, desc: '+180 HP, +10 Agility.' },
   lucky_coin:      { name: 'Lucky Coin', icon: 'market', type: 'gear', slot: 'charm', price: 200, shop: 1, stats: { luck: 5 }, desc: '+5 Luck.' },
   phoenix_feather: { name: 'Phoenix Feather', icon: 'feather', type: 'gear', slot: 'charm', stats: { hp: 25, qi: 0.05 }, desc: '+25 HP, +5% Qi gain.' },

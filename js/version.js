@@ -1,7 +1,16 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.3';
+export const VERSION = '0.9.4';
 export const CHANGELOG = [
+  { v: '0.9.4', date: '2026-11-16', title: 'Fables & Breaches', notes: [
+    'FABLE QUESTS: reach 1,000,000 Fame to open four legendary stories (Fables tab, shown from 100,000 Fame). Inside, time stands still: no aging, no decay, no actions.',
+    'Each Fable mixes choices, stat checks (with your odds shown), puzzles and fights. Dying inside one ends your life for good. You can turn back at the start, but it then closes for 3 years.',
+    'Rewards: a permanent Title (all of them stack), fable-only gear stronger than anything craftable, a fable-only Legendary heirloom and lots of Fame. Best endings pay extra; finish all four to become The Fabled.',
+    'What happens in a Fable follows you home: wounds, a lost arm, a ghost marriage, a debt to the moon. The Iron Pilgrim unlocks free Fablesteel limbs as good as the real thing.',
+    'GATE BREACHES: an SSS, X or Z Gate left uncleared until it expires may rupture. You hold the city in a five-lane defence battle: place Qi Wells, Sword Formations, Jade Barriers, Frost Arrays and Thunder Seals against waves ending in a Breach Lord.',
+    'Holding a breach pays rare materials, a high-grade pill, maybe a relic or heirloom, money and big Fame. Losing costs Health, a serious wound, Fame, money — and sometimes someone close to you.',
+    'The batch slider now matches the Settings sliders, and Actions and Social are properly spaced apart.',
+  ] },
   { v: '0.9.3', date: '2026-11-16', title: 'Tidy traits', notes: [
     'Traits and Personality are separate panels again on the Life tab.',
     'The story no longer jumps to the top and sweeps back down when you open an action category. It keeps your place, and only moves to the end when something new happens.',

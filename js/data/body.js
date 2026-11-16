@@ -56,4 +56,6 @@ export const PROSTHETICS = {
   hand: { name: 'Hook hand', eff: 0.4, price: 300 }, hand2: { name: 'Bionic hand', eff: 0.85, price: 18000 },
   foot: { name: 'Wooden foot', eff: 0.6, price: 250 }, foot2: { name: 'Bionic foot', eff: 0.9, price: 12000 },
   eye: { name: 'Glass eye', eff: 0, price: 200 }, eye2: { name: 'Bionic eye', eff: 0.8, price: 20000 },
+  // v0.9.4 Fablesteel: from the Iron Pilgrim Fable. As good as the real thing, never better.
+  arm3: { name: 'Fablesteel arm', eff: 1, price: 0, fable: true }, leg3: { name: 'Fablesteel leg', eff: 1, price: 0, fable: true }, hand3: { name: 'Fablesteel hand', eff: 1, price: 0, fable: true }, foot3: { name: 'Fablesteel foot', eff: 1, price: 0, fable: true }, eye3: { name: 'Fablesteel eye', eff: 1, price: 0, fable: true },
 };

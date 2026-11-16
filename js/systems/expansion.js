@@ -128,6 +128,14 @@ HOOKS.yearStart.push(c => { if (c.alive && Math.random() < 0.7) ui.log(ambientLi
 HOOKS.yearStart.push(c => { newsYear(c); portfolioYear(c); birthYear(c, haveChild); });
 HOOKS.yearEnd.push(async c => { if (c.alive) { trainersYear(c); jobsYear(c); gigYear(c); appearanceYear(c); addictionYear(c); if (!c.alive) return; temperYear(c, ui, stat); legacyYear(c); renownYear(c); await lawYear(c); if (!c.alive) return; if (inOtherworld(c)) await otherworldYear(c); if (!c.alive) return; if (!isFinite(c.qi.qi) || isNaN(c.qi.qi)) c.qi.qi = (await import('./cultivation.js')).qiCap(c); if (c.qi.realm >= 1 && !c.qiType && !onBodyPathQ(c)) awakenQi(c); } });
 HOOKS.birth.push(c => { rollTemper(c); legacyBirth(c); c.birthSex = c.gender; sexualityOf(c); ui.log(`Personality: ${c.temper.map(id => TEMPER[id].name).join(', ')}.`); });
+// v0.9.4 Gate breaches: one rupture a year is fought out on the city wall
+HOOKS.yearEnd.push(async c => {
+  if (!c.alive || !(c.breaches || []).length || !ui.breach) return;
+  const B = await import('./breach.js'); const rank = c.breaches.sort((a, b) => B.breachTier(b) - B.breachTier(a))[0]; c.breaches = [];
+  if (c.prison || c.otherworld) { B.breachLost(c, rank, { leaks: 3, fled: false }); return; }
+  ui.cinematic?.({ motif: 'crack', color: '#ff4f4f', lines: [`The ${rank}-rank Gate tears wide open.`, 'Everything inside it is coming out.'], title: 'Gate Breach', sub: c.city, sound: 'heavy', hold: 1.6 });
+  const res = await ui.breach(c, rank); if (res?.win) B.breachWon(c, rank, res); else B.breachLost(c, rank, res || { leaks: 3, fled: true });
+});
 HOOKS.yearEnd.push(async c => {
   grantPoints(c); schoolYear(c); ownSectYear(c); bodyYear(c);
   if (!canGetQiIllness(c) && clearQiIllness(c)) ui.log('Without cultivated Qi in my body, the Qi sickness simply faded away.', 'good');
@@ -157,6 +165,8 @@ export async function installExpansion() {
   const AR = await import('../ui/arena.js'); const { S } = await import('../settings.js');
   ui.arena = o => AR.arena(o); ui.arenaOn = () => S().arenaFights !== false;
   ui.bossPhase = (await import('../ui/render.js')).bossPhase;
+  { const FU = await import('../ui/fableUI.js'); TABS.fables = FU.fablesTab; }
+  { const BG = await import('../ui/breachGame.js'); ui.breach = (c, rank) => BG.playBreach(c, rank); }
   TABS.bloodline = P.bloodlineTab; TABS.factions = P.factionsTab;
   { const base = TABS.gates; TABS.gates = () => [...[base()].flat(), P.huntsPanel()]; }
   { const base = TABS.cultivation; const QB = await import('../ui/qiBadge.js'); TABS.cultivation = () => { const out = [base()].flat(); return G.char?.qi?.known ? [...out.slice(0, 1), QB.qiPanel(G.char), ...out.slice(1)] : out; }; }

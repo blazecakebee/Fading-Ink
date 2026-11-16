@@ -12,6 +12,11 @@ export const HEIRLOOM_ORDER = ['mythic', 'legendary', 'rare', 'common'];
 export const MAX_ATTUNED = 3;
 
 export const HEIRLOOMS = {
+  // v0.9.4 Fable heirlooms: only from Fable Quests, never found at random
+  red_lantern:     { tier: 'legendary', fable: true, icon: 'lantern', name: 'Red Wedding Lantern', desc: '+8% Qi gains, stress builds 10% slower.', qi: 1.08, stressMult: 0.9 },
+  unfinished_book: { tier: 'legendary', fable: true, icon: 'manual', name: 'The Unfinished Book', desc: '+10% study, +3% breakthrough.', study: 1.1, breakthrough: 0.03 },
+  general_seal:    { tier: 'legendary', fable: true, icon: 'shield', name: "Rusted General's Seal", desc: '+6% combat power, +6% training.', power: 1.06, train: 1.06 },
+  moon_coin:       { tier: 'legendary', fable: true, icon: 'moon', name: 'The One Real Moon-Coin', desc: '+12% loot, +6% salary.', loot: 1.12, pay: 1.06 },
   // common — small, flavourful
   jade_pendant:  { tier: 'common', icon: 'amulet', name: "Grandmother's Jade Pendant", desc: 'Stress builds 5% slower.', stressMult: 0.95 },
   iron_ring:     { tier: 'common', icon: 'ring', name: 'Worn Iron Ring', desc: '+3% combat power.', power: 1.03 },

@@ -45,7 +45,7 @@ import { net, hostRoom, joinRoom, leave, sendChat, doCoopAction, COOP_ACTIONS, c
 // v0.9.0 grouped, collapsible drawers (Life stays on top, always visible)
 export const NAV = [
   ['Self & Body', [['life', 'Life', 'life'], ['status', 'Status', 'robe'], ['character', 'Character', 'character'], ['health', 'Health', 'doctor'], ['bloodline', 'Bloodline', 'legacy'], ['wardrobe', 'Wardrobe & Armory', 'robe']]],
-  ['Progression', [['skills', 'Skills & Traits', 'skills'], ['cultivation', 'Cultivation', 'cultivation'], ['severed', 'Severed Path', 'fist'], ['crafting', 'Crafting & Gear', 'anvil']]],
+  ['Progression', [['skills', 'Skills & Traits', 'skills'], ['cultivation', 'Cultivation', 'cultivation'], ['fables', 'Fables', 'manual'], ['severed', 'Severed Path', 'fist'], ['crafting', 'Crafting & Gear', 'anvil']]],
   ['World & Social', [['people', 'People', 'people'], ['factions', 'Sect & Guild', 'crown'], ['world', 'World', 'world'], ['chronicle', 'Chronicle', 'study'], ['legacy', 'Legacy & Family', 'legacy'], ['coop', 'Co-op', 'people']]],
   ['Economy & Action', [['gates', 'Dungeons & Gates', 'gates'], ['inventory', 'Inventory', 'bag'], ['career', 'Career', 'career'], ['education', 'Education', 'education'], ['assets', 'Assets & Market', 'assets'], ['market', 'Stock Market', 'stocks']]],
   ['Game', [['achievements', 'Achievements', 'trophy'], ['updates', 'Update Log', 'letter'], ['settings', 'Settings', 'settings']]],
@@ -65,6 +65,7 @@ export async function runActivity(a, el) {
   const snap = { ...c.stats, qi: c.qi.qi, money: c.money }, at = el?.getBoundingClientRect?.(); if (el) { el.classList.remove('act-pop'); void el.offsetWidth; el.classList.add('act-pop'); }
   const cost = a.cost === 's' ? 'social' : 'actions';
   const free = a.cost === 'free';
+  if (c.fableRun) return toast('You are inside a Fable. Actions can\'t be used until you finish it.');
   if (!free && c[cost] <= 0) return toast('No actions left this year. Age up!');
   if (c.prison && a.cat !== 'mind' && a.cat !== 'training' && a.cat !== 'prison') return toast('You are in prison.');
   fx('click');
@@ -116,7 +117,7 @@ function agebar() {
   $('#agebar').replaceChildren(
     h('span', { class: 'age-title display' }, `AGE ${c.age}`), h('span', { class: 'muted' }, '· ' + lifeStage(c.age)),
     c.alive ? '' : h('span', { class: 'hint' }, 'This life has ended.'),
-    h('span', { class: 'budget' }, 'Actions ', h('b', {}, `${c.actions}/${c.maxActions || ACTIONS_PER_YEAR}`), pips(c.actions, c.maxActions || ACTIONS_PER_YEAR, ''), '  Social ', h('b', {}, `${c.social}/${c.maxSocial || SOCIAL_PER_YEAR}`), pips(c.social, c.maxSocial || SOCIAL_PER_YEAR, 'social')),
+    h('span', { class: 'budget' }, h('span', { class: 'bud-grp' }, 'Actions ', h('b', {}, `${c.actions}/${c.maxActions || ACTIONS_PER_YEAR}`), pips(c.actions, c.maxActions || ACTIONS_PER_YEAR, '')), h('span', { class: 'bud-sep' }), h('span', { class: 'bud-grp' }, 'Social ', h('b', {}, `${c.social}/${c.maxSocial || SOCIAL_PER_YEAR}`), pips(c.social, c.maxSocial || SOCIAL_PER_YEAR, 'social'))),
     ageBtn(c));
 }
 // In a co-op room the button becomes a vote: shows who's ready and the countdown.
@@ -152,11 +153,11 @@ function sidebar() {
   const badge = id => id === 'coop' && net.status === 'reconnecting' ? '…' : id === 'coop' && net.status === 'online' ? net.peers.size + 1 : id === 'gates' && c.gates.length ? c.gates.length : id === 'cultivation' && c.qi.realm && c.qi.qi >= qiCap(c) ? '!' : null;
   const curLabel = NAV.flatMap(([, it]) => it).find(([id]) => id === G.ui.tab)?.[1] || 'Menu';
   $('#sidebar').classList.toggle('open', !!G.ui.navOpen);
-  const shut = (META.settings.navShut ||= { Game: true }), vis = it => it.filter(([id]) => (id !== 'cultivation' || (!onBodyPath(c) && (c.qi.known || META.bestRealm > 0))) && (id !== 'severed' || canSeeSevered(c)));
+  const shut = (META.settings.navShut ||= { Game: true }), vis = it => it.filter(([id]) => (id !== 'cultivation' || (!onBodyPath(c) && (c.qi.known || META.bestRealm > 0))) && (id !== 'severed' || canSeeSevered(c)) && (id !== 'fables' || (c.fame || 0) >= 1e5 || !!c.fables || !!c.fableRun));
   $('#sidebar').replaceChildren(h('button', { class: 'nav-toggle', onclick: () => { fx('click'); G.ui.navOpen = !G.ui.navOpen; render(); } }, h('span', {}, '☰ ', curLabel), h('span', { class: 'muted' }, G.ui.navOpen ? 'Close ▴' : 'All tabs ▾')), ...NAV.flatMap(([g, items]) => { const its = vis(items), here = its.some(([id]) => id === G.ui.tab), closed = shut[g] && !here;
     const b = its.reduce((n, [id]) => n + (badge(id) ? 1 : 0), 0);
     return [h('button', { class: 'nav-group' + (closed ? ' shut' : ''), onclick: () => { fx('click'); shut[g] = !shut[g]; save(); render(); } }, h('span', {}, g), closed && b ? h('span', { class: 'badge' }, b) : null, h('span', { class: 'chev' }, closed ? '▸' : '▾')),
-    ...(closed ? [] : its.filter(([id]) => (id !== 'cultivation' || (!onBodyPath(c) && (c.qi.known || META.bestRealm > 0))) && (id !== 'severed' || canSeeSevered(c))).map(([id, label, ic]) => h('button', { class: 'nav-btn' + (G.ui.tab === id ? ' active' : ''), title: label, onclick: () => { fx('click'); G.ui.tab = id; G.ui.navOpen = false; render(); window.innerWidth <= 760 && document.getElementById('center').scrollIntoView({ behavior: 'smooth' }); } },
+    ...(closed ? [] : its.filter(([id]) => (id !== 'cultivation' || (!onBodyPath(c) && (c.qi.known || META.bestRealm > 0))) && (id !== 'severed' || canSeeSevered(c)) && (id !== 'fables' || (c.fame || 0) >= 1e5 || !!c.fables || !!c.fableRun)).map(([id, label, ic]) => h('button', { class: 'nav-btn' + (G.ui.tab === id ? ' active' : ''), title: label, onclick: () => { fx('click'); G.ui.tab = id; G.ui.navOpen = false; render(); window.innerWidth <= 760 && document.getElementById('center').scrollIntoView({ behavior: 'smooth' }); } },
       icon(ic), h('span', { class: 'lbl' }, label), badge(id) ? h('span', { class: 'badge' }, badge(id)) : null)))]; }));
 }
 
@@ -240,7 +241,7 @@ function quickBar(c) {
     h('div', { class: 'qb-row' },
       top.length ? h('button', { class: 'btn ghost mini', disabled: c.actions <= 0, title: top.map(a => a.name).join(', '), onclick: e => { const seq = []; while (seq.length < c.actions) seq.push(...top); runMany(seq.slice(0, c.actions), e.currentTarget); } }, `↻ Repeat routine: ${top.map(a => a.name.replace(/ \(.*\)$/, '')).join(', ')}`) : null,
       rep.length ? h('span', { class: 'batch' }, h('select', { onchange: e => { G.ui.batch = { id: e.target.value, n }; render(); } }, rep.map(a => h('option', { value: a.id, selected: a.id === G.ui.batch.id }, a.name))),
-        h('input', { type: 'range', min: 1, max: Math.max(1, c.actions), value: n, disabled: c.actions <= 1, oninput: e => { G.ui.batch.n = +e.target.value; e.target.nextSibling.textContent = `×${e.target.value}`; } }), h('b', {}, `×${n}`),
+        h('input', { type: 'range', class: 'range', style: { '--p': `${c.actions > 1 ? (n - 1) / (c.actions - 1) * 100 : 100}%` }, min: 1, max: Math.max(1, c.actions), value: n, disabled: c.actions <= 1, oninput: e => { G.ui.batch.n = +e.target.value; e.target.style.setProperty('--p', `${(e.target.value - 1) / Math.max(1, c.actions - 1) * 100}%`); e.target.nextSibling.textContent = `×${e.target.value}`; } }), h('b', { class: 'batch-n' }, `×${n}`),
         h('button', { class: 'btn mini', disabled: c.actions <= 0, onclick: e => { const a = rep.find(x => x.id === G.ui.batch.id); runMany(Array(Math.min(G.ui.batch.n || 1, c.actions)).fill(a), e.currentTarget); } }, 'Do it')) : null));
 }
 export const TABS = {

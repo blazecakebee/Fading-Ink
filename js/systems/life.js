@@ -1,5 +1,6 @@
 // Character creation, yearly aging loop, death, and generational inheritance.
 import { onBodyPath, bodyTier } from './path.js';
+import { maybeBreach } from './breach.js';
 import { HARD } from '../core/hard.js';
 import { spared } from './fortune.js';
 import { BODY_TIERS } from '../data/bodypath.js';
@@ -191,6 +192,7 @@ export function beginYear(c) {
 let lastAgeClicks = [];
 export async function ageUp() {
   const c = G.char; if (!c || !c.alive) return;
+  if (c.fableRun) { ui.toast('You are inside a Fable. Time is frozen until you finish it (Fables tab).'); return; }
   // GLITCHED: spam detection
   const now = performance.now(); lastAgeClicks = lastAgeClicks.filter(t => now - t < 1000); lastAgeClicks.push(now);
   if (lastAgeClicks.length >= 5) earnTrait(c, 'duplicate');
@@ -239,7 +241,7 @@ export async function ageUp() {
   if (c.age === 18 && !c.flags.leftHome) { c.flags.leftHome = true; const p = c.people.find(p => p.role === 'Mother' || p.role === 'Father'); if (p && chance(0.5) && c.wealth !== 'destitute') { const g = ri(200, 3000); money(c, g); ui.log(`${p.first} gave me ${fmtMoney(c, g)} to start my adult life.`, 'good'); } }
 
   // gates countdown
-  c.gates = c.gates.filter(g => --g.years > 0 || (ui.log(`The ${g.rank}-rank Gate near ${c.city} closed on its own.`), false));
+  c.gates = c.gates.filter(g => --g.years > 0 || (maybeBreach(c, g) || ui.log(`The ${g.rank}-rank Gate near ${c.city} closed on its own.`), false)); // v0.9.4 ignored SSS+ Gates may rupture
 
   // necessities & weather
   const T = tierOf(c), B = BIOMES[country(c).biome];
