@@ -1,7 +1,12 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.8.2';
+export const VERSION = '0.8.3';
 export const CHANGELOG = [
+  { v: '0.8.3', date: '2026-11-15', title: 'Everyone is different', notes: [
+    'Every person now has a personality: two traits out of 14, including the new Grumpy and Competitive. Learn them by talking, and they show on each person\'s card in the People tab.',
+    'Conversations are stricter. Only answers that suit their personality help. Bland answers do nothing (strangers find them off-putting), and the wrong ones cost a lot of closeness.',
+    'People have tastes. Some love spending time together, others can\'t stand it but light up at a gift, a spar or a training session. Doing something they hate can make them like you less. Once you\'ve tried something with them, their index card shows what they enjoy and what they can\'t stand.',
+  ] },
   { v: '0.8.2', date: '2026-11-15', title: 'Colourful people', notes: [
     'The People tab is colour-coded: family in amber, love in pink, friends in green, school and work in blue, teachers and agents in purple, enemies in red. Everyone shows ♀ or ♂ next to their name.',
     'Every social action now says what happened: what you talked about (it depends on their age), what you trained, what you argued about, what gift you gave, and so on.',

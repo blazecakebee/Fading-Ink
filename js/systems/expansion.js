@@ -29,6 +29,8 @@ import { FORTUNE_EVENTS } from './fortune.js';
 import { TRAINER_SOCIAL, trainersYear } from './trainers.js';
 import { AGENT_SOCIAL, jobsYear } from './jobs.js';
 import { withFlavor } from '../data/flavor.js';
+import { withTaste } from '../data/personas.js';
+import { gainClose as gainCloseP } from './people.js';
 import { REJECT, BODY_ACTS, bodyYear, startPath, SEVERED_EVENTS, migrateBody } from './bodypath.js';
 import { ACHIEVEMENTS, ACH_BY_ID } from '../data/achievements.js';
 
@@ -37,7 +39,7 @@ for (const t of TRAITS2) if (!TRAIT_BY_ID[t.id]) { TRAITS.push(t); TRAIT_BY_ID[t
 
 // ---- social actions (children, blessing, moving in)
 SOCIAL.push(...FAMILY_SOCIAL, MOVE_IN, ...TRAINER_SOCIAL, ...AGENT_SOCIAL);
-for (const s of SOCIAL) s.run = withFlavor(s.id, s.run); // every social action says what you talked about / did
+for (const s of SOCIAL) s.run = withTaste(s.id, withFlavor(s.id, s.run), gainCloseP); // what you did, and whether THEY enjoyed it
 // ---- more names (fewer repeats)
 for (const cty of COUNTRIES) { const x = MORE_NAMES[cty.id]; if (x && !cty._more) { cty._more = 1; cty.m = [...new Set([...cty.m, ...x.m.split(' ')])]; cty.f = [...new Set([...cty.f, ...x.f.split(' ')])]; } }
 // ---- martial arts schools replace the old all-you-can-eat class; private school, migration

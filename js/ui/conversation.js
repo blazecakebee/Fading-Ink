@@ -9,21 +9,8 @@ import { ri, pick, chance, clamp } from '../core/rng.js';
 import { gainClose, relLabel } from '../systems/people.js';
 import { stat } from '../systems/life.js';
 
-export const PERSONAS = {
-  funny:     { name: 'Funny', likes: ['joke', 'tease'], dislikes: ['advice'] },
-  serious:   { name: 'Serious', likes: ['deep', 'advice'], dislikes: ['joke', 'tease'] },
-  proud:     { name: 'Proud', likes: ['praise', 'bold'], dislikes: ['tease', 'advice'] },
-  shy:       { name: 'Shy', likes: ['gentle', 'listen'], dislikes: ['bold', 'tease'] },
-  curious:   { name: 'Curious', likes: ['deep', 'story'], dislikes: ['small'] },
-  kind:      { name: 'Kind-hearted', likes: ['gentle', 'listen', 'praise'], dislikes: ['bold'] },
-  ambitious: { name: 'Ambitious', likes: ['advice', 'bold'], dislikes: ['small', 'joke'] },
-  playful:   { name: 'Playful', likes: ['tease', 'joke', 'story'], dislikes: ['deep'] },
-  practical: { name: 'Practical', likes: ['advice', 'small'], dislikes: ['story', 'deep'] },
-  dreamer:   { name: 'Dreamer', likes: ['story', 'deep', 'gentle'], dislikes: ['small', 'advice'] },
-  guarded:   { name: 'Guarded', likes: ['listen', 'small'], dislikes: ['deep', 'bold'] },
-  romantic:  { name: 'Romantic', likes: ['praise', 'gentle', 'story'], dislikes: ['small'] },
-};
-const LIKES = ['tea', 'old books', 'street food', 'rainy days', 'martial films', 'cats', 'night markets', 'karaoke', 'chess', 'gardening', 'motorbikes', 'stargazing', 'spicy food', 'video games', 'calligraphy', 'fishing'];
+import { PERSONAS, LIKES, ensurePersona, enjoysList, hatesList } from '../data/personas.js';
+export { PERSONAS, ensurePersona };
 
 // Each scene: a prompt and four answers tagged with a style. Answers are shuffled into A–D.
 const SCENES = [
@@ -36,11 +23,6 @@ const SCENES = [
   { text: p => `${p.first} is nervous about a big decision.`, a: [['"Make a list. Pros, cons, then sleep on it."', 'advice'], ['"Whatever you choose, I\'m on your side."', 'gentle'], ['"Just go for it! Fortune favours the bold."', 'bold'], ['"What\'s the scariest part of it?"', 'deep']] },
   { text: p => `${p.first} brings up a rumour about cultivators.`, a: [['"I\'ve heard stranger. Want to hear about the glowing mountain?"', 'story'], ['"Rumours are just rumours."', 'small'], ['"If it were true, would you want to cultivate?"', 'deep'], ['"Sure, and I\'m secretly an immortal."', 'tease']] },
 ];
-
-export function ensurePersona(p) {
-  if (!p.persona) { const keys = Object.keys(PERSONAS); const a = pick(keys); let b = pick(keys); while (b === a) b = pick(keys); p.persona = [a, b]; p.likes = pick(LIKES); }
-  p.known ||= []; return p;
-}
 
 function scoreAnswer(p, style) {
   let s = 0; for (const t of p.persona) { if (PERSONAS[t].likes.includes(style)) s += 2; if (PERSONAS[t].dislikes.includes(style)) s -= 2; }
@@ -58,6 +40,8 @@ export function indexCard(p) {
     ['Personality', p.persona.map(t => p.known.includes(t) ? PERSONAS[t].name : '???').join(' · ')],
     ['Likes', p.known.includes('likes') ? p.likes : '???'],
     ['Responds to', p.persona.filter(t => p.known.includes(t)).flatMap(t => PERSONAS[t].likes).filter((v, i, a) => a.indexOf(v) === i).join(', ') || '???'],
+    ['Enjoys', enjoysList(p).join(', ') || '???'],
+    ['Can\'t stand', hatesList(p).join(', ') || '???'],
   ];
   return h('div', { class: 'index-card' }, h('div', { class: 'ic-head' }, h('div', { class: 'pframe' }, portraitFor(p, 64)), h('div', {}, h('b', {}, `${p.first} ${p.last}`), h('div', { class: 'muted small' }, 'Index card'))),
     h('table', { class: 'kv small' }, facts.map(([k, v]) => h('tr', {}, h('td', {}, k), h('td', {}, v)))));
@@ -78,7 +62,7 @@ export function converse(c, p) {
     function choose(a) {
       if (done) return; done = true; fx('click');
       const s = scoreAnswer(p, a.style), w = warmth(p.close);
-      let d = s > 0 ? Math.max(4, Math.round((4 + s * 3) * w)) : s < 0 ? Math.round(-4 + s * 2) : 4; // a decent answer is worth ~3 closeness
+      let d = s > 0 ? Math.max(3, Math.round((3 + s * 2.5) * w)) : s < 0 ? Math.round(-5 + s * 2.5) : (p.close < 30 ? -2 : ri(-1, 1)); // v0.8.3: only the right answers help; bland ones do nothing (or put strangers off)
       d += ri(-1, 1);
       gainClose(c, p, d);
       let reveal = '';
