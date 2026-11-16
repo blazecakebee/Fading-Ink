@@ -22,7 +22,7 @@ export function formFx(f) {
 function formPass(f) {
   const T = QI[f.type], parts = [T.pass, ...(T.permPass || []).slice(0, f.perm || 0)], k = K(formRarity(f)), out = {};
   for (const p of parts) for (const [key, v] of Object.entries(p || {})) {
-    const mult = ['qi', 'pill', 'heal', 'loot', 'craft', 'train', 'study', 'social', 'stressMult', 'power'].includes(key);
+    const mult = ['qi', 'pill', 'healRate', 'loot', 'craft', 'train', 'study', 'social', 'stressMult', 'power'].includes(key);
     out[key] = mult ? (out[key] ?? 1) * (1 + (v - 1) * k) : (out[key] || 0) + v * k;
   }
   return out;

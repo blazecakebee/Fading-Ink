@@ -10,6 +10,7 @@ import { gainHeirloom } from './heirlooms.js';
 import { ensureDna } from './genetics.js';
 import { power } from './cultivation.js';
 import { perk } from '../data/legacyTree.js';
+import { addFame, dropRelic } from './renown.js';
 
 // ---------------- Hunts: one stage per year, each a brutal fight. Finish them all for a huge payout.
 export const HUNTS = [
@@ -23,9 +24,22 @@ export const HUNTS = [
     stages: ['The black tide', 'Wreck of the fleet', 'Into the trench', 'The eye in the deep'], pay: 650000, items: { unity_pill: 2, celestial_armor: 1, bloodline_essence: 2 }, heir: 'legendary', desc: 'Ships vanish where the sea turns black. Something the size of an island moves below.' },
   { id: 'sky_devourer', name: 'The Sky-Devourer', boss: 'Sky-Devourer', enemy: 'fallen_immortal', style: 'heaven', color: '#fff4b0', minEq: 10, realm: 11,
     stages: ['The sun goes out', 'Stairway of corpses', 'Above the clouds', 'The mouth of heaven', 'Devourer of skies'], pay: 1200000, items: { celestial_sword: 1, dao_pill: 2, ascend_pill: 1, bloodline_essence: 3 }, heir: 'mythicChance', desc: 'A fallen immortal that eats the sky itself. Each year it swallows more of the stars.' },
+  // v0.8.7 more hunts, from early to beyond the heavens; 'elite' ones need the Guild's invitation (100k Fame)
+  { id: 'tiger_king', name: 'The White Tiger King', boss: 'White Tiger King', enemy: 'tiger_beast', style: 'beast', color: '#e9e6df', minEq: 3, realm: 4,
+    stages: ['Claw marks on the shrine', 'The bamboo sea', 'Den of the King'], pay: 40000, items: { beast_core: 6, beast_hide: 2, marrow_pill: 2 }, heir: 'rare', desc: 'A tiger the size of a house has taken three villages.' },
+  { id: 'ghost_bride', name: 'The Ghost Bride of Lantern Street', boss: 'Ghost Bride', enemy: 'hungry_ghost', style: 'spirit', color: '#ff9ac0', minEq: 4, realm: 5,
+    stages: ['The wedding procession', 'The empty house', 'Her wedding night'], pay: 60000, items: { trib_talisman: 2, calm_incense: 3, heart_pill: 1 }, heir: 'rare', desc: 'Every full moon a groom vanishes. She is still looking for the right one.' },
+  { id: 'jiangshi_lord', name: 'The Jiangshi Lord', boss: 'Jiangshi Lord', enemy: 'jiangshi', style: 'spirit', color: '#7fe3ff', minEq: 5, realm: 6,
+    stages: ['The hopping dead', 'The flooded crypt', 'The coffin of jade'], pay: 100000, items: { purity_pill: 2, spirit_stone: 8, soul_pill: 1 }, heir: 'rare', desc: 'An emperor who refused to die, and his court that followed him.' },
+  { id: 'sword_tomb', name: 'The Tomb of Ten Thousand Swords', boss: 'Sword Saint\'s Remnant', enemy: 'sword_saint', style: 'blade', color: '#e0e6ff', minEq: 7, realm: 8, elite: true,
+    stages: ['The rusted gate', 'Hall of broken blades', 'The saint\'s last stance', 'The sword that remembers'], pay: 330000, items: { void_edge: 1, sever_pill: 2, bloodline_essence: 1 }, heir: 'legendary', desc: 'A Guild secret: a tomb where a Sword Saint\'s intent still kills.' },
+  { id: 'heaven_hound', name: 'The Heaven-Devouring Hound', boss: 'Heaven-Devouring Hound', enemy: 'ancient_qilin', style: 'beast', color: '#ffd36f', minEq: 12, realm: 13, elite: true,
+    stages: ['A moon goes missing', 'The hound\'s trail', 'Across the starfields', 'The jaws of heaven', 'The last bite'], pay: 2500000, items: { ascend_pill: 2, dao_pill: 3, bloodline_essence: 4, celestial_armor: 1 }, heir: 'mythicChance', desc: 'A Guild secret: something is eating the moons of the upper realms.' },
+  { id: 'primordial', name: 'The Primordial Beast', boss: 'Primordial Beast', enemy: 'fallen_immortal', style: 'heaven', color: '#ff2a6d', minEq: 14, realm: 15,
+    stages: ['Before the first dawn', 'The world\'s skeleton', 'The womb of chaos', 'The beast wakes', 'Origin'], pay: 5000000, items: { ascend_pill: 3, dao_pill: 4, bloodline_essence: 5, celestial_sword: 1 }, heir: 'mythicChance', desc: 'It was here before the heavens. It would like them back.' },
 ];
 export const HUNT = Object.fromEntries(HUNTS.map(x => [x.id, x]));
-export const huntOpen = (c, H) => effRealm(c) >= H.minEq;
+export const huntOpen = (c, H) => effRealm(c) >= H.minEq && (!H.elite || !!c.guild?.elite);
 export function startHunt(c, id) { if (c.hunt) return null; const H = HUNT[id]; c.hunt = { id, stage: 0, began: G.world.year, last: null };
   ui.cinematic?.({ motif: 'mountain', color: H.color, lines: [H.desc, 'You will not be home for a long time.'], title: H.name, sub: 'The hunt begins', sound: 'heavy' });
   return { text: `I took up the hunt: ${H.name}. ${H.stages.length} stages — one a year, if I survive.`, cls: 'big', big: true }; }
@@ -47,15 +61,16 @@ export async function huntStage(c) {
   }
   c.wins++; c.hunt.stage++;
   const part = Math.round(H.pay * 0.08 * wage(c) * (perk('d4') ? 1.1 : 1)); money(c, part); addItem(c, pick(Object.keys(H.items)), 1, rollQuality(c, 0.1));
+  addFame(c, (H.minEq + 1) * (H.minEq + 1) * 200, true);
   if (!last) return { text: `Hunt stage cleared: ${H.stages[i]}. Spoils worth ${fmtMoney(c, part)}. The ${H.boss} retreats deeper — next year I follow.`, cls: 'good', big: true };
   // final payout
   const pay = Math.round(H.pay * wage(c) * (perk('d4') ? 1.1 : 1)); money(c, pay);
   for (const [id, n] of Object.entries(H.items)) for (let k = 0; k < n; k++) addItem(c, id, 1, rollQuality(c, 0.2));
   if (H.heir === 'mythicChance') gainHeirloom(c, `the ${H.boss}`, chance(0.25) ? 'mythic' : 'legendary'); else gainHeirloom(c, `the ${H.boss}`, H.heir);
   ensureDna(c).points += 2; META.legacy += 20 + H.realm * 3; if (c.guild) c.guild.merit += 500 + H.realm * 100;
-  (c.huntsDone ||= []).push(H.id); c.hunt = null;
+  (c.huntsDone ||= []).push(H.id); c.hunt = null; const relic = dropRelic(c); addFame(c, (H.minEq + 1) * (H.minEq + 1) * 1500);
   ui.cinematic?.({ motif: 'triangle', color: H.color, lines: [`The ${H.boss} falls, and the ground shakes for a day and a night.`, 'Your name will be told for a hundred years.'], title: `${H.boss} Slain`, sub: 'Hunt complete', sound: 'ascend', hold: 2.4 });
-  return { text: `THE HUNT IS OVER. I slew the ${H.boss}! Reward: ${fmtMoney(c, pay)}, ${Object.keys(H.items).length} treasures, an heirloom, 2 Awakening points and lasting fame.`, cls: 'big', big: true };
+  return { text: `THE HUNT IS OVER. I slew the ${H.boss}! Reward: ${fmtMoney(c, pay)}, ${Object.keys(H.items).length} treasures, an heirloom, a Rare Relic (${relic}), 2 Awakening points and lasting fame.`, cls: 'big', big: true };
 }
 
 // ---------------- Gods (super rare). They may bless you, or you may fight them for a sliver of their power.
@@ -83,11 +98,11 @@ export const GOD_EVENT = { id: 'god', cond: c => c.age >= 16 && !c.flags.metGod,
   if (v === 'pray') { if (chance(0.03 + Math.max(0, c.stats.charisma - 50) / 2000)) return bless(c, g); stat(c, 'happiness', 5); return ui.log(`I prayed. ${g.name} did not answer, but the air felt warm for a while.`); }
   if (v !== 'fight') return ui.log(`I looked away. When I looked back, ${g.name} was gone.`);
   const e = ENEMIES.find(x => x.id === 'fallen_immortal');
-  let def = { ...e, kind: 'human', realm: REALMS.length - 1, hp: 7000, str: 340, agi: 130, name: g.name, moves: ['star_fall', 'void_rend', 'qilin_flame', 'thunder_fist'] };
+  let def = { ...e, kind: 'human', realm: Math.min(REALMS.length - 1, Math.max(12, effRealm(c) + 1)), hp: 7000, str: 340, agi: 130, name: g.name, moves: ['star_fall', 'void_rend', 'qilin_flame', 'thunder_fist'] };
   if (ui.bossPhase) def = await ui.bossPhase(c, def, { ...e, name: g.name }, true);
   const r = await ui.fight(def, { noFlee: true });
   if (r === 'win') {
-    (c.divine ||= []).push({ god: g.id, kind: 'shard', year: G.world.year, mods: { ...g.shard } }); c.flags.godSlayer = true; c.wins++;
+    (c.divine ||= []).push({ god: g.id, kind: 'shard', year: G.world.year, mods: { ...g.shard } }); c.flags.godSlayer = true; c.wins++; addFame(c, 100000);
     await ui.cinematic?.({ motif: 'triangle', color: g.color, lines: [`${g.name} kneels — not in defeat, but in curiosity.`, '"Take it, then." A sliver of godhood burns into you.'], title: 'Godslayer', sub: g.title, sound: 'ascend', hold: 2.4 });
     return ui.log(`I fought ${g.name} and won a sliver of divine power. (${g.shardTxt})`, 'big');
   }

@@ -17,7 +17,12 @@ export const REALMS = [
   { id: 'void', glyph: '虛', cap: 380, name: 'Void Refinement', stages: 5, maxQi: 40000, life: 75, power: 33, color: '#8fa8ff', trib: 4 },
   { id: 'integration', glyph: '合', cap: 420, name: 'Body Integration', stages: 5, maxQi: 65000, life: 85, power: 42, color: '#6fe0d0', trib: 5 },
   { id: 'dao', glyph: '道', cap: 480, name: 'Dao Seeking', stages: 5, maxQi: 100000, life: 100, power: 55, color: '#ffffff', trib: 5 },
-  { id: 'immortal', glyph: '羽', cap: 600, name: 'Immortal Ascension', stages: 1, maxQi: Infinity, life: 150, power: 120, color: '#fff4b0', trib: 7 },
+  { id: 'immortal', glyph: '羽', cap: 600, name: 'Immortal Ascension', stages: 3, maxQi: 160000, life: 150, power: 120, color: '#fff4b0', trib: 7 },
+  // v0.8.7 beyond Immortal Ascension (finite Qi everywhere: the old Infinity broke Qi bars and moves)
+  { id: 'immortal_king', glyph: '王', cap: 700, name: 'Immortal King', stages: 3, maxQi: 260000, life: 120, power: 180, color: '#ffd36f', trib: 8 },
+  { id: 'immortal_emperor', glyph: '帝', cap: 800, name: 'Immortal Emperor', stages: 3, maxQi: 420000, life: 150, power: 270, color: '#ff9f43', trib: 9 },
+  { id: 'dao_ancestor', glyph: '祖', cap: 900, name: 'Dao Ancestor', stages: 3, maxQi: 680000, life: 200, power: 400, color: '#e0b0ff', trib: 10 },
+  { id: 'venerable', glyph: '尊', cap: 1000, name: 'Heavenly Venerable', stages: 1, maxQi: 1000000, life: 250, power: 600, color: '#ffffff', trib: 11 },
 ];
 export const RI = Object.fromEntries(REALMS.map((r, i) => [r.id, i]));   // realm index by id, e.g. RI.foundation
 // Saves from before v0.5.8 used the old 8-realm list; this maps old index → new index.

@@ -71,7 +71,7 @@ export function breakthroughInfo(c) {
   add(`Meridians ${c.qi.meridians}/12`, c.qi.meridians * 0.015);
   add('Traits', traitVal(c, 'breakthrough'));
   if (perkC('c4')) add('Legacy: Tribulation Scars', 0.05);
-  if (major && c.qi.realm >= 2) add("Heaven's resistance", -0.02 * c.qi.realm); // every realm is harder to break than the last
+  if (major && c.qi.realm >= 2) add("Heaven's resistance", Math.max(-0.2, -0.02 * c.qi.realm)); // every realm is harder to break than the last
   add(`Stress ${c.stats.stress}`, -c.stats.stress / 300);
   add('Happiness', (c.stats.happiness - 60) / 600);
   add('Partner (dual cultivation)', bondBonus(c, 'breakthrough') - 1);
@@ -114,7 +114,7 @@ export async function breakthrough(c) {
     if (ui.arenaOn?.()) { // dodge the lightning yourself
       await ui.cinematic?.({ motif: 'bolt', color: '#b18cff', threads: 3, lines: ['Clouds pile up like ink poured into water.', `The Heavens judge your ascent to ${next.name}.`], title: 'Heavenly Tribulation', sub: `${lvl} bolt${lvl > 1 ? 's' : ''}`, sound: 'heavy', hold: 1.4 });
       const names = ['First Bolt', 'Rolling Thunder', "Heaven's Wrath", 'Nine Skies Judgement'];
-      const ar = await ui.arena({ title: `Heavenly Tribulation — ${next.name}`, style: 'heaven', color: '#b18cff', phases: names.slice(0, Math.min(4, 1 + Math.ceil(lvl / 2))), difficulty: 0.15 + lvl * 0.12 - (ward ? 0.15 : 0),
+      const ar = await ui.arena({ title: `Heavenly Tribulation — ${next.name}`, style: 'heaven', color: '#b18cff', phases: names.slice(0, Math.min(4, 1 + Math.ceil(lvl / 2))), difficulty: Math.min(1.2, 0.15 + lvl * 0.12) - (ward ? 0.15 : 0),
         lives: 3 + Math.floor(c.stats.health / 35) + (ward ? 1 : 0), hitsPerPhase: 3, autoChance: clamp(0.35 + c.stats.health / 400 + power(c) / (40 + lvl * 25) + (ward ? 0.15 : 0), 0.1, 0.9),
         lines: { intro: 'The sky splits open. Survive — and strike back at the heart of the storm.', stagger: 'The clouds recoil.', opening: 'A gap in the storm.', openingTitle: 'The clouds thin', win: 'The last bolt fades. You are still standing.', lose: 'The lightning finds you.' } });
       res = ar.result; c.lastFightHpPct = ar.lives / ar.livesMax;

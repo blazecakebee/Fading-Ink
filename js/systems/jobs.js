@@ -66,3 +66,43 @@ export function jobsYear(c) {
   if (c.money < fee) { p.agent = null; p.role = 'Acquaintance'; ui.log(`I couldn't pay ${p.first}'s retainer, so my job agent dropped me.`, 'bad'); return; }
   money(c, -fee);
 }
+
+// ---- v0.8.7 job interviews: one question, your answer is judged against your Smarts, Charisma and subject knowledge
+const QUESTIONS = [
+  { q: 'Why should we hire you over everyone else in that waiting room?', a: [['Lay out exactly what you know about the field.', 'tech'], ['Smile, hold their eye, and sell yourself.', 'charm'], ['"Honestly? I need this job, and I will work harder than anyone."', 'honest']] },
+  { q: 'Tell us about a time you failed.', a: [['Walk through a real mistake and what you changed after it.', 'honest'], ['Turn it into a funny story that ends well.', 'charm'], ['Explain the technical root cause in detail.', 'tech']] },
+  { q: 'Here is a problem from our work. How would you solve it?', a: [['Work it out step by step, out loud.', 'tech'], ['Ask smart questions until the answer appears.', 'charm'], ['"I don\'t know yet, but here\'s how I\'d find out."', 'honest']] },
+];
+export async function interview(c, j) {
+  const Q = pick(QUESTIONS), base = hireChance(c, j), sm = eff(c, 'smarts'), ch = eff(c, 'charisma'), knows = !j.major || j.major.includes(c.edu.major);
+  const v = await ui.choice({ title: `Interview: ${j.name}`, icon: 'career', text: `The panel looks up from your file.\n"${Q.q}"`, options: Q.a.map(([t, k]) => ({ label: t, value: k })) });
+  const fit = v === 'tech' ? (sm - 55) / 120 + (knows && j.edu >= 2 ? 0.08 : -0.04) : v === 'charm' ? (ch - 55) / 120 : 0.04;
+  const p = clamp(base + fit, 0.03, 0.9);
+  if (chance(p)) return { text: `${pick(['They shook my hand on the spot.', 'They called back the same evening.', 'The panel exchanged a look — a good one.'])} I was hired as a ${j.name}! (${Math.round(p * 100)}%)`, cls: 'good', big: true, hired: true };
+  return { text: `${pick(['"We\'ll be in touch." They were not.', 'They went with someone else.', 'I could tell it was over halfway through.'])} (${Math.round(p * 100)}%)`, cls: 'bad' };
+}
+
+// ---- odd jobs board: clear title, one-off or recurring, pay and risk
+const GIGS = [
+  { t: 'Dog walker', kind: 'one-time', pay: [20, 50], risk: 0, age: 8, note: 'Safe. The dogs are huge.' },
+  { t: 'Car wash', kind: 'one-time', pay: [25, 60], risk: 0, age: 8, note: 'Safe, wet, tiring.' },
+  { t: 'Temple sweeper', kind: 'recurring', pay: [15, 30], risk: 0, age: 8, note: 'Safe. Small pay every year you keep it. Calm mind (-Stress).', recur: true },
+  { t: 'Night-market porter', kind: 'one-time', pay: [60, 140], risk: 0.08, age: 14, note: 'Heavy loads: small chance of hurting your back.' },
+  { t: 'Debt collector\'s muscle', kind: 'one-time', pay: [150, 400], risk: 0.25, age: 16, note: 'Good money. Fights happen. Raises Heat.', heat: 10 },
+  { t: 'Gate-site scavenger', kind: 'one-time', pay: [120, 600], risk: 0.3, age: 15, note: 'Picking through a sealed Gate\'s edge. Might find materials — or something left inside.' },
+  { t: 'Tutor for a rich kid', kind: 'recurring', pay: [80, 180], risk: 0, age: 15, note: 'Needs Smarts 60+. Pays every year you keep it.', smarts: 60, recur: true },
+  { t: 'Courier, no questions asked', kind: 'one-time', pay: [200, 700], risk: 0.2, age: 16, note: 'Don\'t open the package. Might be police at the drop. Raises Heat.', heat: 15 },
+];
+export function gigBoard(c) { if (c.gigYear !== G.world.year) { c.gigYear = G.world.year; c.gigs = GIGS.filter(g => c.age >= g.age).sort(() => Math.random() - 0.5).slice(0, 4).map(g => g.t); } return GIGS.filter(g => (c.gigs || []).includes(g.t)); }
+export async function takeGig(c, g) {
+  if (g.smarts && eff(c, 'smarts') < g.smarts) return { text: `They wanted someone smarter for the ${g.t} job.`, cls: 'bad' };
+  c.gigs = (c.gigs || []).filter(x => x !== g.t);
+  if (g.recur) { c.recurGig = { t: g.t, pay: g.pay }; }
+  if (g.heat) c.heat = Math.min(100, (c.heat || 0) + g.heat);
+  if (g.risk && chance(g.risk)) { const hurt = ri(6, 18); c.stats.health = Math.max(1, c.stats.health - hurt); const m = Math.round(ri(...g.pay) * 0.3 * wage(c)); money(c, m);
+    return { text: `${g.t}: it went wrong. I got hurt (-${hurt} Health) and only got ${fmtMoney(c, m)}.`, cls: 'bad' }; }
+  if (g.t === 'Gate-site scavenger' && chance(0.4)) { const { addItem } = await import('./life.js'); addItem(c, pick(['spirit_herb', 'iron_ore', 'beast_core', 'spirit_stone'])); }
+  const m = Math.round(ri(...g.pay) * wage(c)); money(c, m);
+  return { text: `${g.t}${g.recur ? ' (I\'ll keep doing this every year)' : ''}: earned ${fmtMoney(c, m)}.`, cls: 'good' };
+}
+export function gigYear(c) { const r = c.recurGig; if (!r || c.prison) return; if (c.job && !CAREERS.find(j => j.id === c.job.id)?.part) { c.recurGig = null; return; } const m = Math.round(ri(...r.pay) * wage(c)); money(c, m); if (r.t === 'Temple sweeper') c.stats.stress = Math.max(0, c.stats.stress - 3); ui.log(`My ${r.t.toLowerCase()} gig paid ${fmtMoney(c, m)} this year.`); }

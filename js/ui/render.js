@@ -14,6 +14,7 @@ import { ITEMS } from '../data/items.js';
 import { METHODS } from '../data/realms.js';
 import { wage, rollQuality, tiered, QUALITY } from '../systems/life.js';
 import * as J from '../systems/jobs.js';
+import { fameLabel, addFame, gateFame, maybeTransmigrate, dropRelic } from '../systems/renown.js';
 import { PERSONAS, ensurePersona } from '../data/personas.js';
 import { TEMPER, MAX_TEMPER } from '../data/temper.js';
 import { comfort, willInfo, giftToChild, wealthLabel, statCap, softCap, gainMult, CAPPED, discount, priceFor, country, lifeStage, fullName, fmtMoney, realm as realmOf, lifespan, ageUp, money, stat, addItem, ACTIONS_PER_YEAR, SOCIAL_PER_YEAR } from '../systems/life.js';
@@ -61,7 +62,7 @@ export async function runActivity(a) {
   const cost = a.cost === 's' ? 'social' : 'actions';
   const free = a.cost === 'free';
   if (!free && c[cost] <= 0) return toast('No actions left this year. Age up!');
-  if (c.prison && a.cat !== 'mind' && a.cat !== 'training') return toast('You are in prison.');
+  if (c.prison && a.cat !== 'mind' && a.cat !== 'training' && a.cat !== 'prison') return toast('You are in prison.');
   fx('click');
   const res = await a.run(c);
   if (res == null) { render(); return; } // cancelled / couldn't afford → no cost
@@ -91,7 +92,7 @@ function topbar() {
     h('div', { class: 'center' }, h('div', {}, h('b', {}, `Year ${G.world.year}`), ' · ', h('span', { class: 'era' }, G.world.era)),
       h('div', { class: 'where' }, '📍 ', `${c.city}, ${cty.name}`)),
     h('div', { class: 'right' }, h('div', {}, icon('market', 'sm'), ' ', h('span', { class: 'money' }, fmtMoney(c, c.money)), ' ', h('span', { class: 'muted', title: `Born into a ${WEALTH.find(w => w.id === c.wealth).name.toLowerCase()} family` }, wealthLabel(c))),
-      h('div', { class: 'sub' }, `Fame: ${c.fame > 60 ? 'Famous' : c.fame > 25 ? 'Known' : 'Unknown'} · Life #${META.lives} · Gen ${c.generation}`),
+      h('div', { class: 'sub' }, `Fame: ${fameLabel(c.fame || 0)} · Life #${META.lives} · Gen ${c.generation}`),
       h('div', { class: 'row', style: { justifyContent: 'flex-end', gap: '6px' } }, h('button', { class: 'version-chip', title: 'Save & return to the main menu', onclick: () => ui.toMenu?.() }, '☰ Menu'), h('button', { class: 'version-chip', title: 'Update log', onclick: () => openChangelog(CHANGELOG) }, `v${VERSION}`))));
 }
 function agebar() {
@@ -155,7 +156,7 @@ function rightCol() {
     h('div', { class: 'box' }, h('h3', {}, 'Your Stats'), h('div', { class: 'realm-line' }, icon('cultivation', 'sm'), ' ', h('b', {}, c.qi.known || onBodyPath(c) ? realmName(c) : 'Realm: ???')), h('div', { class: 'stats' },
       ...[['fist', 'Strength', effShow(c, 'strength')], ['combat', 'Battle IQ', effShow(c, 'battle')], ['kick', 'Agility', effShow(c, 'agility')], ['people', 'Charisma', effShow(c, 'charisma')], ['star', 'Luck', s.luck],
         ['combat', 'Power', power(c).toFixed(1)], ['trophy', 'Fights won', c.wins], ['gates', 'Gates', c.gatesCleared],
-        ['market', 'Gold', fmtMoney(c, c.money)], ['bell', 'Fame', c.fame || 0]].map(([ic, k, v]) => h('div', {}, icon(ic, 'sm'), k, h('b', {}, v))))),
+        ['market', 'Gold', fmtMoney(c, c.money)], ['bell', 'Fame', (c.fame || 0).toLocaleString()]].map(([ic, k, v]) => h('div', {}, icon(ic, 'sm'), k, h('b', {}, v))))),
     (c.conditions || []).length ? h('div', { class: 'box' }, h('h3', {}, 'Conditions'), c.conditions.map(x => h('span', { class: 'chip', style: { '--tc': 'var(--bad)', cursor: 'pointer' }, onclick: () => { G.ui.tab = 'health'; render(); } }, COND_BY_ID[x.id].name))) : null,
     h('div', { class: 'box' }, h('h3', {}, 'Your Traits ', h('small', { class: 'muted', style: { fontSize: '.8rem' } }, 'hover for details')),
       c.traits.length ? c.traits.map(traitChip) : h('span', { class: 'muted' }, 'None yet.')),
@@ -357,7 +358,7 @@ export const TABS = {
         return h('div', { class: 'card' + (ok ? '' : ' locked') }, h('h4', {}, j.name, j.part ? h('span', { class: 'muted' }, ' (part-time)') : '', lead ? h('span', { class: 'grade', style: { background: '#7fd1ff' } }, 'Agent lead') : ''),
         h('div', { class: 'muted' }, `${fmtMoney(c, j.pay * wage(c) * (j.part ? 0.5 : 1))}/yr · age ${j.minAge}+ · ${EDUCATION[j.edu]}${j.major ? ' in ' + j.major.join(' or ') : ''}${j.stat ? ' · ' + Object.entries(j.stat).map(([k, v]) => `${k} ${v}+`).join(', ') : ''}${j.realm ? ' · ' + REALMS[j.realm].name : ''}`),
         h('div', { class: 'row', style: { marginTop: '8px' } }, h('button', { class: 'btn', disabled: !c.alive || c.prison || c.actions <= 0 || !ok || c.job?.id === j.id,
-          onclick: () => runActivity({ id: 'apply_' + j.id, cat: 'work', run: cc => { const b = J.jobBoard(cc); if (chance(J.hireChance(cc, j))) { cc.job = { id: j.id, years: 0, perf: 50 }; b.ids = b.ids.filter(x => x !== j.id); b.leads = b.leads.filter(x => x !== j.id); return { text: `I was hired as a ${j.name}!`, cls: 'good', big: true }; } return { text: `My application to be a ${j.name} was rejected.`, cls: 'bad' }; } }) }, 'Apply (⚡1)'),
+          onclick: () => runActivity({ id: 'apply_' + j.id, cat: 'work', run: async cc => { const b = J.jobBoard(cc); const r = await J.interview(cc, j); if (r.hired) { cc.job = { id: j.id, years: 0, perf: 50 }; b.ids = b.ids.filter(x => x !== j.id); b.leads = b.leads.filter(x => x !== j.id); } return r; } }) }, 'Apply (⚡1)'),
           ok ? h('span', { class: 'muted small' }, `${Math.round(J.hireChance(c, j) * 100)}% chance`) : h('span', { class: 'muted small' }, 'Not qualified'))); }))];
   },
 
@@ -504,15 +505,22 @@ async function enterGate(i, sweep) {
   const c = G.char, g = c.gates[i], R = GATE_RANKS.find(r => r.rank === g.rank), T = gateType(g);
   await runActivity({ id: 'gate', cat: 'adventure', run: async cc => {
     let awakened = false;
+    if (!sweep && maybeTransmigrate(cc)) { cc.gates.splice(i, 1); return { text: `The ${g.rank}-rank Gate was not what it seemed. It took me to another world.`, cls: 'big', big: true }; }
     if (sweep) { cc.flags.presenceWin = true; cc.wins += R.fights; }
     else for (let f = 0; f < R.fights; f++) {
       const boss = f === R.fights - 1;
+      if (f > 0 && f === Math.floor(R.fights / 2)) { // v0.8.7 a quiet chamber between waves: meditate for Qi scaled to the Gate
+        const tier = GATE_RANKS.indexOf(R), mult = 1.5 + tier * 0.5;
+        const v = await choice({ title: 'A quiet chamber', icon: 'meditate', text: `Halfway through the ${T.name}. The Qi here is thick${tier >= 4 ? ' as syrup' : ''}.\nMeditate (×${mult.toFixed(1)} Qi, heal a little — but something may find you first) or press on?`, options: [{ label: 'Meditate', value: true }, { label: 'Press on', value: false, ghost: true }] });
+        if (v) { const { qiGain, qiCap } = await import('../systems/cultivation.js'); const q = cc.qi.realm ? Math.round(qiGain(cc, ri(10, 18)) * mult) : 0; if (q) cc.qi.qi = Math.min(qiCap(cc), cc.qi.qi + q); stat(cc, 'health', ri(3, 8));
+          logLine(q ? `I meditated in the Gate's quiet chamber. +${q} Qi.` : 'I rested in a quiet chamber of the Gate.', 'qi'); if (chance(0.2)) logLine('Something smelled me meditating. The next fight came early.', 'bad'); }
+      }
       const e = ENEMIES.find(x => x.id === (boss ? T.boss[g.rank] || pick(T.pool) : pick(T.pool)));
       // bosses of C-rank and up may be AWAKENED: much tougher, much richer. Big bosses get an entrance.
       if (boss && GATE_RANKS.indexOf(R) >= 2 && chance(0.25)) awakened = true;
-      const er = Math.max(e.realm || 0, R.realm + (boss && awakened ? 1 : 0));
+      const er = R.realm + (boss && awakened ? 1 : 0); // v0.8.7: Gate foes fight at the Gate's realm (not their native one)
       if (boss && (awakened || GATE_RANKS.indexOf(R) >= 4)) await ui.cinematic?.({ motif: awakened ? 'crack' : 'seal', color: awakened ? '#ff3a4a' : R.color, threads: 9, lines: [awakened ? 'The air in the Gate turns to iron.' : 'The deepest chamber of the Gate.', `${e.name} rises${awakened ? ', eyes burning — AWAKENED' : ''}.`], title: e.name, sub: awakened ? 'Awakened Boss' : `${g.rank}-rank Boss`, sound: 'heavy', hold: 1.6 });
-      let def = boss ? { ...e, realm: er, hp: Math.round(e.hp * (awakened ? 1.6 : 1.4)), str: Math.round(e.str * (awakened ? 1.3 : 1.1)), name: `${awakened ? 'AWAKENED' : 'BOSS'} · ${e.name}` } : { ...e, realm: Math.max(e.realm || 0, R.realm), name: `${e.name} (${f + 1}/${R.fights})` };
+      let def = boss ? { ...e, realm: er, hp: Math.round(e.hp * (awakened ? 1.6 : 1.4)), str: Math.round(e.str * (awakened ? 1.3 : 1.1)), name: `${awakened ? 'AWAKENED' : 'BOSS'} · ${e.name}` } : { ...e, realm: R.realm, name: `${e.name} (${f + 1}/${R.fights})` };
       if (boss && (awakened || GATE_RANKS.indexOf(R) >= 4)) def = await bossPhase(cc, def, e, awakened);
       const r = await import('./combat.js').then(m => m.fight(def));
       if (r === 'win' && boss && (awakened || GATE_RANKS.indexOf(R) >= 4)) await ui.cinematic?.({ motif: 'triangle', color: awakened ? '#ff3a4a' : R.color, threads: 0, lines: [`${e.name} drops to one knee.`, awakened ? 'The burning light in its eyes gutters out.' : 'The Gate begins to close around you.'], title: 'Victory', sub: `${g.rank}-rank ${T.name}`, sound: 'milestone', hold: 1.6 });
@@ -520,7 +528,7 @@ async function enterGate(i, sweep) {
       if (r !== 'win') return { text: r === 'flee' ? `I fled the ${T.name}.` : `I was beaten inside the ${g.rank}-rank ${T.name} and dragged myself out.`, cls: 'bad' };
       cc.wins++;
     }
-    cc.gates.splice(i, 1); cc.gatesCleared++; if (cc.gatesCleared >= 10) earnTrait(cc, 'gatebreaker'); if (/^S/.test(g.rank)) cc.flags.gateS = true;
+    cc.gates.splice(i, 1); cc.gatesCleared++; addFame(cc, gateFame(GATE_RANKS.indexOf(R)) * (awakened ? 2 : 1), true); if (cc.gatesCleared >= 10) earnTrait(cc, 'gatebreaker'); if (/^S/.test(g.rank)) cc.flags.gateS = true;
     const tier = GATE_RANKS.indexOf(R), yld = gateYield(cc, R);
     const n = Math.max(1, Math.round((ri(2, 3) + Math.floor(tier / 2) + (awakened ? 3 : 0)) * traitVal0(cc) * yld));
     const table = Object.entries(T.loot).map(([id, w]) => ({ id, w }));
@@ -534,6 +542,8 @@ async function enterGate(i, sweep) {
       else { const q = rollQuality(cc, awakened ? 0.08 : 0); addItem(cc, L.id, 1, q); add((tiered(L.id) && q !== 'mid' ? QUALITY[q].short + ' ' : '') + (ITEMS[L.id]?.name || L.id)); }
     }
     if (awakened) { addItem(cc, pick(['bloodline_essence', 'recipe_scroll', 'trib_talisman', 'marrow_pill'])); add('Awakened core'); }
+    if (chance((GATE_RANKS.indexOf(R) + 1) * 0.012 * (awakened ? 2 : 1))) add(dropRelic(cc) + ' (Rare Relic!)');
+    add(`Fame +${(gateFame(GATE_RANKS.indexOf(R)) * (awakened ? 2 : 1)).toLocaleString()}`);
     if (chance(gateHeirloomChance(tier) * yld * (awakened ? 2.5 : 1))) { const x = gainHeirloom(cc, `${g.rank}-rank ${T.name}`); if (x) add(HEIRLOOMS[x.id].name); }
     if (cc.guild && tier >= cc.guild.rank - 1) cc.guild.merit += Math.round((tier + 1) * 8 * yld);
     return { text: `${sweep ? `I walked into the ${g.rank}-rank ${T.name} and nothing inside dared move. ` : ''}I cleared the ${g.rank}-rank ${T.name}${awakened ? ' and slew its AWAKENED boss' : ''}!${yld < 1 ? ` (outlevelled: ${Math.round(yld * 100)}% loot)` : ''} Loot: ${Object.entries(got).map(([k, v]) => v > 1 ? `${v}× ${k}` : k).join(', ')}.`, cls: 'good', big: true };

@@ -27,12 +27,18 @@ import { META } from '../core/state.js';
 import { GOD_EVENT, GOD_ACHIEVEMENTS } from './endgame.js';
 import { FORTUNE_EVENTS } from './fortune.js';
 import { TRAINER_SOCIAL, trainersYear } from './trainers.js';
-import { AGENT_SOCIAL, jobsYear } from './jobs.js';
+import { AGENT_SOCIAL, jobsYear, gigYear } from './jobs.js';
 import { withFlavor } from '../data/flavor.js';
 import { withTaste } from '../data/personas.js';
 import { SACRIFICE, SACRIFICE_EVENT } from './sacrifice.js';
 import { QI_ACTS, awakenQi } from './qitype.js';
 import { legacyBirth, legacyYear } from './legacyExtra.js';
+import { renownYear, otherworldYear, inOtherworld } from './renown.js';
+import { PRISON_ACTS, PRISON_CAT, lawYear } from './law.js';
+import { DARK_EVENTS, REHAB, addictionYear } from '../data/darkEvents.js';
+import { IDENTITY_ACTS, attractedTo, sexualityOf } from './identity.js';
+import { appearanceYear } from './appearance.js';
+import { CATEGORIES } from '../data/activities.js';
 import { onBodyPath as onBodyPathQ } from './path.js';
 import { rollTemper, temperYear, TEMPER } from '../data/temper.js';
 import { gainClose as gainCloseP } from './people.js';
@@ -44,13 +50,15 @@ for (const t of TRAITS2) if (!TRAIT_BY_ID[t.id]) { TRAITS.push(t); TRAIT_BY_ID[t
 
 // ---- social actions (children, blessing, moving in)
 SOCIAL.push(...FAMILY_SOCIAL, MOVE_IN, ...TRAINER_SOCIAL, ...AGENT_SOCIAL);
+{ const d = SOCIAL.find(s => s.id === 'date'); if (d) { const r0 = d.run; d.run = (c, p) => attractedTo(p, c) ? r0(c, p) : { text: `${p.first} smiled kindly. "You're lovely — but you're not who I'm looking for."`, cls: 'bad' }; } } // everyone has a sexuality now
 for (const s of SOCIAL) s.run = withTaste(s.id, withFlavor(s.id, s.run), gainCloseP); // what you did, and whether THEY enjoyed it
 // ---- more names (fewer repeats)
 for (const cty of COUNTRIES) { const x = MORE_NAMES[cty.id]; if (x && !cty._more) { cty._more = 1; cty.m = [...new Set([...cty.m, ...x.m.split(' ')])]; cty.f = [...new Set([...cty.f, ...x.f.split(' ')])]; } }
 // ---- martial arts schools replace the old all-you-can-eat class; private school, migration
 { const i = ACTIVITIES.findIndex(a => a.id === 'martial'); if (i >= 0) ACTIVITIES[i] = MARTIAL; else ACTIVITIES.push(MARTIAL); }
 { const i = ACTIVITIES.findIndex(a => a.id === 'doctor'); if (i >= 0) ACTIVITIES[i] = DOCTOR; else ACTIVITIES.push(DOCTOR); }
-ACTIVITIES.push(SWITCH_ART, PRIVATE, MIGRATE, REJECT, ...BODY_ACTS, SACRIFICE, ...QI_ACTS);
+ACTIVITIES.push(SWITCH_ART, PRIVATE, MIGRATE, REJECT, ...BODY_ACTS, SACRIFICE, ...QI_ACTS, ...PRISON_ACTS, REHAB, ...IDENTITY_ACTS);
+if (!CATEGORIES.some(x => x.id === 'prison')) CATEGORIES.push(PRISON_CAT);
 // born without Qi at all
 for (const t of [{ id: 'heaven_severed', tier: 'legendary', name: 'Heaven-Severed', desc: 'Born with no Qi at all. You walk the Severed Path from birth: +12 Strength, +10 Agility, +10 Health.', mods: { strength: 12, agility: 10, health: 10 } }]) if (!TRAIT_BY_ID[t.id]) { TRAITS.push(t); TRAIT_BY_ID[t.id] = t; }
 for (const a of [{ id: 'severed', name: 'Severed', desc: 'Walk the Severed Path.', pts: 5, check: c => c.path === 'body' }, { id: 'iron_body', name: 'Steel Without Qi', desc: 'Reach Steel Sinew on the Severed Path.', pts: 10, check: c => (c.bodyPath?.tier || 0) >= 3 }, { id: 'unbound', name: 'The Unbound', desc: 'Complete the Severed Path.', pts: 40, check: c => (c.bodyPath?.tier || 0) >= 12 }, ...GOD_ACHIEVEMENTS]) if (!ACH_BY_ID[a.id]) { ACHIEVEMENTS.push(a); ACH_BY_ID[a.id] = a; }
@@ -74,7 +82,7 @@ ACTIVITIES.push(
 // ---- events
 const gs = EVENTS.find(e => e.id === 'gate_spawn');
 if (gs) { Object.defineProperty(gs, 'w', { get: () => newsMult('gate_surge') ? 12 : 5 }); gs.run = c => { spawnGate(c); }; }
-EVENTS.push(GOD_EVENT, SACRIFICE_EVENT, ...SEVERED_EVENTS, ...FORTUNE_EVENTS,
+EVENTS.push(GOD_EVENT, SACRIFICE_EVENT, ...DARK_EVENTS, ...SEVERED_EVENTS, ...FORTUNE_EVENTS,
   { id: 'ruins', cond: c => c.age >= 16, w: 0.25, run: async c => {
       const v = await ui.choice({ title: 'Collapsed Ruins', icon: 'chest', text: 'A landslide has exposed the corner of an ancient storehouse. Something glints under the rubble.', options: [{ label: 'Dig carefully', value: 'dig' }, { label: 'Leave it', value: false }] });
       if (!v) return ui.log('I left the ruins alone.');
@@ -116,8 +124,8 @@ HOOKS.inherit.push((old, c, ch) => {
   c.flags.intro = { motif: 'tree', color: '#7fe3a0', lines: [`${fullName(old)} has died: ${old.cause || 'their story ended'}.`, 'The ink of their life dries on the page.', 'Their blood runs on in you.'], title: fullName(c), sub: `Generation ${c.generation}`, sound: 'birth' };
 });
 HOOKS.yearStart.push(c => { newsYear(c); portfolioYear(c); birthYear(c, haveChild); });
-HOOKS.yearEnd.push(c => { if (c.alive) { trainersYear(c); jobsYear(c); temperYear(c, ui, stat); legacyYear(c); if (c.qi.realm >= 1 && !c.qiType && !onBodyPathQ(c)) awakenQi(c); } });
-HOOKS.birth.push(c => { rollTemper(c); legacyBirth(c); ui.log(`Personality: ${c.temper.map(id => TEMPER[id].name).join(', ')}.`); });
+HOOKS.yearEnd.push(async c => { if (c.alive) { trainersYear(c); jobsYear(c); gigYear(c); appearanceYear(c); addictionYear(c); if (!c.alive) return; temperYear(c, ui, stat); legacyYear(c); renownYear(c); await lawYear(c); if (!c.alive) return; if (inOtherworld(c)) await otherworldYear(c); if (!c.alive) return; if (!isFinite(c.qi.qi) || isNaN(c.qi.qi)) c.qi.qi = (await import('./cultivation.js')).qiCap(c); if (c.qi.realm >= 1 && !c.qiType && !onBodyPathQ(c)) awakenQi(c); } });
+HOOKS.birth.push(c => { rollTemper(c); legacyBirth(c); c.birthSex = c.gender; sexualityOf(c); ui.log(`Personality: ${c.temper.map(id => TEMPER[id].name).join(', ')}.`); });
 HOOKS.yearEnd.push(async c => {
   grantPoints(c); schoolYear(c); ownSectYear(c); bodyYear(c);
   if (!canGetQiIllness(c) && clearQiIllness(c)) ui.log('Without cultivated Qi in my body, the Qi sickness simply faded away.', 'good');

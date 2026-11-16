@@ -3,6 +3,7 @@ import { h } from './dom.js';
 import { QI, RARITY, compatible, SECOND_REALM, FUSE_REALM } from '../data/qitypes.js';
 import { qiOf, formName, formRarity, formFx, refineInfo, fuseInfo } from '../systems/qitype.js';
 import { REALMS } from '../data/realms.js';
+import { fxHost } from './moveFx.js';
 
 export function qiBadge(f, size = 34, fusedWith = null) {
   const T = QI[f.type], r = RARITY[formRarity(f)], c2 = fusedWith ? QI[fusedWith.type].colors[0] : T.colors[1];
@@ -36,7 +37,7 @@ export function qiPanel(c) {
 }
 // burst of Qi-coloured particles over an element (fight screen)
 export function qiBurst(target, colors, big) {
-  if (!target) return; const r = target.getBoundingClientRect(); const layer = document.body;
+  if (!target) return; const layer = fxHost(target), o = layer.getBoundingClientRect(), r0 = target.getBoundingClientRect(); const k = (o.width / (layer.offsetWidth || o.width)) || 1; const r = { left: (r0.left - o.left) / k, top: (r0.top - o.top) / k + (layer.parentElement?.scrollTop || 0), width: r0.width / k, height: r0.height / k };
   for (let i = 0; i < (big ? 18 : 10); i++) {
     const p = h('div', { class: 'qi-spark' }); const a = Math.random() * Math.PI * 2, d = 30 + Math.random() * (big ? 70 : 45);
     p.style.left = (r.left + r.width / 2) + 'px'; p.style.top = (r.top + r.height / 2) + 'px';

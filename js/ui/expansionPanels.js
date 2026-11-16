@@ -21,6 +21,17 @@ const geneChip = id => { const g = GENE(id); const col = g?.neg ? '#ff7a6a' : g?
   return h('span', { class: 'chip-gene', style: { borderColor: col, color: col }, 'data-tip': g?.desc || '', 'data-tip-title': g?.name || id }, geneName(id)); };
 export const geneChips = ids => (ids || []).map(geneChip);
 
+// v0.8.7 the DNA double helix beside the Awakening tree: one rung per awakened slot, gold when filled
+function helix(n, max, pts) {
+  const NS = 'http://www.w3.org/2000/svg', W = 150, H = 420, R = 22, el = (t, a) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); return e; };
+  const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, class: 'helix-svg' }), x = (y, ph) => W / 2 + Math.sin(y / 38 + ph) * 46;
+  const path = ph => { let d = ''; for (let y = 0; y <= H; y += 6) d += `${y ? 'L' : 'M'}${x(y, ph).toFixed(1)} ${y}`; return d; };
+  const rungs = Math.max(max, 8);
+  for (let i = 0; i < rungs; i++) { const y = 20 + i * (H - 40) / (rungs - 1), x1 = x(y, 0), x2 = x(y, Math.PI), on = i < n && i < max;
+    svg.append(el('line', { x1, y1: y, x2, y2: y, class: 'rung' + (on ? ' on' : i < max ? '' : ' dim') })); if (on) svg.append(el('circle', { cx: (x1 + x2) / 2, cy: y, r: 4, class: 'rung-dot' })); }
+  svg.append(el('path', { d: path(0), class: 'strand a' }), el('path', { d: path(Math.PI), class: 'strand b' }));
+  return h('div', { class: 'helix' }, h('div', { class: 'helix-head' }, h('span', { class: 'muted small' }, 'STRANDS'), h('b', {}, ` ${n}/${max}`)), svg, h('div', { class: 'muted small', style: { textAlign: 'center' } }, `${pts}◆ to spend`));
+}
 // ---------------- Bloodline tab
 export function bloodlineTab() {
   const c = G.char, d = ensureDna(c);
@@ -46,7 +57,7 @@ export function bloodlineTab() {
       h('div', { class: 'small', style: { marginTop: '6px' } }, h('b', {}, `${d.points}◆ Awakening points`), ` · ${d.awakened.length}/${MAX_AWAKENED} awakened slots · earn 1◆ for each new realm, 1◆ at 18, or refine Bloodline Essence.`)),
     h('h3', { class: 'display', style: { margin: '14px 0 6px' } }, 'Awakening tree'),
     h('p', { class: 'muted small' }, 'Branch outward to wake dormant genes. Deeper genes need higher realms — and the transcendent genes at the bottom demand you first accept a flaw (⚠).'),
-    h('div', { class: 'gene-tree' }, cols), cross.length ? h('div', { style: { maxWidth: '260px', marginTop: '6px' } }, h('div', { class: 'muted small' }, 'Cross-branch'), ...cross) : null,
+    h('div', { class: 'dna-wrap' }, h('div', { class: 'gene-tree' }, cols), helix(d.awakened.length, MAX_AWAKENED, d.points)), cross.length ? h('div', { style: { maxWidth: '260px', marginTop: '6px' } }, h('div', { class: 'muted small' }, 'Cross-branch'), ...cross) : null,
     h('h3', { class: 'display', style: { margin: '18px 0 6px' } }, 'Family heirlooms'),
     h('p', { class: 'muted small' }, `Only your ${MAX_ATTUNED} finest heirlooms are attuned at once. Each one has a small chance to be lost every time it passes to the next generation. Found in Gates (rarely), by luck at birth, or in old ruins — Mythic pieces are 1 in 1,000 finds.`),
     hl.length ? h('div', { class: 'grid2' }, hl.map(x => { const H = HEIRLOOMS[x.id], T = HEIRLOOM_TIERS[H.tier];
@@ -132,6 +143,8 @@ export function factionsTab() {
 
 // ---------------- End-game hunts (shown under Dungeons & Gates) and divine favour
 import * as EG from '../systems/endgame.js';
+import * as RN from '../systems/renown.js';
+import { wage } from '../systems/life.js';
 export function huntsPanel() {
   const c = G.char, cur = c.hunt && EG.HUNT[c.hunt.id];
   return h('div', { style: { marginTop: '18px' } }, h('h3', { class: 'display' }, 'End-game Hunts'),
@@ -142,8 +155,18 @@ export function huntsPanel() {
     h('div', { class: 'grid2' }, EG.HUNTS.map(H => { const open = EG.huntOpen(c, H), done = (c.huntsDone || []).includes(H.id);
       return h('div', { class: 'card', style: { opacity: open ? 1 : 0.55, borderColor: done ? H.color : '' } }, h('b', { style: { color: H.color } }, H.name), h('div', { class: 'muted small' }, H.desc),
         h('div', { class: 'small', style: { marginTop: '4px' } }, `${H.stages.length} stages · foes around ${REALMS[H.minEq].name}, final stage ${REALMS[H.minEq + 1].name} · pays ~${fmtMoney(c, H.pay * 0.6)}+`),
-        done ? h('div', { class: 'small', style: { color: H.color } }, '✓ Slain this life') : !open ? h('div', { class: 'small muted' }, `Needs ${REALMS[H.minEq].name} (or the matching body tier)`) :
-          h('button', { class: 'btn mini', style: { marginTop: '6px' }, disabled: !!c.hunt || !c.alive || c.age < 18, onclick: () => R.run({ id: 'hunt_start', cost: 'free', run: cc => EG.startHunt(cc, H.id) }) }, 'Take up the hunt')); })));
+        done ? h('div', { class: 'small', style: { color: H.color } }, '✓ Slain this life') : !open ? h('div', { class: 'small muted' }, H.elite && !c.guild?.elite ? 'Guild secret: needs the Guild\'s invitation (100,000 Fame)' : `Needs ${REALMS[H.minEq].name} (or the matching body tier)`) :
+          h('button', { class: 'btn mini', style: { marginTop: '6px' }, disabled: !!c.hunt || !c.alive || c.age < 18, onclick: () => R.run({ id: 'hunt_start', cost: 'free', run: cc => EG.startHunt(cc, H.id) }) }, 'Take up the hunt')); })),
+    wantedPanel(c));
+}
+// v0.8.7 Wanted board: demonic cultivators with a price on their heads
+function wantedPanel(c) {
+  if (c.age < 16) return null; const list = RN.bountyBoard(c);
+  return h('div', { style: { marginTop: '18px' } }, h('h3', { class: 'display' }, 'Wanted: Demonic Cultivators'),
+    h('p', { class: 'muted small' }, `Posted by the Hunter Association. Track one down (1 action) for the bounty and Fame. Bounties expire. Brought down: ${c.bountiesDone || 0}.`),
+    h('div', { class: 'grid2' }, list.map(b => h('div', { class: 'card wanted' }, h('b', {}, b.name), h('div', { class: 'muted small' }, `${REALMS[b.realm].name} · ${b.years} year${b.years > 1 ? 's' : ''} left`),
+      h('div', { class: 'small' }, `Reward ${fmtMoney(c, b.reward * wage(c))} · Fame +${b.fame.toLocaleString()}`),
+      h('button', { class: 'btn mini', style: { marginTop: '6px' }, disabled: !c.alive || c.actions <= 0, onclick: () => R.run({ id: 'bounty', cat: 'adventure', run: cc => RN.huntBounty(cc, b.id) }) }, 'Hunt them (⚡1)')))));
 }
 export function divinePanel() {
   const c = G.char; if (!(c.divine || []).length) return null;

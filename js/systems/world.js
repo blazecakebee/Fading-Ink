@@ -66,6 +66,10 @@ export function ensureMatchingGate(c) {
   let idx = 0; GATE_RANKS.forEach((r, i) => { if (r.realm <= effRealm(c)) idx = i; });
   const near = c.gates.some(g => Math.abs(GATE_RANKS.findIndex(r => r.rank === g.rank) - idx) <= 1);
   if (!near && chance(0.5)) spawnGate(c, true);
+  // v0.8.7: stronger cultivators see more Gates, and the small ones never disappear
+  const want = 2 + Math.floor(effRealm(c) / 3);
+  for (let i = 0; i < 3 && c.gates.length < want; i++) if (chance(0.55)) { const low = c.gates.some(g => GATE_RANKS.findIndex(r => r.rank === g.rank) <= Math.max(0, idx - 3));
+    const R = !low && idx >= 3 ? GATE_RANKS[ri(0, Math.max(0, idx - 3))] : rankFor(c); const g = makeGate(R.rank); c.gates.push(g); ui.log(`A ${R.rank}-rank ${GATE_TYPES.find(t => t.id === g.type).name} tore open near ${c.city}.`, 'qi'); }
 }
 export const newsMult = id => G.world?.news?.year === G.world?.year && G.world.news.id === id;
 

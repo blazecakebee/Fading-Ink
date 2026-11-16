@@ -109,7 +109,11 @@ export const ACTIVITIES = [
   // ---- WORK & MONEY
   { id: 'work_hard', cat: 'work', name: 'Work harder', icon: 'career', minAge: 12, need: c => !!c.job, run: c => { c.job.perf = clamp(c.job.perf + ri(8, 15)); stat(c, 'stress', 5);
       if (c.job.perf > 85 && chance(0.4)) { const b = Math.round(1500 * wage(c)); money(c, b); return { text: `I got a bonus of ${fmtMoney(c, b)}!`, cls: 'good' }; } return `I put in extra hours. Performance: ${c.job.perf}%.`; } },
-  { id: 'odd_jobs', cat: 'work', name: 'Do odd jobs', icon: 'hammer', minAge: 8, run: c => { const g = Math.round(ri(15, 80) * wage(c)); money(c, g); return `I ${pick(['washed cars', 'walked dogs', 'swept the temple', 'carried groceries'])} for ${fmtMoney(c, g)}.`; } },
+  { id: 'odd_jobs', cat: 'work', name: 'Odd jobs board', icon: 'hammer', minAge: 8, run: async c => { // v0.8.7: clear gigs with pay and risk
+    const J = await import('../systems/jobs.js'); const list = J.gigBoard(c); if (!list.length) return 'Nobody is hiring for odd jobs right now. Try again next year.';
+    const v = await ui.choice({ title: 'Odd jobs board', icon: 'hammer', text: `Notes pinned to a corkboard. Each takes this action.${c.recurGig ? `\nCurrent recurring gig: ${c.recurGig.t} (taking another recurring gig replaces it).` : ''}`,
+      options: [...list.map(g => ({ label: `${g.t} · ${g.kind} · ${fmtMoney(c, g.pay[0] * wage(c))}–${fmtMoney(c, g.pay[1] * wage(c))}${g.risk ? ` · ${Math.round(g.risk * 100)}% risk` : ' · safe'} — ${g.note}`, value: g.t })), { label: 'Turn them all down', value: null, ghost: true }] });
+    if (!v) return null; return J.takeGig(c, list.find(g => g.t === v)); } },
   { id: 'invest', cat: 'work', name: 'Open the stock market', icon: 'stocks', minAge: 18, run: () => { ui.openTab?.('market'); return null; } },
   { id: 'casino', cat: 'leisure', name: 'Gamble at the casino', icon: 'cards', minAge: 18, run: async c => {
       const bet = await ui.choice({ title: 'Casino', text: `Cash: ${fmtMoney(c, c.money)}. Place a bet on blackjack.`, icon: 'cards', options: [50, 500, 5000].filter(b => b <= c.money).map(b => ({ label: `Bet ${fmtMoney(c, b)}`, value: b })) });
@@ -119,7 +123,7 @@ export const ACTIVITIES = [
   // ---- LEISURE
   { id: 'party', cat: 'leisure', name: 'Go to a party', icon: 'beer', minAge: 15, run: c => { stat(c, 'happiness', 8); stat(c, 'stress', -6); stat(c, 'happiness', 10); if (chance(0.5)) { const p = makePerson(c, { role: 'Friend', close: ri(30, 55) }); c.people.push(p); return `I met ${p.first} at a party and we hit it off.`; } return 'I danced until the lights came on.'; } },
   { id: 'vacation', cat: 'leisure', name: 'Go on vacation', icon: 'travel', minAge: 18, run: c => { const cost = priceFor(c, 1500 * country(c).econ); if (c.money < cost) return null; money(c, -cost); stat(c, 'happiness', 15); stat(c, 'stress', -20); stat(c, 'happiness', 18); return `I took a trip to ${pick(['the mountains of Wudang', 'a beach in Bali', 'Kyoto in autumn', 'Paris', 'a desert monastery'])}. (${fmtMoney(c, cost)})`; } },
-  { id: 'social_media', cat: 'leisure', name: 'Post on social media', icon: 'phone', minAge: 13, need: c => c.age >= ({ developing: 18, emerging: 14, developed: 12 }[country(c).tier] || 12) || ['wealthy', 'rich', 'royal'].includes(c.wealth), run: c => { const g = Math.max(0, Math.round(ri(-2, 6) + (c.stats.looks + eff(c, 'charisma') - 100) / 20)); c.fame = clamp((c.fame || 0) + g); if (g > 3) c.flags.viral = true; return g > 3 ? { text: `My post went viral! Fame +${g}.`, cls: 'good' } : 'Nobody liked my post.'; } },
+  { id: 'social_media', cat: 'leisure', name: 'Post on social media', icon: 'phone', minAge: 13, need: c => c.age >= ({ developing: 18, emerging: 14, developed: 12 }[country(c).tier] || 12) || ['wealthy', 'rich', 'royal'].includes(c.wealth), run: c => { const g = Math.max(0, Math.round(ri(-2, 6) + (c.stats.looks + eff(c, 'charisma') - 100) / 20)); c.fame = Math.max(0, (c.fame || 0) + g * 100); if (g > 3) c.flags.viral = true; return g > 3 ? { text: `My post went viral! Fame +${g * 100}.`, cls: 'good' } : 'Nobody liked my post.'; } },
   { id: 'adopt_pet', cat: 'leisure', name: 'Adopt a pet', icon: 'pet', minAge: 10, need: c => !c.assets.some(a => a.type === 'pet'), run: c => { const kind = pick(['cat', 'dog', 'rabbit', 'crow', 'koi fish']); c.assets.push({ type: 'pet', name: `${pick(['Mochi', 'Ink', 'Bao', 'Pepper', 'Luna', 'Ghost'])} the ${kind}`, value: 0 }); stat(c, 'happiness', 10); return `I adopted a ${kind}.`; } },
 
   // ---- CRIME
@@ -147,12 +151,10 @@ export const ACTIVITIES = [
 ];
 
 async function crime(c, risk, loot, text, years) {
-  const caught = chance(risk * 1.5 * traitMult(c, 'crime') * (1 - eff(c, 'agility') / 300));
-  if (caught) {
-    if (years && c.age >= 18) { c.prison = years + ri(0, years); c.flags.prisonEver = true; return { text: `${text}... and got caught. Sentenced to ${c.prison} years in prison.`, cls: 'bad', big: true }; }
-    stat(c, 'happiness', -8); return { text: `${text}... but got caught. ${c.age < 18 ? 'My parents were called.' : 'I paid a fine.'}`, cls: 'bad' };
-  }
-  const g = Math.round(ri(...loot) * wage(c)); money(c, g); c.flags.crimeWin = true; return { text: `${text}. Got away with ${fmtMoney(c, g)}.`, cls: 'good' };
+  const L = await import('../systems/law.js'); // v0.8.7: heat + country policing + standoffs
+  if (chance(L.caughtChance(c, risk))) return L.standoff(c, years, text);
+  L.addHeat(c, Math.round(risk * 40));
+  const g = Math.round(ri(...loot) * wage(c)); money(c, g); c.flags.crimeWin = true; return { text: `${text}. Got away with ${fmtMoney(c, g)}.${(c.heat || 0) >= 45 ? ' (The Federal Authorities are looking into me.)' : ''}`, cls: 'good' };
 }
 
 // Social actions (cost a Social point) — used from the People tab.

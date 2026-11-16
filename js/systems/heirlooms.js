@@ -45,7 +45,7 @@ export function inheritHeirlooms(old, c) {
   for (const x of lost) ui.log(`The ${HEIRLOOMS[x.id].name} was lost when my parent died — sold, stolen or buried with them.`, 'bad');
 }
 // Chance of an heirloom dropping from a Gate boss, by gate tier index (E=0 … SSS=7)
-export const gateHeirloomChance = tier => [0.004, 0.008, 0.015, 0.025, 0.035, 0.05, 0.065, 0.08][tier] || 0.004;
+export const gateHeirloomChance = tier => [0.004, 0.008, 0.015, 0.025, 0.035, 0.05, 0.065, 0.08, 0.1, 0.12][tier] || 0.004;
 // Convert pre-0.6 string heirlooms into objects
 export function migrateHeirlooms(c) {
   c.heirlooms = (c.heirlooms || []).map(x => typeof x === 'string' ? { id: 'notes', tier: 'common', found: x.replace(/'s Cultivation Notes$/, ''), how: 'written', gens: 1 } : x).filter(isHeirloom);

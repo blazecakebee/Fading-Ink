@@ -60,8 +60,23 @@ export const ITEMS = {
   lucky_coin:      { name: 'Lucky Coin', icon: 'market', type: 'gear', slot: 'charm', price: 200, shop: 1, stats: { luck: 5 }, desc: '+5 Luck.' },
   phoenix_feather: { name: 'Phoenix Feather', icon: 'feather', type: 'gear', slot: 'charm', stats: { hp: 25, qi: 0.05 }, desc: '+25 HP, +5% Qi gain.' },
   fang_necklace: { name: 'Beast Fang Necklace', icon: 'claw', type: 'gear', slot: 'charm', stats: { agi: 8 }, desc: '+8 Agility.' },
+  // v0.8.7 Rare Relics: sell for a fortune, or enshrine (Inventory) for permanent meditation Qi
+  // v0.8.7 accessories: necklaces & rings (shown on your character)
+  silver_locket:   { name: 'Silver Locket', icon: 'amulet', type: 'gear', slot: 'necklace', price: 400, shop: 1, stats: { luck: 4 }, color: '#d8dde6', desc: '+4 Luck.' },
+  spirit_pendant:  { name: 'Spirit Jade Pendant', icon: 'amulet', type: 'gear', slot: 'necklace', stats: { qi: 0.06 }, color: '#5fd38a', desc: '+6% Qi gain.' },
+  dragon_tooth:    { name: 'Dragon-Tooth Necklace', icon: 'claw', type: 'gear', slot: 'necklace', stats: { dmg: 0.08, hp: 10 }, color: '#f2efe6', desc: '+8% damage, +10 HP.' },
+  prayer_beads:    { name: 'Prayer Beads', icon: 'amulet', type: 'gear', slot: 'necklace', price: 900, shop: 1, stats: { qi: 0.03, luck: 2 }, color: '#8a5a3a', desc: '+3% Qi gain, +2 Luck.' },
+  iron_band:       { name: 'Iron Band', icon: 'ring', type: 'gear', slot: 'ring', price: 250, shop: 1, stats: { agi: 3 }, color: '#a9b3bf', desc: '+3 Agility.' },
+  ruby_ring:       { name: 'Blood Ruby Ring', icon: 'ring', type: 'gear', slot: 'ring', stats: { hp: 30 }, color: '#d81b3a', desc: '+30 HP in fights.' },
+  storage_ring:    { name: 'Storage Ring', icon: 'ring', type: 'gear', slot: 'ring', stats: { luck: 6, qi: 0.03 }, color: '#ffd36f', desc: 'A cultivator\'s classic. +6 Luck, +3% Qi gain.' },
+  sword_ring:      { name: 'Sword-Intent Ring', icon: 'ring', type: 'gear', slot: 'ring', stats: { dmg: 0.1 }, color: '#e0e6ff', desc: '+10% damage.' },
+  relic_lotus:  { name: 'Jade Lotus Relic', icon: 'flower', type: 'relic', desc: 'Enshrined: +10% Qi from meditation. Or sell it to a collector.' },
+  relic_bone:   { name: 'Saint\'s Finger-Bone', icon: 'skull', type: 'relic', desc: 'Enshrined: +12% Qi. Or sell it to a collector.' },
+  relic_mirror: { name: 'Mirror of the Ninth Sky', icon: 'eye', type: 'relic', desc: 'Enshrined: +15% Qi. Or sell it to a collector.' },
+  relic_bell:   { name: 'Bell of the First Sect', icon: 'bell', type: 'relic', desc: 'Enshrined: +8% Qi. Or sell it to a collector.' },
+  relic_seed:   { name: 'World-Tree Seed', icon: 'wood', type: 'relic', desc: 'Enshrined: +18% Qi. Or sell it to a collector.' },
 };
-export const SLOTS = { weapon: 'Weapon', armor: 'Armour', charm: 'Charm' };
+export const SLOTS = { weapon: 'Weapon', armor: 'Armour', charm: 'Charm', necklace: 'Necklace', ring: 'Ring' };
 
 // Recipes: inputs is a multiset. base = success chance before Smarts/traits/bonds. known = starter recipe.
 export const RECIPES = [

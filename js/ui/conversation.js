@@ -10,6 +10,7 @@ import { gainClose, relLabel } from '../systems/people.js';
 import { stat } from '../systems/life.js';
 
 import { PERSONAS, LIKES, ensurePersona, enjoysList, hatesList } from '../data/personas.js';
+import { SEXUALITIES, sexualityOf } from '../systems/identity.js';
 export { PERSONAS, ensurePersona };
 
 // Each scene: a prompt and four answers tagged with a style. Answers are shuffled into A–D.
@@ -40,6 +41,7 @@ export function indexCard(p) {
     ['Personality', p.persona.map(t => p.known.includes(t) ? PERSONAS[t].name : '???').join(' · ')],
     ['Likes', p.known.includes('likes') ? p.likes : '???'],
     ['Responds to', p.persona.filter(t => p.known.includes(t)).flatMap(t => PERSONAS[t].likes).filter((v, i, a) => a.indexOf(v) === i).join(', ') || '???'],
+    ['Into', p.close >= 50 ? SEXUALITIES[sexualityOf(p)] : '???'],
     ['Enjoys', enjoysList(p).join(', ') || '???'],
     ['Can\'t stand', hatesList(p).join(', ') || '???'],
   ];

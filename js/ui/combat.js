@@ -26,6 +26,8 @@ import { myHidden } from '../systems/trainers.js';
 import { combatFx, qiColors, qiOf, qiSfx } from '../systems/qitype.js';
 import { QI } from '../data/qitypes.js';
 import { qiBurst, qiBadge } from './qiBadge.js';
+import { playMoveFx, floatNum } from './moveFx.js';
+const MOVE_COL = { fire: '#ff6a3d', water: '#4fb3ff', lightning: '#b18cff', eye: '#8fa8ff', star: '#ffe08a', demon: '#ff3a4a', metal: '#d0d6e0', heart: '#ff6fa8', skull: '#e9e6df', cultivation: '#7fe3ff' };
 import { PLAYER_HP, ENEMY_HP, ENEMY_DMG, GEAR_DMG, SEVERED_EDGE, realmScale, enemyScale, enemyPct, playerPct, qiStat, enemyQiStat } from '../systems/combatcore.js';
 
 const bkLabel = v => v >= 80 ? 'Master' : v >= 60 ? 'Veteran' : v >= 40 ? 'Seasoned' : v >= 20 ? 'Trained' : 'Novice';
@@ -38,7 +40,7 @@ export function fight(enemyDef, opts = {}) {
     const pct = k => playerPct(eff(c, k) || 0, cap); // stats count as a % of your realm's cap
     const me = {
       name: 'You', maxHp: Math.round(((40 + c.stats.health * 0.5 + eff(c, 'strength') * 0.3) * (1 + (pPow - 1) * 0.5) + gs.hp) * PLAYER_HP), gear: { ...gs, dmg: (gs.dmg || 0) * GEAR_DMG },
-      mods: combatMods(c), str: pct('strength'), agi: pct('agility') + gs.agi, bk: pct('battle'), pow: pPow, stam: 100, qi: c.qi.qi, maxQi: Math.max(1, c.qi.qi), mom: 0, guard: false, armor: 0, evade: false, burn: 0,
+      mods: combatMods(c), str: pct('strength'), agi: pct('agility') + gs.agi, bk: pct('battle'), pow: pPow, stam: 100, qi: isFinite(c.qi.qi) ? c.qi.qi : 1e6, maxQi: Math.max(1, isFinite(c.qi.qi) ? c.qi.qi : 1e6), mom: 0, guard: false, armor: 0, evade: false, burn: 0,
     };
     const QF = combatFx(c), qCol = qiColors(c), qSnd = qiOf(c) ? QI[c.qiType.primary.type].snd : 'pure'; // your Qi type's riders, colours and sound
     if (QF.hp) me.maxHp = Math.round(me.maxHp * (1 + QF.hp));
@@ -97,7 +99,7 @@ export function fight(enemyDef, opts = {}) {
       ui.meHpTxt.textContent = `${Math.max(0, Math.round(me.hp))}/${me.maxHp}`; ui.enHpTxt.textContent = `${Math.max(0, Math.round(en.hp))}/${en.maxHp}`;
       ui.meMom.textContent = '«'.repeat(1 + me.mom * 2); ui.enMom.textContent = '»'.repeat(1 + en.mom * 2);
       ui.meMom.classList.toggle('off', me.mom === 0); ui.enMom.classList.toggle('off', en.mom === 0);
-      stamBar.style.width = me.stam + '%'; qiBar.style.width = (me.qi / me.maxQi * 100) + '%';
+      stamBar.style.width = me.stam + '%'; qiBar.style.width = (isFinite(me.qi / me.maxQi) ? Math.min(100, me.qi / me.maxQi * 100) : 100) + '%';
       targetRow.replaceChildren(h('span', { class: 'muted small' }, 'Target:'), ...Object.entries(GROUPS).map(([g, G2]) => h('button', { class: 'tchip' + (target === g ? ' on' : '') + (en.crippled[g] ? ' crip' : ''), title: G2.note, onclick: () => { target = g; fx('click'); draw(); } }, G2.name, en.crippled[g] ? ' ✗' : '')));
       movesBox.replaceChildren(...myMoves.map(k => {
         if (k === 'special') return h('button', { class: 'btn special', disabled: miniUsed, onclick: () => special() }, icon(MINIS[mini].icon, 'sm'), MINIS[mini].name, h('small', {}, miniUsed ? 'used' : 'special'));
@@ -110,6 +112,8 @@ export function fight(enemyDef, opts = {}) {
     function attack(att, def, mvKey, attIsMe) {
       const mv = MOVES[mvKey];
       att.stam = clamp(att.stam - mv.cost); if (mv.qi && attIsMe) att.qi -= mv.qi;
+      const defPf0 = attIsMe ? ui.enPf : ui.mePf, attPf0 = attIsMe ? ui.mePf : ui.enPf, fxCol = attIsMe && mv.stat === 'qi' ? qCol[0] : MOVE_COL[mv.icon] || (attIsMe ? '#ffd36f' : '#ff7a6a');
+      if (mv.guard || mv.armor) playMoveFx(mvKey, attPf0, attPf0, fxCol);
       if (mv.guard) { att.guard = true; return `${attIsMe ? 'You brace' : en.name + ' braces'} and steady${attIsMe ? '' : 's'} ${attIsMe ? 'your' : 'its'} breath.`; }
       if (mv.armor) { att.armor = mv.armor; return `${attIsMe ? 'Your' : en.name + "'s"} skin hardens like iron.`; }
       let acc = mv.acc + (att.agi - def.agi) / 400 + (att.bk || 0) / 400 - (def.evade ? 0.4 : 0) + (attIsMe ? GROUPS[target].acc + me.mods.acc : 0); def.evade = false;
@@ -133,8 +137,8 @@ export function fight(enemyDef, opts = {}) {
         if (QF.burn && chance(QF.burn)) def.burn = 2; if (QF.stun && chance(QF.stun)) def.stun = 1; if (QF.evade && chance(QF.evade)) att.evade = true;
         if (QF.heal || QF.drain) att.hp = Math.min(att.maxHp, att.hp + att.maxHp * ((QF.heal || 0) + (QF.drain || 0)) * 0.2); // a share of YOUR max HP, so it doesn't snowball at high realms
         qiBurst(ui.enPf, qCol, crit); qiSfx(qSnd); }
-      fx(crit ? 'crit' : 'hit'); shake(defPf);
-      const r = defPf.getBoundingClientRect(); floatText((crit ? 'CRIT ' : '-') + dmg, r.left + r.width / 2 - 20, r.top + 10, crit ? '#ffd84a' : qiMove ? qCol[0] : '#ff6b6b');
+      if (crit) fx('crit'); playMoveFx(mvKey, attPf, defPf, fxCol, crit); shake(defPf);
+      floatNum(defPf, (crit ? 'CRIT ' : '-') + dmg, crit ? '#ffd84a' : qiMove ? qCol[0] : '#ff6b6b');
       let extra = '';
       if (attIsMe) { // targeted zone damage on the enemy
         en.zones[target] -= dmg;

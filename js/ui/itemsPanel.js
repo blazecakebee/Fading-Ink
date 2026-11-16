@@ -1,6 +1,7 @@
 import { heirloomsOf } from '../systems/heirlooms.js';
 import { HEIRLOOMS, HEIRLOOM_TIERS } from '../data/heirlooms.js';
 import { gearSprite } from './gearSprites.js';
+import * as RN from '../systems/renown.js';
 // Inventory, Crafting & Gear, and Health tabs.
 import { G } from '../core/state.js';
 import { h, icon } from './dom.js';
@@ -20,7 +21,7 @@ import { ensureBody, partEff, maxHp, isMissing, allCaps, qiHealInfo, qiHeal, pro
 
 const pct = p => Math.round(p * 100) + '%';
 const statLine = st => Object.entries(st || {}).map(([k, v]) => k === 'dmg' || k === 'qi' ? `${v > 0 ? '+' : ''}${Math.round(v * 100)}% ${k === 'dmg' ? 'damage' : 'Qi'}` : `${v > 0 ? '+' : ''}${v} ${k === 'hp' ? 'HP' : k[0].toUpperCase() + k.slice(1)}`).join(', ');
-const TYPE_ORDER = [['gear', 'Gear'], ['consumable', 'Consumables & medicine'], ['material', 'Materials']];
+const TYPE_ORDER = [['relic', 'Rare Relics'], ['gear', 'Gear'], ['consumable', 'Consumables & medicine'], ['material', 'Materials']];
 
 // ---------- INVENTORY: everything you own in one place
 export function inventoryTab() {
@@ -32,6 +33,7 @@ export function inventoryTab() {
       h('div', { class: 'row', style: { marginTop: '6px' } },
         it.type === 'gear' ? h('button', { class: 'btn', onclick: () => { equip(c, id, q); fx('action'); render(); } }, `Equip (${SLOTS[it.slot]})`) : null,
         ['heal', 'marrow', 'incense', 'ink', 'recipe'].includes(it.use) ? h('button', { class: 'btn', onclick: () => { const t = useItem(c, id); if (t) { logLine(t, 'good'); fx('action'); } render(); } }, 'Use') : null,
+        it.type === 'relic' ? [h('button', { class: 'btn', disabled: (c.relics || []).length >= 3, onclick: () => { const t = RN.enshrine(c, id); if (t) { logLine(t, 'qi'); fx('milestone'); } render(); } }, `Enshrine (${(c.relics || []).length}/3)`), h('button', { class: 'btn ghost', onclick: () => { const t = RN.sellRelic(c, id); if (t) { logLine(t, 'good'); fx('coin'); } render(); } }, 'Sell to a collector')] : null,
         it.use === 'qi' ? h('span', { class: 'muted small' }, 'Use from the Cultivation tab') : null,
         it.use === 'med' ? h('span', { class: 'muted small' }, 'Use from the Health tab') : null,
         it.use === 'devour' ? h('span', { class: 'muted small' }, 'Devour from Cultivation, or craft with it') : null,
@@ -45,6 +47,7 @@ export function inventoryTab() {
         h('div', { class: 'muted small', style: { marginTop: '6px' } }, statLine(gs) ? 'In combat: ' + statLine(Object.fromEntries(Object.entries(gs).filter(([, v]) => v))) : 'No gear bonuses.'))),
     ...TYPE_ORDER.map(([type, label]) => { const list = items.filter(([id]) => (ITEMS[id]?.type || 'material') === type); if (!list.length) return null;
       return [h('h3', { class: 'display', style: { margin: '18px 0 8px' } }, label), h('div', { class: 'grid2' }, list.flatMap(([id, n]) => tiered(id) ? Object.entries(qCounts(c, id)).filter(([, k]) => k > 0).reverse().map(([q, k]) => card(id, k, q)) : [card(id, n)]))]; }),
+    (c.relics || []).length ? h('div', { class: 'box', style: { marginTop: '12px' } }, h('h3', {}, 'Enshrined relics'), h('div', { class: 'small' }, c.relics.map(id => RN.RELICS[id]?.name).join(' · ')), h('div', { class: 'muted small' }, `Meditation Qi ×${RN.relicQi(c).toFixed(2)}`)) : null,
     !items.length ? h('p', { class: 'muted' }, 'Your bag is empty. Gather materials, clear Gates, or buy from the Market.') : null,
     h('h3', { class: 'display', style: { margin: '18px 0 8px' } }, 'Property, vehicles & pets'),
     c.assets.length ? h('div', { class: 'grid2' }, c.assets.map(a => h('div', { class: 'card row' }, icon(a.type === 'pet' ? 'pet' : a.type), h('div', {}, h('b', {}, a.name), h('div', { class: 'muted small' }, a.type === 'pet' ? 'Pet' : fmtMoney(c, a.value) + (a.tenant ? ' · rented out' : '')))))) : h('p', { class: 'muted' }, 'Nothing yet — see Assets & Market.'),

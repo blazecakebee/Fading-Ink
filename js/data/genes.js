@@ -48,6 +48,14 @@ export const TREE_GENES = {
   t_blood: { branch: 'blood', row: 3, trans: true, name: 'Immortal Bloodline', desc: '+15 years of life, +2 Health a year. Passes to children more often.', cost: 3, realm: 8, req: ['ln'], life: 15, heal: 2 },
   // Cross-branch
   x1:  { branch: 'cross', row: 1, name: 'Predator Instinct', desc: '+6% combat power. Needs Dense Muscle and Open Channels.', cost: 2, realm: 2, req: ['b1', 's1'], power: 1.06 },
+  // v0.8.7 deeper bloodline: a 5th tier past each transcendent gene (needs the realms beyond Immortal Ascension) and more cross genes
+  u_body: { branch: 'body', row: 4, trans: true, name: 'Titan Ancestry', desc: '+8% combat power, +10% training.', cost: 4, realm: 13, req: ['t_body'], power: 1.08, train: 1.1 },
+  u_mind: { branch: 'mind', row: 4, trans: true, name: 'Dao Comprehension', desc: '+5% breakthrough, -15% stress.', cost: 4, realm: 13, req: ['t_mind'], breakthrough: 0.05, stressMult: 0.85 },
+  u_spirit: { branch: 'spirit', row: 4, trans: true, name: 'Origin Spirit Sea', desc: '+12% Qi gains, +5% Gate loot.', cost: 4, realm: 13, req: ['t_spirit'], qi: 1.12, loot: 1.05 },
+  u_blood: { branch: 'blood', row: 4, trans: true, name: 'Eternal Lineage', desc: '+20 years of life. Your children start with more Awakening points.', cost: 4, realm: 14, req: ['t_blood'], life: 20 },
+  x2:  { branch: 'cross', row: 2, name: 'Silver Tongue Blood', desc: '+6% closeness, +5% salary. Needs Eidetic Memory and Kin Bond.', cost: 2, realm: 3, req: ['m1', 'l1'], social: 1.06, pay: 1.05 },
+  x3:  { branch: 'cross', row: 3, name: 'Alchemist\'s Blood', desc: '+10% pill potency, +8% crafting. Needs Lattice Mind and Spirit Root Resonance.', cost: 2, realm: 4, req: ['m2', 's2'], pill: 1.1, craft: 1.08 },
+  x4:  { branch: 'cross', row: 4, name: 'Undying Will', desc: '+3 Health a year, heal 10% faster. Needs Iron Marrow and Ancestral Echo.', cost: 3, realm: 6, req: ['b2', 'l2'], heal: 3, healRate: 1.1 },
 };
 export const GENE = id => BASE_GENES[id] || TREE_GENES[id];
-export const MAX_AWAKENED = 7;
+export const MAX_AWAKENED = 10; // v0.8.7: 10 strands

@@ -76,7 +76,7 @@ export function buildPortrait(genes, { age = 20, gender = 'F', realm = 0, hair =
   const hcD = shade(hc, -0.28), hcL = shade(hc, 0.32);
   const style0 = hair?.style || genes.style; const style = HAIR_BASE[style0] || style0;
   const brow = hair?.brow ?? genes.brow ?? 0, mouth = hair?.mouth ?? genes.mouth ?? 0, eyes = hair?.eyes ?? genes.eyes ?? 0, mark = hair?.mark ?? genes.mark ?? 0;
-  const eyeC = EYE_COLORS[genes.eye] || EYE_COLORS[0];
+  const eyeC = hair?.redEyes ? '#ff2a3a' : hair?.goldEyes ? '#ffd36f' : EYE_COLORS[genes.eye] || EYE_COLORS[0]; // v0.8.7 life can change your eyes
   const cloth = CLOTHES[Math.floor(R() * CLOTHES.length)], clothD = shade(cloth, -0.3);
   const accent = ['#ff6b8a', '#ffd166', '#6be0ff', '#ffffff', '#c7a6ff'][Math.floor(R() * 5)];
   const top = Math.round(cy - ry), eyeY = Math.round(cy + ry * 0.08), bottomHead = Math.round(cy + ry);
@@ -254,10 +254,13 @@ export function buildPortrait(genes, { age = 20, gender = 'F', realm = 0, hair =
   // cultivation forehead mark
   if (realm >= 4) { const mc = elemColor || REALMS[realm].color; set(cx, top + 4, mc); set(cx - 1, top + 5, mc); set(cx, top + 5, '#ffffff'); set(cx, top + 6, mc); }
 
+  if (hair?.scar && st !== 'infant') for (let i = 0; i < 3; i++) set(cx + 3 + i, eyeY + 1 + i, skinD); // a scar across the cheek
   if (raw) return { g, st, skin, skinS, skinD, cloth, clothD, accent, hc, bodyTop, bottomHead, top0: top };
   return finish(g, realm, elemColor, R);
 }
 
+import { ITEMS as _ITEMS } from '../data/items.js';
+const ITEMS_COL = new Proxy({}, { get: (_, k) => _ITEMS[k]?.color });
 // Outline + cultivation aura, shared by portraits and full-body sprites
 function finish(g, realm, elemColor, R) {
   const H = g.length, W = g[0].length;
@@ -301,6 +304,12 @@ export function buildFullBody(genes, opts = {}) {
   // torso
   for (let y = top; y < top + torsoH; y++) { const w = sw - (y > top + torsoH * 0.55 && gender === 'F' ? 1 : 0);
     for (let x = cx - w; x < cx + w; x++) set(x, y, x === cx - w || x === cx + w - 1 ? mainD : main); }
+  // v0.8.7 feminine silhouette for teen/adult women: a fuller chest line (cloth shading only; the waist already narrows below)
+  if (gender === 'F' && (st === 'adult' || st === 'middle' || st === 'elder' || st === 'teen')) {
+    const cy0 = top + Math.round(torsoH * 0.25), bw = st === 'teen' ? 2 : 3;
+    for (const side of [-1, 1]) { const bx = side < 0 ? cx - 1 - bw : cx + 1; for (let i = 0; i < bw; i++) { set(bx + i, cy0 + 1, mainD); set(bx + i, cy0 - 1, shade(main, 0.12)); } }
+    set(cx - 1, cy0, mainD); set(cx, cy0, mainD); // centre fold
+  }
   // collar
   set(cx - 1, top, skinS); set(cx, top, skinS); set(cx - 1, top + 1, skin); set(cx, top + 1, skin);
   // arms (3px) + hands
@@ -331,6 +340,9 @@ export function buildFullBody(genes, opts = {}) {
   if (O.hat) for (let x = cx - 7; x <= cx + 6; x++) { set(x, head.top0 ?? 4, O.hat.color); if (x > cx - 6 && x < cx + 5) set(x, (head.top0 ?? 4) - 1, O.hat.color); }
   // charm pendant
   if (gear.charm) { set(cx - 1, top + 3, gear.charm === 'jade_charm' ? '#5fd38a' : '#f2efe6'); set(cx, top + 3, gear.charm === 'jade_charm' ? '#3fa36a' : '#d8d2c2'); }
+  // v0.8.7 necklace on the chest, ring on the left hand
+  if (gear.necklace) { const nc = ITEMS_COL[gear.necklace] || '#e8e2d0'; set(cx - 2, top + 2, nc); set(cx + 1, top + 2, nc); set(cx - 1, top + 4, nc); set(cx, top + 4, '#ffffff'); }
+  if (gear.ring && !gone('hand_l')) set(cx - sw - 2, top + armLen - 1, ITEMS_COL[gear.ring] || '#ffd36f');
   // weapon in right hand
   if (gear.weapon && !gone('hand_r')) { const [blade, hilt] = GEAR_COLORS[gear.weapon] || GEAR_COLORS.iron_sword; const hx = cx + sw + 1, hy = top + armLen - 2;
     for (let y = hy - 12; y < hy - 1; y++) set(hx + 3, y, blade); set(hx + 3, hy - 13, shade(blade, 0.4));

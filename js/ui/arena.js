@@ -19,10 +19,14 @@ const P = {
         else { ctx.shadowColor = col; ctx.shadowBlur = 24; ctx.fillStyle = '#fff'; ctx.fillRect(-900, -w / 6, 1800, w / 3); ctx.globalAlpha = 0.55; ctx.fillStyle = col; ctx.fillRect(-900, -w / 2, 1800, w); } ctx.restore(); } }; },
   burst(d, at) { const x = rnd(90, W - 90), y = rnd(70, H - 70), n = 3 + Math.round(d * 3); return Array.from({ length: n }, (_, i) => P.beam(d, at + i * 0.05, { x, y, a: i * Math.PI / n + rnd(-0.1, 0.1), w: 12, warn: 0.85 })); },
   cross(d, at) { const x = rnd(120, W - 120), y = rnd(90, H - 90); return [P.beam(d, at, { x, y, a: 0 }), P.beam(d, at, { x, y, a: Math.PI / 2 })]; },
-  ring(d, at) { const x = rnd(140, W - 140), y = rnd(100, H - 100), gap = rnd(0, Math.PI * 2), gw = 0.9 - d * 0.25, sp = 190 + d * 80;
-    return { t0: at, warn: 0.6, live: 2.6, hit: (px, py, t) => { const r = t * sp, dd = dist(px, py, x, y); if (Math.abs(dd - r) > 9) return false; let ang = Math.atan2(py - y, px - x) - gap; ang = Math.atan2(Math.sin(ang), Math.cos(ang)); return Math.abs(ang) > gw / 2; },
-      draw(ctx, t, on, k, col) { ctx.save(); ctx.strokeStyle = col; if (!on) { ctx.globalAlpha = 0.6 * k; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 10 + 6 * k, 0, 7); ctx.stroke(); }
-        else { ctx.shadowColor = col; ctx.shadowBlur = 16; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(x, y, t * sp, gap + gw / 2, gap + Math.PI * 2 - gw / 2); ctx.stroke(); } ctx.restore(); } }; },
+  // v0.8.7: always 3 wide, telegraphed gaps (shown during the warning), and the ring fades out and stops hurting after ~1.5s
+  ring(d, at) { const x = rnd(140, W - 140), y = rnd(100, H - 100), g0 = rnd(0, Math.PI * 2), gw = Math.max(0.75, 1.1 - d * 0.12), sp = 170 + d * 50, FADE = 1.1, LIFE = 1.6;
+    const gaps = [0, 1, 2].map(i => g0 + i * Math.PI * 2 / 3), inGap = ang => gaps.some(g => { let a = ang - g; a = Math.atan2(Math.sin(a), Math.cos(a)); return Math.abs(a) < gw / 2; });
+    const alpha = t => t < FADE ? 1 : Math.max(0, 1 - (t - FADE) / (LIFE - FADE));
+    return { t0: at, warn: 0.8, live: LIFE, hit: (px, py, t) => { if (alpha(t) < 0.5) return false; const r = t * sp, dd = dist(px, py, x, y); if (Math.abs(dd - r) > 9) return false; return !inGap(Math.atan2(py - y, px - x)); },
+      draw(ctx, t, on, k, col) { ctx.save(); ctx.strokeStyle = col;
+        if (!on) { ctx.globalAlpha = 0.6 * k; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 10 + 6 * k, 0, 7); ctx.stroke(); ctx.globalAlpha = 0.35 * k; ctx.lineWidth = 3; for (const g of gaps) { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.cos(g) * 140, y + Math.sin(g) * 140); ctx.stroke(); } }
+        else { ctx.globalAlpha = alpha(t); ctx.shadowColor = col; ctx.shadowBlur = 16; ctx.lineWidth = 6; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(x, y, t * sp, gaps[i] + gw / 2, gaps[(i + 1) % 3] + (i === 2 ? Math.PI * 2 : 0) - gw / 2); ctx.stroke(); } } ctx.restore(); } }; },
   orbs(d, at) { const side = Math.floor(rnd(0, 4)), n = 4 + Math.round(d * 4), out = [];
     for (let i = 0; i < n; i++) { const sx = side === 0 ? -10 : side === 1 ? W + 10 : rnd(20, W - 20), sy = side === 2 ? -10 : side === 3 ? H + 10 : rnd(20, H - 20);
       const tx = rnd(100, W - 100), ty = rnd(80, H - 80), a = Math.atan2(ty - sy, tx - sx), sp = 170 + d * 90, t0 = at + i * 0.18;

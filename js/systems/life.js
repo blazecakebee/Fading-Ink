@@ -214,7 +214,7 @@ export async function ageUp() {
   // bodies recover toward a baseline that drops with age; old age wears you down
   const target = c.age < 40 ? 88 : c.age < 60 ? 72 : 58;
   // the lower you are, the harder your body fights back (kidneys & gut matter). v0.7.9: slower healing, real aging
-  if (c.stats.health < target) stat(c, 'health', Math.round((c.stats.health < 40 ? ri(4, 8) : c.age < 18 ? ri(2, 5) : ri(1, 4)) * healMult(c) / Math.sqrt(HARD) * 1.1));
+  if (c.stats.health < target) stat(c, 'health', Math.round((c.stats.health < 40 ? ri(4, 8) : c.age < 18 ? ri(2, 5) : ri(1, 4)) * healMult(c) / Math.sqrt(HARD) * 1.1 * traitMult(c, 'healRate')));
   else if (c.age > 30) stat(c, 'health', -Math.round(ri(0, c.age > 65 ? 4 : 2) * (1 + (HARD - 1) / 2)));
   if (c.qi.realm) stat(c, 'health', c.qi.realm);
   if (traitVal(c, 'heal')) stat(c, 'health', traitVal(c, 'heal'));

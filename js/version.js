@@ -1,7 +1,35 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.8.6';
+export const VERSION = '0.8.8';
 export const CHANGELOG = [
+  { v: '0.8.8', date: '2026-11-16', title: 'Bodies, bloodlines & darker lives', notes: [
+    'Bloodline: the Awakening tree now sits beside a glowing DNA double helix, one gold rung per awakened gene. Slots go up from 7 to 10. New genes: four 5th-tier transcendent genes for the realms beyond Immortal Ascension, plus three new cross-branch genes.',
+    'Accessories: new Necklace and Ring slots with 8 new pieces (Storage Ring, Sword-Intent Ring, Dragon-Tooth Necklace, Prayer Beads…). Each has its own sprite and shows on your character. Find them in Gates or buy the simpler ones.',
+    'Health tab: organs are drawn as real shapes (brain, eyes, heart, lungs, liver, stomach, kidneys, spine, ribs, dantian) and coloured by their condition.',
+    'Your life marks you: a facial wound can heal into a scar, blood sacrifice or Demonic Qi turns your eyes red, the realms beyond Void Refinement turn them gold, grief can turn your hair white. Women\'s full-body sprites have a more feminine silhouette.',
+    'Job interviews: applying means answering a question from the panel. Your answer is judged against your Smarts, Charisma and whether you studied the right subject.',
+    'Odd jobs board: each gig shows its title, whether it\'s one-time or recurring, the pay range and the risk. Recurring gigs pay every year.',
+    'Darker, grittier life events: muggings, drugs and addiction (with rehab), blackmail, a friend who steals from you, fires, car crashes, stalkers, witnessing a murder, a cult, debt collectors, a cheating partner, inheritance feuds, demonic massacres, and some dark laughs.',
+    'Identity: everyone has a sexuality, and people only date those they\'re into. Yours can change any time (Mind & Body). Gender transition is possible medically, or through cultivation from Origin Spirit. Pregnancy follows birth sex.',
+    'Adoption: adopt from the city orphanage or take in a sect-war orphan. Eternal Youth (the Longevity Peach, or Nascent Soul and beyond) removes the age limit on having children.',
+    'Fixed: some healing bonuses (Resilient, Iron Stomach, Water Qi…) were adding flat Health instead of speeding up healing.',
+  ] },
+  { v: '0.8.7', date: '2026-11-16', title: 'Beyond the heavens', notes: [
+    'Fixed: at Immortal Ascension, Qi became "Infinity", which broke the Qi bar and Qi moves. Qi is now always finite, with safety checks everywhere.',
+    'Fixed: the expanding ring attack in action phases always has 3 wide gaps (shown during the warning), and it fades out and stops hurting after about 1.5 seconds.',
+    'Fairer fights: being even one realm above your enemy is a clear edge now. Gate enemies fight at the Gate\'s own realm, and random encounters scale to you. In the simulator, a fighter one realm above wins 96–100% of the time.',
+    'Every move has its own visual effect and sound: punches, kicks, slashes, fireballs, lightning, rifts in space, meteors, life-draining siphons, shields, shockwaves. Moves added later get a fitting effect automatically. Damage numbers now always appear in the right place.',
+    'Four new realms beyond Immortal Ascension: Immortal King, Immortal Emperor, Dao Ancestor and Heavenly Venerable. Immortal Ascension now has 3 stages.',
+    'New X-rank and Z-rank Gates (Rift Beyond the Heavens) for those realms. Stronger cultivators see more Gates, and small low-rank Gates keep appearing so you can still farm them.',
+    'Gates have a quiet chamber halfway through: meditate for a big Qi boost scaled to the Gate (something may find you first) or press on.',
+    'Rare Relics: rare Gate drops, guaranteed when you finish a Hunt. Sell one for a fortune, or enshrine up to 3 for permanent meditation Qi.',
+    '6 new Hunts, from the White Tiger King to the Primordial Beast. Two of them are Guild secrets.',
+    'Fame matters: Gates, Hunts, bounties and gods give lots of Fame. At 100,000 Fame, great sects invite you in as an Elder and the Guild makes you an elite S-rank member with access to secret Hunts. Sect masters with little Fame face betrayals.',
+    'Wanted board: demonic cultivators with a price on their heads (Dungeons & Gates). Hunt them for money and Fame.',
+    'Law & order: crimes build Heat. Rich, high-tech countries catch you far faster. When cornered you can flee, fight or talk your way out.',
+    'Prison is no longer just skipped turns. Fight in the yard, work, appeal, or break out (easy for a cultivator against mortal guards). Escaped cultivators are hunted by the Guild, and if they catch you, it\'s 50–80 years in the Immortal Penitentiary.',
+    'Transmigration: very rarely, a Gate takes you to another world for 10–14 years. Survive a deadly fight every year (three deaths there are permanent). Come back as a Transmigrator with big permanent bonuses and otherworld treasures.',
+  ] },
   { v: '0.8.6', date: '2026-11-16', title: 'A bigger Legacy shop', notes: [
     '17 new Legacy upgrades, including a whole new branch, Destiny: Fate\'s Mercy, Gate Sense, Divine Notice, Hunter\'s Blood and Fortune\'s Favourite. New in the other branches: Family Heirloom Car, Trust Fund, Connections, Ancestral Qi, Meridian Map, Second Root, Thick Bones, Severed Heritage, Iron Stomach, Crafter\'s Line, Old Soul and Teacher\'s Favour.',
     'Blessings for your next life: one-time gifts that your next life (new life or heir) uses up, up to 3 at a time. The 8 blessings are Born in the Storm, Prodigy, Silver Spoon, Ancestor\'s Gift (a Rare heirloom), Spirit-Touched, Good Heart, Survival Kit and Born Strong. Change your mind before your next life starts and you get a full refund.',

@@ -602,6 +602,44 @@ body:not([data-theme='clean']):not([data-theme='parchment']):not([data-theme='pa
   background: radial-gradient(circle at 30% 25%, rgba(255,255,255,.55), transparent 45%), linear-gradient(135deg, var(--q1), var(--q2)); box-shadow: 0 0 0 2px var(--qr), 0 0 12px var(--q1); font-family: serif; line-height: 1; }
 .qibadge.mythic { animation: qiMythic 3s linear infinite; }
 @keyframes qiMythic { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
-.qi-spark { position: fixed; width: 7px; height: 7px; border-radius: 50%; background: var(--qc); box-shadow: 0 0 10px var(--qc); pointer-events: none; z-index: 9999; animation: qiSpark .65s ease-out forwards; }
+.qi-spark { position: absolute; width: 7px; height: 7px; border-radius: 50%; background: var(--qc); box-shadow: 0 0 10px var(--qc); pointer-events: none; z-index: 9999; animation: qiSpark .65s ease-out forwards; }
 @keyframes qiSpark { from { transform: translate(-50%, -50%) scale(1.3); opacity: 1; } to { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.2); opacity: 0; } }
 .qi-hit { animation: qiHit .45s ease-out; } @keyframes qiHit { 0% { box-shadow: 0 0 0 0 var(--qglow); } 40% { box-shadow: 0 0 28px 8px var(--qglow); } 100% { box-shadow: 0 0 0 0 transparent; } }
+/* v0.8.7 move FX */
+.mfx-layer { position: absolute; inset: 0; pointer-events: none; overflow: visible; z-index: 50; }
+.mfx { position: absolute; pointer-events: none; z-index: 9998; transform: translate(-50%, -50%); }
+.mfx.impact { width: 70px; height: 70px; border-radius: 50%; border: 4px solid var(--fc); box-shadow: 0 0 18px var(--fc), inset 0 0 14px var(--fc); animation: mfxImpact .45s ease-out forwards; }
+@keyframes mfxImpact { from { transform: translate(-50%, -50%) scale(.2); opacity: 1; } to { transform: translate(-50%, -50%) scale(calc(1.3 * var(--s, 1))); opacity: 0; } }
+.mfx.arc { width: 110px; height: 110px; border-radius: 50%; border-top: 6px solid var(--fc); border-right: 3px solid transparent; filter: drop-shadow(0 0 8px var(--fc)); animation: mfxArc .4s ease-out forwards; }
+@keyframes mfxArc { from { transform: translate(-50%, -50%) rotate(var(--r)) scale(calc(.6 * var(--s, 1))); opacity: 1; } to { transform: translate(-50%, -50%) rotate(calc(var(--r) + 140deg)) scale(var(--s, 1)); opacity: 0; } }
+.mfx.slash { width: 150px; height: 6px; background: linear-gradient(90deg, transparent, #fff, var(--fc), transparent); box-shadow: 0 0 14px var(--fc); animation: mfxSlash .35s ease-out forwards; }
+@keyframes mfxSlash { from { transform: translate(-50%, -50%) rotate(var(--r)) scaleX(0); opacity: 1; } 60% { opacity: 1; } to { transform: translate(-50%, -50%) rotate(var(--r)) scaleX(var(--s, 1)); opacity: 0; } }
+.mfx.shield { width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--fc); background: radial-gradient(circle, transparent 55%, color-mix(in srgb, var(--fc) 35%, transparent)); animation: mfxShield .9s ease-out forwards; }
+@keyframes mfxShield { 0% { transform: translate(-50%, -50%) scale(.6); opacity: 0; } 30% { opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.1); opacity: 0; } }
+.mfx.ghost { width: 60px; height: 80px; border-radius: 40%; background: var(--fc); opacity: .35; filter: blur(6px); animation: mfxFade .4s ease-out forwards; }
+@keyframes mfxFade { to { opacity: 0; } }
+.mfx.orb { width: calc(26px * var(--s, 1)); height: calc(26px * var(--s, 1)); border-radius: 50%; background: radial-gradient(circle, #fff 20%, var(--fc) 60%, transparent 70%); box-shadow: 0 0 22px var(--fc); animation: mfxOrb .35s ease-in forwards; }
+@keyframes mfxOrb { to { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))); } }
+.mfx.flameburst { width: 90px; height: 90px; border-radius: 50%; background: radial-gradient(circle, #fff6 0%, var(--fc) 35%, #ff3a1a88 60%, transparent 72%); animation: mfxImpact .5s ease-out forwards; }
+.mfx.beam { height: 10px; width: var(--len); transform-origin: 0 50%; background: linear-gradient(90deg, var(--fc), #fff, var(--fc)); box-shadow: 0 0 20px var(--fc); animation: mfxBeam .4s ease-out forwards; }
+@keyframes mfxBeam { from { transform: translate(0, -50%) rotate(var(--ang)) scaleY(1.6); opacity: 1; } to { transform: translate(0, -50%) rotate(var(--ang)) scaleY(.1); opacity: 0; } }
+.mfx.bolt { width: 24px; height: 220px; transform: translate(-50%, -100%); background: linear-gradient(180deg, transparent, #fff 40%, var(--fc)); clip-path: polygon(40% 0, 60% 0, 45% 40%, 70% 40%, 30% 100%, 45% 55%, 25% 55%); filter: drop-shadow(0 0 10px var(--fc)); animation: mfxFlick .5s steps(3) forwards; }
+@keyframes mfxFlick { 0% { opacity: 1; } 50% { opacity: .4; } 100% { opacity: 0; } }
+.mfx.rift { width: 140px; height: 18px; border-radius: 50%; background: #05060f; box-shadow: 0 0 0 3px var(--fc), 0 0 30px var(--fc); animation: mfxRift .9s ease-out forwards; }
+@keyframes mfxRift { 0% { transform: translate(-50%, -50%) rotate(var(--r)) scaleX(0); } 30% { transform: translate(-50%, -50%) rotate(var(--r)) scaleX(var(--s, 1)) scaleY(1.6); } 100% { transform: translate(-50%, -50%) rotate(var(--r)) scaleX(0); opacity: 0; } }
+.mfx.meteor { width: 30px; height: 30px; border-radius: 50%; background: radial-gradient(circle, #fff, var(--fc)); box-shadow: 0 0 30px var(--fc), -20px -20px 30px var(--fc); animation: mfxMeteor .4s ease-in forwards; }
+@keyframes mfxMeteor { from { transform: translate(calc(-50% + 160px), calc(-50% - 260px)); } to { transform: translate(-50%, -50%); } }
+.mfx.siphon { width: 9px; height: 9px; border-radius: 50%; background: var(--fc); box-shadow: 0 0 10px var(--fc); animation: mfxOrb .45s ease-in forwards; }
+.mfx.quake { width: 160px; height: 40px; border-radius: 50%; border: 4px solid var(--fc); transform: translate(-50%, 30%); animation: mfxQuake .7s ease-out forwards; }
+@keyframes mfxQuake { from { transform: translate(-50%, 30%) scale(.3); opacity: 1; } to { transform: translate(-50%, 30%) scale(calc(1.3 * var(--s, 1))); opacity: 0; } }
+.card.wanted { border-left: 4px solid #b0001a; background: linear-gradient(90deg, #b0001a22, transparent); }
+.modal { position: relative; }
+.mfx.num { font-weight: 900; font-size: 1.3rem; text-shadow: 0 2px 0 #000, 0 0 8px #000; white-space: nowrap; animation: mfxNum 1.1s ease-out forwards; }
+@keyframes mfxNum { from { transform: translate(-50%, -50%); opacity: 1; } to { transform: translate(-50%, -160%); opacity: 0; } }
+/* v0.8.7 DNA helix */
+.dna-wrap { display: grid; grid-template-columns: 1fr 170px; gap: 12px; align-items: start; } @media (max-width: 760px) { .dna-wrap { grid-template-columns: 1fr; } .helix { display: none; } }
+.helix { position: sticky; top: 10px; padding: 8px; border-radius: 12px; background: radial-gradient(ellipse at 50% 40%, #1d3b52, #0b1520 70%); box-shadow: inset 0 0 30px #000; }
+.helix-head { text-align: center; letter-spacing: .1em; font-size: 1.05rem; } .helix-svg { width: 100%; height: auto; animation: helixFloat 6s ease-in-out infinite; }
+@keyframes helixFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.helix .strand { fill: none; stroke-width: 7; stroke-linecap: round; } .helix .strand.a { stroke: #8fd3e8; filter: drop-shadow(0 0 4px #4fb3ff); } .helix .strand.b { stroke: #6aaec4; opacity: .85; }
+.helix .rung { stroke: #5c8fa3; stroke-width: 4; } .helix .rung.on { stroke: #ffb02e; stroke-width: 6; filter: drop-shadow(0 0 6px #ffb02e); } .helix .rung.dim { opacity: .25; } .helix .rung-dot { fill: #fff3c4; }

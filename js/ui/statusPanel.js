@@ -4,6 +4,7 @@ import { h, icon } from './dom.js';
 import { drawFullBody } from './portrait.js';
 import { traitChip, temperChip, render } from './render.js';
 import { TEMPER } from '../data/temper.js';
+import { SEXUALITIES as SEX } from '../systems/identity.js';
 import { qiOf, formName } from '../systems/qitype.js';
 import { qiBadge } from './qiBadge.js';
 import { REALMS, ELEMENTS } from '../data/realms.js';
@@ -65,7 +66,7 @@ export function statusTab() {
         h('h2', { class: 'display', style: { fontSize: '2rem' } }, fullName(c)),
         c.ownSect ? h('div', { class: 'clan' }, `👑 ${c.gender === 'F' ? 'Matriarch' : 'Patriarch'} of the ${c.ownSect.clan} Clan`) : null,
         h('table', { class: 'kv' },
-          row('Age', `${c.age} · ${lifeStage(c.age)} · ~${lifespan(c)}y lifespan`), row('Gender', c.gender === 'F' ? 'Female' : 'Male'),
+          row('Age', `${c.age} · ${lifeStage(c.age)} · ~${lifespan(c)}y lifespan`), row('Gender', `${c.gender === 'F' ? 'Female' : 'Male'}${c.birthSex && c.birthSex !== c.gender ? ' (transitioned)' : ''} · ${SEX[c.sexuality] || 'Straight'}`),
           row('Height', fmtHeight(heightNow(c))), row('Build', `${muscleLabel(c.body.muscle)} (muscle ${c.body.muscle})`),
           row('Home', `${c.city}, ${cty.name}`), row('Born into', WEALTH.find(w => w.id === c.wealth).name), row('Wealth', `${wealthLabel(c)} · net worth ${fmtMoney(c, netWorth(c))}`),
           row('Generation', `${c.generation} · Life #${META.lives}`), row('Sect', sectName(c) || '—'), row('Job', c.job ? c.job.id.replace(/_/g, ' ') : '—'),

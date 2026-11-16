@@ -22,6 +22,19 @@ const SHAPES = {
   foot_l: ['path', { d: 'M43 222 L56 222 L57 232 Q50 236 38 233 Q38 226 43 222 Z' }],
   foot_r: ['path', { d: 'M64 222 L77 222 L82 233 Q70 236 63 232 Z' }],
 };
+// v0.8.7 anatomical organ shapes (paths drawn around 0,0 and moved onto each organ's spot)
+const ORGAN_SHAPES = {
+  brain: 'M-8 2 C-10 -6 -4 -9 0 -7 C4 -9 10 -6 8 2 C6 6 -6 6 -8 2 Z M-4 -5 Q-2 -1 -5 2 M2 -6 Q0 -2 3 1 M0 -7 L0 4',
+  eye_l: 'M-4 0 Q0 -3 4 0 Q0 3 -4 0 Z', eye_r: 'M-4 0 Q0 -3 4 0 Q0 3 -4 0 Z', jaw: 'M-6 -2 Q0 5 6 -2',
+  heart: 'M0 5 C-7 0 -7 -6 -3 -6 C-1 -6 0 -4 0 -3 C0 -4 1 -6 3 -6 C7 -6 7 0 0 5 Z',
+  lung_l: 'M2 -9 C-5 -8 -7 0 -6 8 C-3 9 1 7 2 4 Z', lung_r: 'M-2 -9 C5 -8 7 0 6 8 C3 9 -1 7 -2 4 Z',
+  liver: 'M-9 -2 C-6 -6 6 -6 9 -3 C6 2 0 5 -6 4 C-9 3 -10 1 -9 -2 Z', stomach: 'M-3 -6 C-1 -6 0 -4 2 -3 C7 -1 6 6 1 6 C-4 6 -5 2 -3 -1 C-4 -3 -4 -5 -3 -6 Z',
+  kidney_l: 'M1 -5 C-5 -5 -5 5 1 5 C3 5 3 2 1 0 C3 -2 3 -5 1 -5 Z', kidney_r: 'M-1 -5 C5 -5 5 5 -1 5 C-3 5 -3 2 -1 0 C-3 -2 -3 -5 -1 -5 Z',
+  spine: 'M0 -20 L0 22 M-2 -16 L2 -16 M-2 -10 L2 -10 M-2 -4 L2 -4 M-2 2 L2 2 M-2 8 L2 8 M-2 14 L2 14',
+  ribs: 'M-12 -4 Q-6 -8 0 -6 Q6 -8 12 -4 M-12 0 Q-6 -4 0 -2 Q6 -4 12 0 M-11 4 Q-6 0 0 2 Q6 0 11 4',
+  dantian: 'M-4 0 A4 4 0 1 0 4 0 A4 4 0 1 0 -4 0 Z',
+};
+const LINE_ORGANS = ['spine', 'ribs', 'jaw'];
 const ORGAN_DOTS = { brain: [60, 18], eye_l: [53, 26], eye_r: [67, 26], jaw: [60, 38], heart: [66, 74], lung_l: [50, 72], lung_r: [72, 70], liver: [52, 92], stomach: [66, 94], kidney_l: [50, 106], kidney_r: [70, 106], spine: [60, 84], ribs: [60, 64], dantian: [60, 118] };
 const PROSTH_COLOR = '#5fb4ff'; // artificial parts glow a cool blue
 const color = (c, id) => {
@@ -51,9 +64,11 @@ export function bodyDiagram(c, rerender) {
     const inj = c.body.parts[id].inj; const bb = attrs.cx ? [attrs.cx, attrs.cy] : null;
     inj.slice(0, 4).forEach((i, k) => { const [x, y] = bb || centroid(id); const ln = el('line', { x1: x - 4 + k * 3, y1: y - 4 + k * 4, x2: x + 3 + k * 3, y2: y + 1 + k * 4, class: 'wound ' + i.type }); svg.append(ln); });
   }
-  for (const [id, [x, y]] of Object.entries(ORGAN_DOTS)) {
+  for (const [id, [x, y]] of Object.entries(ORGAN_DOTS).sort((a, b) => LINE_ORGANS.includes(b[0]) - LINE_ORGANS.includes(a[0]))) { // bones first, organs on top
     if (isMissing(c, id) && !['eye_l', 'eye_r'].includes(id)) continue;
-    const d = el('circle', { cx: x, cy: y, r: id === 'dantian' ? 3.4 : 2.4, fill: id === 'dantian' ? 'var(--qi)' : color(c, id), class: 'organ' + (id === 'dantian' ? ' dantian' : '') + (focus === id ? ' focus' : '') });
+    const col = id === 'dantian' ? 'var(--qi)' : color(c, id), line = LINE_ORGANS.includes(id);
+    const d = ORGAN_SHAPES[id] ? el('path', { d: ORGAN_SHAPES[id], transform: `translate(${x} ${y})`, fill: line ? 'none' : col, stroke: line ? col : '#0b0e16', 'stroke-width': line ? 1.6 : 0.7, class: 'organ' + (line ? ' line' : '') + (id === 'dantian' ? ' dantian' : '') + (focus === id ? ' focus' : '') })
+      : el('circle', { cx: x, cy: y, r: 2.4, fill: col, class: 'organ' + (focus === id ? ' focus' : '') });
     const t = el('title', {}); t.textContent = `${PART_BY_ID[id].name}: ${Math.round(partEff(c, id) * 100)}%`; d.append(t);
     d.addEventListener('click', e => { e.stopPropagation(); G.ui.bodyFocus = focus === id ? null : id; rerender(); });
     svg.append(d);

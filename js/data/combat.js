@@ -25,6 +25,8 @@ export const DIFFICULTY = 1.5;
 export function presence(gap) {
   if (gap >= 3) return { me: 1.5, them: 0.3, crush: true, line: 'Your presence alone drives them to their knees.' };
   if (gap === 2) return { me: 1.25, them: 0.65, line: 'Your aura presses down on them. Their hands shake.' };
+  if (gap === 1) return { me: 1.12, them: 0.88, line: '' }; // v0.8.7: even one realm above is a clear edge
+  if (gap === -1) return { me: 0.9, them: 1.1, line: '' };
   if (gap === -2) return { me: 0.7, them: 1.3, line: 'Their aura presses down on you. Your hands shake.' };
   if (gap <= -3) return { me: 0.35, them: 1.7, crushed: true, line: 'Their presence crushes the breath from your lungs. You can barely stand.' };
   return { me: 1, them: 1, line: '' };
@@ -64,6 +66,9 @@ export const GATE_RANKS = [
   { rank: 'S', pool: ['yaoguai', 'ghost_king'], fights: 3, realm: 7, color: '#ff4f4f' },
   { rank: 'SS', pool: ['sword_saint', 'void_wraith'], fights: 4, realm: 9, color: '#ff4fd8' },
   { rank: 'SSS', pool: ['heavenly_demon', 'ancient_qilin'], fights: 4, realm: 11, color: '#fff4b0' },
+  // v0.8.7 beyond Immortal Ascension
+  { rank: 'X', pool: ['fallen_immortal', 'void_wraith', 'ancient_qilin'], fights: 5, realm: 13, color: '#7fffd4' },
+  { rank: 'Z', pool: ['fallen_immortal', 'heavenly_demon', 'void_wraith'], fights: 5, realm: 15, color: '#ff2a6d' },
 ];
 export const LOOT = [
   { id: 'qi_pill', name: 'Qi Gathering Pill', icon: 'pill', w: 30, use: 'qi' },
@@ -84,23 +89,25 @@ export const LOOT = [
 // Gate themes: each has its own enemies, final boss and loot table. Ranks decide which themes can appear.
 export const GATE_TYPES = [
   { id: 'temple', name: 'Haunted Temple', icon: 'ghost', ranks: 'EDCBAS', pool: ['hungry_ghost', 'corrupt_soul', 'fox_spirit'], boss: { E: 'hungry_ghost', D: 'corrupt_soul', C: 'fox_spirit', B: 'fox_spirit', A: 'ghost_king', S: 'ghost_king' },
-    loot: { recipe_scroll: 6, spirit_stone: 30, calm_incense: 18, trib_talisman: 8, spirit_herb: 15, heart_pill: 6, manual: 8, gold: 15, foundation_pill: 6 }, desc: 'Incense smoke and whispering spirits.' },
+    loot: { spirit_pendant: 3, prayer_beads: 3, recipe_scroll: 6, spirit_stone: 30, calm_incense: 18, trib_talisman: 8, spirit_herb: 15, heart_pill: 6, manual: 8, gold: 15, foundation_pill: 6 }, desc: 'Incense smoke and whispering spirits.' },
   { id: 'den', name: 'Spirit Beast Den', icon: 'claw', ranks: 'EDCBA', pool: ['spirit_wolf', 'tiger_beast'], boss: { E: 'spirit_wolf', D: 'spirit_wolf', C: 'tiger_beast', B: 'tiger_beast', A: 'yaoguai' },
-    loot: { beast_hide: 6, recipe_scroll: 4, beast_core: 40, spirit_herb: 20, cloth: 10, marrow_pill: 6, fang_necklace: 4, gold: 12, foundation_pill: 5, ginseng: 4 }, desc: 'Claw marks and bones. Beast cores everywhere.' },
+    loot: { dragon_tooth: 2, iron_band: 3, beast_hide: 6, recipe_scroll: 4, beast_core: 40, spirit_herb: 20, cloth: 10, marrow_pill: 6, fang_necklace: 4, gold: 12, foundation_pill: 5, ginseng: 4 }, desc: 'Claw marks and bones. Beast cores everywhere.' },
   { id: 'altar', name: 'Demonic Altar', icon: 'demon', ranks: 'DCBAS', pool: ['blood_cultist', 'demonic', 'corrupt_soul'], boss: { D: 'blood_cultist', C: 'demonic', B: 'demonic', A: 'demonic', S: 'ghost_king' },
     loot: { flame_glaive: 3, recipe_scroll: 8, demonic_core: 22, spirit_stone: 20, qi_pill: 20, purity_pill: 6, manual: 12, gold: 20, foundation_pill: 8 }, desc: 'Blood-soaked stones. Demonic cultivators guard their secrets.' },
   { id: 'tomb', name: 'Flooded Tomb', icon: 'water', ranks: 'EDCB', pool: ['jiangshi', 'drowned_ghost'], boss: { E: 'drowned_ghost', D: 'jiangshi', C: 'jiangshi', B: 'jiangshi' },
-    loot: { recipe_scroll: 8, ginseng: 8, spirit_herb: 25, cloth: 15, heal_pill: 20, mending_salve: 8, gold: 25 }, desc: 'Ancient burial chambers, half underwater.' },
+    loot: { ruby_ring: 3, silver_locket: 3, recipe_scroll: 8, ginseng: 8, spirit_herb: 25, cloth: 15, heal_pill: 20, mending_salve: 8, gold: 25 }, desc: 'Ancient burial chambers, half underwater.' },
   { id: 'mine', name: 'Spirit Iron Mine', icon: 'pickaxe', ranks: 'DCBA', pool: ['stone_golem', 'thug', 'spirit_wolf'], boss: { D: 'stone_golem', C: 'stone_golem', B: 'stone_golem', A: 'stone_golem' },
     loot: { jade_sword: 3, bronze_plate: 4, recipe_scroll: 3, iron_ore: 40, spirit_stone: 25, iron_sword: 6, iron_mail: 4, spirit_blade: 2, gold: 15 }, desc: 'Collapsed tunnels and animated stone.' },
   { id: 'rift', name: 'Dragon Rift', icon: 'fire', ranks: 'AS SS', pool: ['tiger_beast', 'yaoguai'], boss: { A: 'young_dragon', S: 'young_dragon', SS: 'ancient_qilin' },
     loot: { thunder_blade: 3, jade_scale: 3, recipe_scroll: 6, dragon_scale: 25, foundation_pill: 15, core_pill: 6, soul_pill: 3, spirit_stone: 25, dragon_vest: 4, ginseng: 10, gold: 20 }, desc: 'Heat shimmer and scales the size of plates.' },
   { id: 'void', name: 'Void Rift', icon: 'eye', ranks: 'S SS SSS', pool: ['void_wraith', 'sword_saint', 'heavenly_demon'], boss: { S: 'void_wraith', SS: 'heavenly_demon', SSS: 'fallen_immortal' },
-    loot: { void_edge: 3, void_mantle: 3, phoenix_feather: 3, spirit_stone: 30, void_pill: 8, unity_pill: 4, sever_pill: 8, bloodline_essence: 3, recipe_scroll: 6, gold: 20, dao_pill: 2 }, desc: 'Space folds in on itself. Things from outside the world wait here.' },
+    loot: { storage_ring: 4, sword_ring: 3, void_edge: 3, void_mantle: 3, phoenix_feather: 3, spirit_stone: 30, void_pill: 8, unity_pill: 4, sever_pill: 8, bloodline_essence: 3, recipe_scroll: 6, gold: 20, dao_pill: 2 }, desc: 'Space folds in on itself. Things from outside the world wait here.' },
   { id: 'palace', name: 'Fallen Celestial Palace', icon: 'crown', ranks: 'SS SSS', pool: ['ancient_qilin', 'sword_saint', 'void_wraith'], boss: { SS: 'ancient_qilin', SSS: 'fallen_immortal' },
     loot: { celestial_sword: 2, celestial_armor: 2, phoenix_feather: 3, spirit_stone: 30, unity_pill: 8, dao_pill: 6, ascend_pill: 2, bloodline_essence: 4, dragon_vest: 4, gold: 25 }, desc: 'Ruins of a palace that fell out of the sky. Its guardians still serve.' },
 ];
 // rank strings are matched exactly ('S' must not match 'SS')
+GATE_TYPES.push({ id: 'beyond', name: 'Rift Beyond the Heavens', icon: 'eye', ranks: 'X Z', pool: ['fallen_immortal', 'void_wraith', 'heavenly_demon', 'ancient_qilin'], boss: { X: 'fallen_immortal', Z: 'fallen_immortal' },
+  loot: { celestial_sword: 4, celestial_armor: 4, ascend_pill: 6, dao_pill: 10, bloodline_essence: 8, phoenix_feather: 6, spirit_stone: 30, gold: 30 }, desc: 'A wound in the sky. What lives on the other side was old when the heavens were young.' });
 export const hasRank = (t, rank) => t.ranks.split(/\s+/).flatMap(x => ['SS', 'SSS'].includes(x) ? [x] : x.split('')).includes(rank);
 export function makeGate(rank) {
   const types = GATE_TYPES.filter(t => hasRank(t, rank));

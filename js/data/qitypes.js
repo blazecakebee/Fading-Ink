@@ -23,11 +23,11 @@ export const QI_TYPES = [
     ['Blazing Hellfire', 'uncommon', { burn: 0.1, dmg: 0.02 }, 'Hotter, wilder flames.'],
     ['Samadhi True Fire', 'rare', { burn: 0.08 }, 'Burns the Qi out of its target. Better pills.', ],
     ['Phoenix Nirvana Flame', 'legendary', { heal: 0.05 }, 'Part of the burn becomes your own healing.']]),
-  Q('water', 'Water Qi', '水', 'common', ['#4fb3ff', '#bff2ff'], 'water', { heal: 0.05, evade: 0.06 }, { heal: 1.05 }, 'Recovery and evasion. Washes away poison.', [
+  Q('water', 'Water Qi', '水', 'common', ['#4fb3ff', '#bff2ff'], 'water', { heal: 0.05, evade: 0.06 }, { healRate: 1.08 }, 'Recovery and evasion. Washes away poison.', [
     ['Spirit Spring Dew', 'uncommon', { heal: 0.04 }, 'Rapid healing of body and meridians.'],
     ['Black Tortoise Heavy Water', 'rare', { hp: 0.05 }, 'Dense, heavy Qi: much harder to hurt.'],
     ['Raging Abyssal Tide', 'epic', { pierce: 0.12 }, 'Waves that pour through shields.']]),
-  Q('wood', 'Wood Qi', '木', 'common', ['#6fd36f', '#d8ff9a'], 'wood', { drain: 0.05 }, { life: 2, heal: 1.05 }, 'Vitality: steady regeneration, a longer life, more herbs.', [
+  Q('wood', 'Wood Qi', '木', 'common', ['#6fd36f', '#d8ff9a'], 'wood', { drain: 0.05 }, { life: 2, healRate: 1.05 }, 'Vitality: steady regeneration, a longer life, more herbs.', [
     ['Blood-Thorn Parasitic Vine', 'uncommon', { drain: 0.04 }, 'Thorns that drink from your enemy.'],
     ['Wither-Rot Decay Qi', 'rare', { dmg: 0.03 }, 'Rot that eats away at armour and flesh.'],
     ['World Tree Evergreen Qi', 'legendary', { drain: 0.03 }, 'The world tree\'s patience: a longer life.']]),

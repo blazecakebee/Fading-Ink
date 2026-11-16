@@ -54,7 +54,7 @@ export const TREE = [
   { id: 'd5', branch: 'destiny', name: 'Fortune\'s Favourite', desc: '+5 Luck at birth, and loot rolls High grade more often.', cost: 80, max: 1, req: 'd3' },
 ];
 // passive bonuses from the tree (fed into the bonus system)
-export const legacyMods = () => ({ heal: 1 + 0.1 * perk('b8'), loot: 1 + 0.08 * perk('d2') });
+export const legacyMods = () => ({ healRate: 1 + 0.1 * perk('b8'), loot: 1 + 0.08 * perk('d2') });
 // v0.8.6 one-time blessings: bought now, used up by your next life (a new life or an heir)
 export const BLESSINGS = [
   { id: 'nl_storm', name: 'Born in the Storm', desc: 'Lightning strikes at your birth: +3% breakthroughs and a strong pull toward Lightning Qi.', cost: 35 },

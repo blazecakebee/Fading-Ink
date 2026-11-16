@@ -1,4 +1,5 @@
 import { eff } from '../systems/body.js';
+import { effRealm } from '../systems/path.js';
 // Random yearly events. Each: cond(c) -> bool, weight, run(c) async. Choice events open a popup.
 import { ui } from '../core/bus.js';
 import { G } from '../core/state.js';
@@ -17,7 +18,7 @@ const E = [
   { id: 'bully', cond: c => c.age >= 7 && c.age <= 15 && c.edu.school, w: 8 * 1, run: async c => {
       const v = await ui.choice({ title: 'A bully corners you', text: `${pick(['Big', 'Mean', 'Tall'])} ${pick(['Jun', 'Tyler', 'Diego', 'Igor', 'Kenji'])} demands your lunch money.`, icon: 'fist',
         options: [{ label: 'Fight back', value: 'fight' }, { label: 'Hand it over', value: 'pay' }, { label: 'Tell a teacher', value: 'tell' }] });
-      if (v === 'fight') { const r = await ui.fight({ ...ENEMIES[0] }); ui.log(r === 'win' ? 'I fought the bully and won. Nobody bothers me now.' : 'The bully beat me up.', r === 'win' ? 'good' : 'bad'); if (r === 'win') c.wins++; }
+      if (v === 'fight') { const r = await ui.fight({ ...ENEMIES[0], realm: 0 }); ui.log(r === 'win' ? 'I fought the bully and won. Nobody bothers me now.' : 'The bully beat me up.', r === 'win' ? 'good' : 'bad'); if (r === 'win') c.wins++; }
       else if (v === 'pay') { stat(c, 'happiness', -6); ui.log('I handed over my lunch money.', 'bad'); }
       else { ui.log('I told a teacher. The bully got detention.'); stat(c, 'happiness', 2); } } },
   { id: 'gifted', cond: c => c.age >= 6 && c.age <= 12 && eff(c, 'smarts') > 75, w: 4, run: c => { stat(c, 'smarts', 4); c.edu.grades = clamp(c.edu.grades + 10); ui.log('My teacher entered me into the gifted program.', 'good'); } },
@@ -33,14 +34,14 @@ const E = [
   { id: 'gang_threat', cond: c => c.age >= 16 && c.qi.realm >= 1, w: 3 * 1, run: async c => {
       const v = await ui.choice({ title: 'Crimson Lotus collectors', text: 'Two gang cultivators smell Qi on you. "Unregistered cultivator. Pay tribute or bleed."', icon: 'demon',
         options: [{ label: 'Fight', value: 'fight' }, { label: `Pay ${fmtMoney(c, 500 * country(c).econ)}`, value: 'pay' }, { label: 'Run', value: 'run' }] });
-      if (v === 'fight') { const r = await ui.fight({ ...ENEMIES.find(e => e.id === 'gangster') }); ui.log(r === 'win' ? 'I sent them crawling back to their masters.' : 'They beat me and took what I had.', r === 'win' ? 'good' : 'bad'); if (r !== 'win') money(c, -Math.max(0, c.money * 0.2)); else { c.wins++; if (chance(0.4)) addItem(c, 'qi_pill'); } }
+      if (v === 'fight') { const r = await ui.fight({ ...ENEMIES.find(e => e.id === 'gangster'), realm: Math.min(2, effRealm(c) + 1) }); ui.log(r === 'win' ? 'I sent them crawling back to their masters.' : 'They beat me and took what I had.', r === 'win' ? 'good' : 'bad'); if (r !== 'win') money(c, -Math.max(0, c.money * 0.2)); else { c.wins++; if (chance(0.4)) addItem(c, 'qi_pill'); } }
       else if (v === 'pay') { money(c, -500 * country(c).econ); ui.log('I paid tribute. It felt like swallowing glass.', 'bad'); }
       else { if (chance(eff(c, 'agility') / 100)) ui.log('I outran them through the night market.'); else { stat(c, 'health', -8); ui.log('They caught me. I limped home.', 'bad'); } } } },
   { id: 'spirit_night', cond: c => c.age >= 14, w: 3, run: async c => {
       const sp = pick(['hungry_ghost', 'jiangshi']);
       const v = await ui.choice({ title: 'Something in the dark', text: `A ${ENEMIES.find(e => e.id === sp).name} drifts out of the alley, hungry.`, icon: 'ghost', options: [{ label: 'Fight it', value: true }, { label: 'Flee', value: false }] });
       if (!v) { ui.log('I ran until dawn.'); stat(c, 'stress', 10); return; }
-      const r = await ui.fight({ ...ENEMIES.find(e => e.id === sp) });
+      const r = await ui.fight({ ...ENEMIES.find(e => e.id === sp), realm: Math.min(ENEMIES.find(e => e.id === sp).realm, effRealm(c) + 1) });
       if (r === 'win') { c.wins++; ui.log('I banished the spirit. Its ash smelled of incense.', 'good'); if (chance(0.3)) { addItem(c, 'spirit_stone'); ui.log('It left behind a Spirit Stone.', 'qi'); } }
       else { stat(c, 'health', -8); ui.log('It fed on me. I woke up cold.', 'bad'); } } },
   { id: 'method_market', cond: c => c.qi.realm >= 1 && c.age >= 14, w: 2, run: async c => {
