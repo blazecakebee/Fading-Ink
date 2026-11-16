@@ -21,7 +21,8 @@ import { bleedMult } from '../systems/health.js';
 import { MINIS, playMini } from './minigames.js';
 import { GROUPS } from '../data/body.js';
 import { hitBody, combatMods } from '../systems/body.js';
-import { die } from '../systems/life.js';
+import { die, statCap } from '../systems/life.js';
+import { PLAYER_HP, ENEMY_HP, ENEMY_DMG, GEAR_DMG, SEVERED_EDGE, realmScale, enemyScale, enemyPct, playerPct, qiStat, enemyQiStat } from '../systems/combatcore.js';
 
 const bkLabel = v => v >= 80 ? 'Master' : v >= 60 ? 'Veteran' : v >= 40 ? 'Seasoned' : v >= 20 ? 'Trained' : 'Novice';
 const realmLabel = r => r === 0 ? 'Mortal' : REALMS[r].name;
@@ -29,15 +30,17 @@ const realmLabel = r => r === 0 ? 'Mortal' : REALMS[r].name;
 export function fight(enemyDef, opts = {}) {
   const c = G.char;
   return new Promise(resolve => {
-    const pPow = power(c), gs = gearStats(c);
+    const pPow = power(c), gs = gearStats(c), cap = statCap(c);
+    const pct = k => playerPct(eff(c, k) || 0, cap); // stats count as a % of your realm's cap
     const me = {
-      name: 'You', maxHp: Math.round((40 + c.stats.health * 0.5 + eff(c, 'strength') * 0.3) * (1 + (pPow - 1) * 0.5) + gs.hp), gear: gs,
-      mods: combatMods(c), str: eff(c, 'strength'), agi: eff(c, 'agility') + gs.agi, bk: eff(c, 'battle') || 0, pow: pPow, stam: 100, qi: c.qi.qi, maxQi: Math.max(1, c.qi.qi), mom: 0, guard: false, armor: 0, evade: false, burn: 0,
+      name: 'You', maxHp: Math.round(((40 + c.stats.health * 0.5 + eff(c, 'strength') * 0.3) * (1 + (pPow - 1) * 0.5) + gs.hp) * PLAYER_HP), gear: { ...gs, dmg: (gs.dmg || 0) * GEAR_DMG },
+      mods: combatMods(c), str: pct('strength'), agi: pct('agility') + gs.agi, bk: pct('battle'), pow: pPow, stam: 100, qi: c.qi.qi, maxQi: Math.max(1, c.qi.qi), mom: 0, guard: false, armor: 0, evade: false, burn: 0,
     };
     me.hp = me.maxHp;
     const ePow = REALMS[enemyDef.realm || 0].power * (enemyDef.kind === 'spirit' ? traitMult(c, 'spiritBane') ** -1 : 1);
-    const diff = enemyDef.sparring ? 1 : DIFFICULTY;
-    const en = { ...enemyDef, maxHp: Math.round(enemyDef.hp * (1 + (ePow - 1) * 0.5) * diff), str: Math.round(enemyDef.str * diff), agi: enemyDef.agi, pow: ePow, stam: 100, qi: 999, mom: 0, guard: false, armor: 0, evade: false, burn: 0, stun: 0, weak: false };
+    const sc = enemyDef.sparring || opts.tribulation ? 1 : enemyScale(enemyDef.id, enemyDef.realm);
+    const hpK = enemyDef.sparring ? PLAYER_HP : ENEMY_HP;
+    const en = { ...enemyDef, sc, dmgK: enemyDef.sparring ? 1 : opts.tribulation ? ENEMY_DMG * 1.6 : ENEMY_DMG * sc, maxHp: Math.round(enemyDef.hp * (1 + (ePow - 1) * 0.5) * hpK * sc), str: enemyPct(enemyDef, enemyDef.str), agi: enemyPct(enemyDef, enemyDef.agi), pow: ePow, stam: 100, qi: 999, mom: 0, guard: false, armor: 0, evade: false, burn: 0, stun: 0, weak: false };
     en.hp = en.maxHp;
     const P = presence(opts.tribulation || enemyDef.kind === 'heaven' || enemyDef.sparring ? 0 : (onBodyPath(c) ? Math.max(0, effRealm(c) - (enemyDef.realm || 0)) : c.qi.realm - (enemyDef.realm || 0))); // the Severed have no Qi to suppress
     if (P.crushed) me.stam = 50;
@@ -57,7 +60,7 @@ export function fight(enemyDef, opts = {}) {
       ui[isMe ? 'meHp' : 'enHp'] = hp; ui[isMe ? 'meMom' : 'enMom'] = mom;
       const hpTxt = h('div', { class: 'flvl' }); ui[isMe ? 'meHpTxt' : 'enHpTxt'] = hpTxt;
       const info = h('div', { class: 'info' }, h('div', { class: 'fname' }, isMe ? 'You' : who.name),
-        h('div', { class: 'flvl' }, `${isMe ? (onBodyPath(c) ? bodyTier(c).name : realmLabel(c.qi.realm) + (c.qi.realm ? ' ' + c.qi.stage : '')) : realmLabel(who.realm || 0)} · Power ${Math.round(who.pow * 10) / 10}${isMe ? ` · ${bkLabel(eff(c, 'battle'))}` : ''}`),
+        h('div', { class: 'flvl' }, `${isMe ? (onBodyPath(c) ? bodyTier(c).name : realmLabel(c.qi.realm) + (c.qi.realm ? ' ' + c.qi.stage : '')) : realmLabel(who.realm || 0)} · Power ${Math.round(who.pow * 10) / 10}${isMe ? ` · ${bkLabel(me.bk)}` : ''}`),
         h('div', { class: 'hpbar' }, hp), hpTxt, mom);
       const pf = h('div', { class: 'fportrait' }, isMe ? mePortrait : ePortrait); ui[isMe ? 'mePf' : 'enPf'] = pf;
       return h('div', { class: 'fighter' + (isMe ? ' me' : '') }, isMe ? [pf, info] : [info, pf]);
@@ -106,12 +109,12 @@ export function fight(enemyDef, opts = {}) {
       const defPf = attIsMe ? ui.enPf : ui.mePf, attPf = attIsMe ? ui.mePf : ui.enPf;
       attPf.classList.add(attIsMe ? 'lunge-r' : 'lunge-l'); setTimeout(() => attPf.classList.remove('lunge-r', 'lunge-l'), 140);
       if (!chance(clamp(acc, 0.1, 0.98) * 100 / 100)) { att.mom = 0; fx('miss'); return `${attIsMe ? 'You' : en.name} used ${mv.name}... and missed.`; }
-      const statV = mv.stat === 'qi' ? 60 + (attIsMe ? c.qi.affinity : 40) : mv.stat === 'agility' ? att.agi : att.str;
+      const statV = mv.stat === 'qi' ? (attIsMe ? qiStat(c.qi.affinity) : enemyQiStat(enemyDef.realm)) : mv.stat === 'agility' ? att.agi : att.str;
       let dmg = ri(...mv.dmg) * (0.6 + statV / 100) * (mv.stat === 'qi' || mv.body ? att.pow : Math.sqrt(att.pow)) * (1 + att.mom * 0.1) * (1 + (att.gear?.dmg || 0)) * (1 + (att.bk || 0) / 250) * (!attIsMe || !en.weak ? 1 : 1.5) * (attIsMe ? (mv.stat === 'qi' ? me.mods.qi : me.mods.dmg) : (en.crippled.arms ? 0.65 : 1));
-      dmg *= attIsMe ? P.me : P.them;
-      if (attIsMe && onBodyPath(c) && ((enemyDef.realm || 0) > 0 || enemyDef.kind === 'spirit')) dmg *= 1.15; // Qi users can't sense the Severed coming
+      dmg *= attIsMe ? P.me : P.them * en.dmgK;
+      if (attIsMe && onBodyPath(c) && ((enemyDef.realm || 0) > 0 || enemyDef.kind === 'spirit')) dmg *= SEVERED_EDGE; // Qi users can't sense the Severed coming
       if (def.guard && !mv.pierce) { dmg *= 0.5; def.guard = false; } if (def.armor && !mv.pierce) { dmg *= 0.5; def.armor--; }
-      const crit = chance(0.08 + (attIsMe ? (c.stats.luck + gs.luck) / 1000 + eff(c, 'battle') / 2000 : 0)); if (crit) dmg *= 1.7;
+      const crit = chance(0.08 + (attIsMe ? (c.stats.luck + gs.luck) / 1000 + me.bk / 2000 : 0)); if (crit) dmg *= 1.7;
       if (enemyDef.sparring && attIsMe === false) dmg *= 0.7;
       dmg = Math.max(1, Math.round(dmg)); def.hp -= dmg; att.mom = Math.min(3, att.mom + (mv.mom || 1)); def.mom = 0;
       if (mv.drain) att.hp = Math.min(att.maxHp, att.hp + dmg * mv.drain);
@@ -129,9 +132,9 @@ export function fight(enemyDef, opts = {}) {
           if (target === 'torso') { en.stam = Math.max(0, en.stam - 40); extra += ' Its ribs crack — it gasps for breath.'; }
         }
       } else if (!def.isEnemy) { // the enemy hits YOUR body: real injuries
-        const res = hitBody(c, { amount: dmg, type: mv.burn ? 'burn' : cuts ? 'cut' : 'blunt', ratio: en.pow / me.pow, sparring: !!enemyDef.sparring });
+        const res = hitBody(c, { amount: dmg / me.maxHp * 150, type: mv.burn ? 'burn' : cuts ? 'cut' : 'blunt', ratio: en.pow / me.pow, sparring: !!enemyDef.sparring });
         if (res.text) extra = ` (${res.text})`;
-        if (res.lost) { me.mods = combatMods(c); me.agi = eff(c, 'agility') + gs.agi; }
+        if (res.lost) { me.mods = combatMods(c); me.agi = pct('agility') + gs.agi; }
         if (res.fatal) fatal = res.part.name;
         if (dmg >= me.maxHp * 0.2) fx('heavy');
       }
@@ -173,7 +176,7 @@ export function fight(enemyDef, opts = {}) {
       const lines = [];
       if (meFirst) { lines.push(attack(me, en, k, true)); draw(); if (en.hp > 0) { await wait(380); lines.push(await enemyTurn(true)); } }
       else { lines.push(await enemyTurn(true)); draw(); if (me.hp > 0) { await wait(380); lines.push(attack(me, en, k, true)); } }
-      for (const f of [me, en]) { if (f.burn > 0) { f.burn--; f.hp -= 6; } f.stam = clamp(f.stam + 8 * (f === me ? me.mods.stam * (P.crushed ? 0.5 : 1) : 1)); }
+      for (const f of [me, en]) { if (f.burn > 0) { f.burn--; f.hp -= 6; } f.stam = clamp(f.stam + 8 * (f === me ? me.mods.stam * (P.crushed ? 0.5 : 1) * (onBodyPath(c) ? 1.75 : 1) : 1)); } // the Severed live on stamina, not Qi
       if (en.regen && en.hp > 0) en.hp = Math.min(en.maxHp, en.hp + Math.round(en.maxHp * en.regen));
       if (fatal) { me.hp = 0; }
       log.textContent = lines.join(' ');

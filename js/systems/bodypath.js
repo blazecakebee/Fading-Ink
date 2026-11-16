@@ -16,7 +16,7 @@ export function startPath(c, why) {
   Object.assign(c.qi, { known: false, realm: 0, stage: 1, qi: 0, manuals: [], techs: [], methods: ['basic'], meridians: 0 });
 }
 export const REJECT = { id: 'reject_qi', cat: 'mind', name: 'Reject your Qi forever (Severed Path)', icon: 'skull', minAge: 12, need: c => !onBodyPath(c) && c.qi.realm === 0 && knowsSevered(c), run: async c => {
-  const ok = await ui.choice({ title: 'The Severed Path', icon: 'skull', text: `Cut every thread of Qi from your body — forever.\n\n• You can never cultivate Qi — no realms, Qi arts or methods, ever. There is no going back.\n• In return your body has no ceiling: temper it through nine tiers until it rivals Nascent Souls and beyond.\n• Qi users cannot sense you or press you down with their presence, and your strikes hit them harder.\n• But your lifespan will be far shorter than a cultivator's.`,
+  const ok = await ui.choice({ title: 'The Severed Path', icon: 'skull', text: `Cut every thread of Qi from your body — forever.\n\n• You can never cultivate Qi — no realms, Qi arts or methods, ever. There is no going back.\n• In return your body has no ceiling: temper it through twelve punishing tiers until it can stand against cultivators.\n• Tempering is slow, painful and dangerous, and a failed Trial can break you.\n• Qi users cannot sense you or press you down with their presence, and your strikes hit them harder.\n• But your lifespan will be far shorter than a cultivator's.`,
     options: [{ label: 'Sever it all', value: true }, { label: 'Not yet', value: false, ghost: true }] });
   if (!ok) return null;
   const hadSect = c.sect && !['own', 'iron'].includes(c.sect);
@@ -25,11 +25,11 @@ export const REJECT = { id: 'reject_qi', cat: 'mind', name: 'Reject your Qi fore
   ui.cinematic?.({ motif: 'crack', color: '#d9a36a', lines: ['You find the warm thread in your belly — and tear it out.', 'The world goes quiet. Your body has never felt louder.'], title: 'The Severed Path', sub: 'Qi rejected', sound: 'heavy' });
   return { text: `I severed my Qi forever. From now on, my body is my only weapon.${hadSect ? ' My sect had no place for someone like me any more.' : ''}`, cls: 'big', big: true };
 } };
-const gain = (c, a, b) => Math.max(1, Math.round(ri(a, b) * traitMult(c, 'train') * (1 + (c.stats.health - 60) / 200)));
+const gain = (c, a, b) => Math.max(1, Math.round(ri(a, b) * 0.8 * traitMult(c, 'train') * (1 + (c.stats.health - 60) / 200)));
 function addProg(c, n) { c.bodyPath.prog = (c.bodyPath.prog || 0) + n; return n; }
 export const BODY_ACTS = [
   { id: 'body_condition', cat: 'training', name: 'Brutal conditioning (Severed)', icon: 'gym', minAge: 12, need: onBodyPath, run: c => {
-      const p = addProg(c, gain(c, 10, 16)); stat(c, 'strength', ri(1, 2)); stat(c, 'health', -ri(1, 4)); addMuscle(c, ri(1, 2));
+      const p = addProg(c, gain(c, 10, 16)); stat(c, 'strength', ri(0, 2)); stat(c, 'health', -ri(3, 7)); if (chance(0.06)) { stat(c, 'health', -10); ui.log('I pushed too far and tore something deep inside.', 'bad'); } addMuscle(c, ri(1, 2));
       return `I trained until my muscles tore and knitted back stronger. Tempering +${p}.`; } },
   { id: 'body_endure', cat: 'training', name: 'Endurance ordeal (Severed)', icon: 'snowball', minAge: 12, need: onBodyPath, run: c => {
       const ord = pick(['stood under a freezing waterfall for an hour', 'ran up the mountain carrying stones', 'held a horse stance from dawn to dusk', 'swam against the river current until dark']);
@@ -45,12 +45,12 @@ export const BODY_ACTS = [
       const next = BODY_TIERS[T(c) + 1];
       const e = ENEMIES.find(x => x.id === ['stone_golem', 'tiger_beast', 'yaoguai', 'yaoguai', 'young_dragon', 'sword_saint', 'void_wraith', 'heavenly_demon', 'ancient_qilin', 'ancient_qilin', 'fallen_immortal', 'fallen_immortal', 'fallen_immortal'][T(c)]) || ENEMIES[1];
       ui.log(`My body screams that it is ready. I seek out a ${e.name} to test it.`, 'qi');
-      let def = { ...e, realm: next.eq, name: `Trial · ${e.name}` };
+      let def = { ...e, realm: bodyTier(c).eq, hp: Math.round(e.hp * 1.5), str: Math.round(e.str * 1.15), name: `Trial · ${e.name}` };
       if (ui.bossPhase) def = await ui.bossPhase(c, def, e, T(c) >= 5);
       const r = await ui.fight(def, { noFlee: true });
-      if (r !== 'win') { c.bodyPath.prog = Math.round(c.bodyPath.prog * 0.7); stat(c, 'health', -20); return { text: `I failed my Body Trial. My body is not yet ${next.name}.`, cls: 'bad' }; }
+      if (r !== 'win') { c.bodyPath.prog = Math.round(c.bodyPath.prog * 0.55); stat(c, 'health', -ri(25, 40)); if (c.stats.health <= 0) { const { die } = await import('./life.js'); die(c, `broken by my Body Trial`); return null; } return { text: `I failed my Body Trial. My body is not yet ${next.name}.`, cls: 'bad' }; }
       c.wins++; c.bodyPath.tier++; c.bodyPath.prog = 0;
-      stat(c, 'strength', 6); stat(c, 'agility', 4); stat(c, 'battle', 3); stat(c, 'health', 25); addMuscle(c, 4);
+      stat(c, 'strength', 4); stat(c, 'agility', 3); stat(c, 'battle', 2); stat(c, 'health', 15); addMuscle(c, 4);
       ui.cinematic?.({ motif: 'glyph', glyph: next.glyph, color: next.color, lines: ['No Qi. No heaven\'s blessing. Only you.', next.eq >= 6 ? 'Cultivators who once looked down on you now look away.' : 'Your body breaks its old limits.'], title: next.name, sub: 'The Severed Path', sound: 'ascend', hold: 2 });
       return { text: `BODY TRIAL PASSED! My body has become ${next.name}. (Counts as ${next.eq ? 'a realm ' + next.eq + ' cultivator' : 'mortal'} in a fight.)`, cls: 'big', big: true }; } },
 ];
@@ -60,9 +60,10 @@ export function migrateBody(c) { if (c.bodyPath && !c.bodyPath.v2) { if (c.bodyP
 export function bodyYear(c) {
   if (!onBodyPath(c)) return;
   const b = c.bodyPath; const dw = Math.max(0, c.wins - (b.wins ?? c.wins)), dg = Math.max(0, c.gatesCleared - (b.gates ?? c.gatesCleared));
-  if (dw || dg) { const p = addProg(c, dw * 6 + dg * 20); ui.log(`Every fight hardened me further (Tempering +${p}).`); }
+  if (dw || dg) { const p = addProg(c, dw * 4 + dg * 14); ui.log(`Every fight hardened me further (Tempering +${p}).`); }
   b.wins = c.wins; b.gates = c.gatesCleared;
-  if (b.tier) stat(c, 'health', b.tier * 2);
+  if (b.tier) stat(c, 'health', Math.ceil(b.tier * 0.8));
+  if (b.tier >= 4 && c.age > 45 && chance(0.15)) { stat(c, 'health', -ri(4, 9)); ui.log('Old strain from tempering flared up. A body pushed this hard pays it back.', 'bad'); }
   c.qi.known = false; c.qi.realm = 0; c.qi.qi = 0;
   if (b.prog >= bodyTier(c).need && b.tier < BODY_TIERS.length - 1 && !b.readyNoted) { b.readyNoted = b.tier; ui.log('My body is ready for its next Trial (Training activities).', 'qi'); }
   if (b.readyNoted !== undefined && b.readyNoted !== b.tier) delete b.readyNoted;

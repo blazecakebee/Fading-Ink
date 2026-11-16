@@ -1,4 +1,5 @@
 import { qiFlowMult } from './body.js';
+import { HARD } from '../core/hard.js';
 // Qi cultivation: gathering Qi, opening meridians, breakthroughs and Heavenly Tribulations.
 import { onBodyPath, bodyTier } from './path.js';
 import { ui } from '../core/bus.js';
@@ -16,7 +17,9 @@ import { ITEMS } from '../data/items.js';
 
 export const realmName = c => onBodyPath(c) ? `${bodyTier(c).name} (Severed)` : c.qi.realm === 0 ? 'Mortal' : `${REALMS[c.qi.realm].name} ${REALMS[c.qi.realm].stages > 1 ? 'Stage ' + c.qi.stage : ''}`.trim();
 export const qiCap = c => Math.round(REALMS[c.qi.realm].maxQi * (1 + (c.qi.stage - 1) * 0.7));
-export const power = c => (onBodyPath(c) ? bodyTier(c).power * (1 + Math.min(1, (c.bodyPath.prog || 0) / bodyTier(c).need) * 0.3) : REALMS[c.qi.realm].power * (1 + (c.qi.stage - 1) * 0.11)) * traitMult(c, 'power');
+export const power = c => (onBodyPath(c) ? bodyTier(c).power * (1 + Math.min(1, (c.bodyPath.prog || 0) / bodyTier(c).need) * 0.3) : REALMS[c.qi.realm].power * (1 + (c.qi.stage - 1) * 0.11)) * powerBonus(c);
+// v0.7.9: power from traits, genes, heirlooms and gods stacks with diminishing returns and tops out at x1.6
+export const powerBonus = c => { const m = traitMult(c, 'power'); return m <= 1 ? m : Math.min(1.6, 1 + (m - 1) * 0.6); };
 
 export function qiGain(c, base) {
   const manual = Math.max(1, ...c.qi.manuals.map(m => MANUALS.find(x => x.id === m)?.qi || 1));
@@ -78,7 +81,9 @@ export function breakthroughInfo(c) {
   const bp = major && next && Object.entries(ITEMS).find(([id, it]) => it.bt?.realm === next.id && c.inv[id]);
   if (bp) add(bp[1].name, bp[1].bt.bonus);
   if (c.conditions?.some(x => x.id === 'qi_deviation')) add('Qi Deviation Sickness', -0.2);
-  const p = clamp(parts.reduce((s, [, v]) => s + v, 0), 0.05, 0.97);
+  const raw = parts.reduce((s, [, v]) => s + v, 0);
+  if (raw < 1) parts.push(['Unforgiving heavens', -(1 - raw) * (HARD - 1)]); // failure is 1.5x as likely
+  const p = clamp(parts.reduce((s, [, v]) => s + v, 0), 0.05, 0.95);
   const blockers = [];
   if (!next) blockers.push('You stand at the peak.');
   if (c.qi.qi < cap) blockers.push(`Fill your Qi first (${c.qi.qi}/${cap}).`);

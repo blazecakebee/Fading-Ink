@@ -11,7 +11,8 @@ import { traitMult, traitVal } from '../systems/traits.js';
 import { bondBonus, bondList } from '../systems/people.js';
 import { gearStats } from '../systems/crafting.js';
 import { condQiMult, moodMult, moodFace, bleedMult } from '../systems/health.js';
-import { realmName, power, method, qiCap, sectName } from '../systems/cultivation.js';
+import { realmName, power, powerBonus, method, qiCap, sectName } from '../systems/cultivation.js';
+import { onBodyPath, bodyTier } from '../systems/path.js';
 import { heightNow, fmtHeight, muscleLabel, ensureBody, allCaps } from '../systems/body.js';
 import { CAPACITIES } from '../data/body.js';
 import { bodySection } from './itemsPanel.js';
@@ -43,7 +44,7 @@ export function statusTab() {
     ['Gate loot', pct(traitMult(c, 'loot')), 'traits'],
     ['Breakthrough bonus', add(traitVal(c, 'breakthrough') + (M.bt || 0) + bondBonus(c, 'breakthrough') - 1), 'traits, method & partner'],
     ['Stress build-up', pct(traitMult(c, 'stressMult')), 'traits'],
-    ['Combat power', `×${pPow.toFixed(2)}`, `realm ×${REALMS[c.qi.realm].power} · traits ${pct(traitMult(c, 'power'))}`],
+    ['Combat power', `×${pPow.toFixed(2)}`, `${onBodyPath(c) ? 'body tier' : 'realm'} ×${onBodyPath(c) ? bodyTier(c).power : REALMS[c.qi.realm].power} · traits ${pct(powerBonus(c))} (max +60%)`],
   ];
   return [h('h2', { class: 'display' }, 'Status'),
     h('div', { class: 'status-top' },

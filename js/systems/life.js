@@ -1,5 +1,7 @@
 // Character creation, yearly aging loop, death, and generational inheritance.
 import { onBodyPath, bodyTier } from './path.js';
+import { HARD } from '../core/hard.js';
+import { spared } from './fortune.js';
 import { BODY_TIERS } from '../data/bodypath.js';
 import { G, META, save } from '../core/state.js';
 import { ui } from '../core/bus.js';
@@ -38,7 +40,7 @@ export const fxRate = c => FX[c?.country] ?? 1;
 // Wages follow the local economy (a doctor in Cairo earns far less than one in New York) and are deliberately
 // modest: getting rich should take a career, luck or a cultivation empire — not a few years of clicking.
 export const WAGE = { us: 1.2, gb: 1.05, fr: 1.0, jp: 0.95, kr: 0.9, cn: 0.5, ru: 0.4, br: 0.3, mx: 0.3, in: 0.2, eg: 0.17, ng: 0.15 };
-export const INCOME = 0.6;
+export const INCOME = 0.45; // v0.7.9: harder (was 0.6)
 export const wage = c => (WAGE[c?.country] ?? country(c).econ) * INCOME;
 export const fmtMoney = (c, n) => { const v = Math.round(n * fxRate(c)); return (v < 0 ? '-' : '') + country(c).currency + Math.abs(v).toLocaleString(); };
 export function lifeStage(age) {
@@ -185,8 +187,10 @@ export async function ageUp() {
   // passive stat drift
   // bodies recover toward a baseline that drops with age; old age wears you down
   const target = c.age < 40 ? 88 : c.age < 60 ? 72 : 58;
-  if (c.stats.health < target) stat(c, 'health', Math.round((c.stats.health < 40 ? ri(5, 10) : c.age < 18 ? ri(3, 7) : ri(2, 5)) * healMult(c))); // kidneys & gut matter // the lower you are, the harder your body fights back else if (c.age > 30) stat(c, 'health', -ri(0, c.age > 65 ? 4 : 2));
-  if (c.qi.realm) stat(c, 'health', c.qi.realm * 2);
+  // the lower you are, the harder your body fights back (kidneys & gut matter). v0.7.9: slower healing, real aging
+  if (c.stats.health < target) stat(c, 'health', Math.round((c.stats.health < 40 ? ri(4, 8) : c.age < 18 ? ri(2, 5) : ri(1, 4)) * healMult(c) / Math.sqrt(HARD) * 1.1));
+  else if (c.age > 30) stat(c, 'health', -Math.round(ri(0, c.age > 65 ? 4 : 2) * (1 + (HARD - 1) / 2)));
+  if (c.qi.realm) stat(c, 'health', c.qi.realm);
   if (traitVal(c, 'heal')) stat(c, 'health', traitVal(c, 'heal'));
   stat(c, 'stress', -ri(1, 4)); // and drains slowly
   if (c.stats.stress > 75) { stat(c, 'health', -3); stat(c, 'happiness', -5); }
@@ -273,8 +277,8 @@ function checkDeath(c) {
   if (c.stats.health <= 0 && c.age < 18 && !c.flags.rescued) { c.flags.rescued = true; c.stats.health = 25; ui.log('I nearly died, but a doctor pulled me back from the edge.', 'bad'); trauma(c, 0.4); }
   if (c.stats.health <= 0) cause = 'my body finally gave out';
   else if (c.age > ls - 8 && chance(0.12 + (c.age - (ls - 8)) * 0.08)) cause = 'I passed peacefully of old age';
-  else if (chance(suddenDeathChance(c))) cause = c.conditions?.some(x => ['heart', 'congenital_heart'].includes(x.id)) && chance(0.6) ? 'a sudden heart attack' : pick(['a freak accident', 'a sudden aneurysm', 'a car accident', 'a stray spirit beast', 'a fall down the stairs']);
-  if (cause) die(c, cause);
+  else if (chance(suddenDeathChance(c) * HARD)) cause = c.conditions?.some(x => ['heart', 'congenital_heart'].includes(x.id)) && chance(0.6) ? 'a sudden heart attack' : pick(['a freak accident', 'a sudden aneurysm', 'a car accident', 'a stray spirit beast', 'a fall down the stairs']);
+  if (cause && !(cause !== 'my body finally gave out' && !/old age/.test(cause) && spared(c, cause))) die(c, cause);
 }
 
 export function die(c, cause) {

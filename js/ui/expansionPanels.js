@@ -141,7 +141,7 @@ export function huntsPanel() {
         h('button', { class: 'btn ghost', onclick: () => R.run({ id: 'hunt_quit', cost: 'free', run: cc => EG.abandonHunt(cc) }) }, 'Abandon'))) : null,
     h('div', { class: 'grid2' }, EG.HUNTS.map(H => { const open = EG.huntOpen(c, H), done = (c.huntsDone || []).includes(H.id);
       return h('div', { class: 'card', style: { opacity: open ? 1 : 0.55, borderColor: done ? H.color : '' } }, h('b', { style: { color: H.color } }, H.name), h('div', { class: 'muted small' }, H.desc),
-        h('div', { class: 'small', style: { marginTop: '4px' } }, `${H.stages.length} stages · foes around ${REALMS[H.realm].name} · pays ~${fmtMoney(c, H.pay * 0.6)}+`),
+        h('div', { class: 'small', style: { marginTop: '4px' } }, `${H.stages.length} stages · foes around ${REALMS[H.minEq].name}, final stage ${REALMS[H.minEq + 1].name} · pays ~${fmtMoney(c, H.pay * 0.6)}+`),
         done ? h('div', { class: 'small', style: { color: H.color } }, '✓ Slain this life') : !open ? h('div', { class: 'small muted' }, `Needs ${REALMS[H.minEq].name} (or the matching body tier)`) :
           h('button', { class: 'btn mini', style: { marginTop: '6px' }, disabled: !!c.hunt || !c.alive || c.age < 18, onclick: () => R.run({ id: 'hunt_start', cost: 'free', run: cc => EG.startHunt(cc, H.id) }) }, 'Take up the hunt')); })));
 }

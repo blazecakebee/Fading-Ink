@@ -1,21 +1,22 @@
+// v0.7.9: nerfed — each tier is ~10% weaker than the matching Qi realm (stages make the gap ~20%) and lives shorter.
 // v0.7.8: 13 tiers. The Unbound now stands level with Immortal Ascension.
 // The Severed Path: reject Qi entirely and temper the body until it rivals cultivators.
 // Each tier counts as a cultivation realm (eq) for power, stat caps, presence, Gates and the Guild —
 // but the body path gives far less lifespan, no Qi arts, no meditation and no sects that teach Qi.
 export const BODY_TIERS = [
   { id: 'b0', glyph: '人', name: 'Ordinary Body', eq: 0, cap: 100, life: 0, power: 1, need: 60, color: '#9a8f80' },
-  { id: 'b1', glyph: '鍛', name: 'Tempered Flesh', eq: 1, cap: 120, life: 3, power: 1.4, need: 130, color: '#d9a36a' },
-  { id: 'b2', glyph: '鐵', name: 'Iron Bone', eq: 2, cap: 140, life: 5, power: 1.9, need: 230, color: '#a9b3bf' },
-  { id: 'b3', glyph: '鋼', name: 'Steel Sinew', eq: 3, cap: 170, life: 8, power: 3.4, need: 380, color: '#cfd8e3' },
-  { id: 'b4', glyph: '岩', name: 'Bedrock Body', eq: 4, cap: 220, life: 10, power: 6.5, need: 600, color: '#b08a5a' },
-  { id: 'b5', glyph: '巨', name: 'Titan Frame', eq: 5, cap: 260, life: 12, power: 9.5, need: 900, color: '#e07a4a' },
-  { id: 'b6', glyph: '磐', name: 'Unbreakable Body', eq: 6, cap: 300, life: 14, power: 13, need: 1300, color: '#ffb02e' },
-  { id: 'b7', glyph: '逆', name: 'Heaven-Defying Body', eq: 7, cap: 340, life: 16, power: 19, need: 1800, color: '#ff4f4f' },
-  { id: 'b8', glyph: '破', name: 'Sky-Breaker Body', eq: 8, cap: 390, life: 18, power: 27, need: 2600, color: '#ff4fd8' },
-  { id: 'b9', glyph: '渡', name: 'Void-Walker Body', eq: 9, cap: 420, life: 18, power: 34, need: 3400, color: '#8fa8ff' },
-  { id: 'b10', glyph: '擔', name: 'World-Bearing Body', eq: 10, cap: 450, life: 20, power: 44, need: 4400, color: '#6fe0d0' },
-  { id: 'b11', glyph: '霸', name: 'Titan Sovereign', eq: 11, cap: 500, life: 22, power: 58, need: 5800, color: '#ffd36f' },
-  { id: 'b12', glyph: '無', name: 'The Unbound', eq: 12, cap: 600, life: 25, power: 118, need: Infinity, color: '#ffffff' },
+  { id: 'b1', glyph: '鍛', name: 'Tempered Flesh', eq: 1, cap: 115, life: 2, power: 1.2, need: 160, color: '#d9a36a' },
+  { id: 'b2', glyph: '鐵', name: 'Iron Bone', eq: 2, cap: 135, life: 4, power: 1.45, need: 300, color: '#a9b3bf' },
+  { id: 'b3', glyph: '鋼', name: 'Steel Sinew', eq: 3, cap: 160, life: 6, power: 2.7, need: 520, color: '#cfd8e3' },
+  { id: 'b4', glyph: '岩', name: 'Bedrock Body', eq: 4, cap: 200, life: 8, power: 5.4, need: 850, color: '#b08a5a' },
+  { id: 'b5', glyph: '巨', name: 'Titan Frame', eq: 5, cap: 230, life: 9, power: 8.6, need: 1300, color: '#e07a4a' },
+  { id: 'b6', glyph: '磐', name: 'Unbreakable Body', eq: 6, cap: 260, life: 10, power: 10.8, need: 1900, color: '#ffb02e' },
+  { id: 'b7', glyph: '逆', name: 'Heaven-Defying Body', eq: 7, cap: 300, life: 11, power: 16, need: 2700, color: '#ff4f4f' },
+  { id: 'b8', glyph: '破', name: 'Sky-Breaker Body', eq: 8, cap: 335, life: 12, power: 22.5, need: 3800, color: '#ff4fd8' },
+  { id: 'b9', glyph: '渡', name: 'Void-Walker Body', eq: 9, cap: 370, life: 12, power: 30, need: 5000, color: '#8fa8ff' },
+  { id: 'b10', glyph: '擔', name: 'World-Bearing Body', eq: 10, cap: 400, life: 13, power: 38, need: 6500, color: '#6fe0d0' },
+  { id: 'b11', glyph: '霸', name: 'Titan Sovereign', eq: 11, cap: 440, life: 14, power: 50, need: 8500, color: '#ffd36f' },
+  { id: 'b12', glyph: '無', name: 'The Unbound', eq: 12, cap: 500, life: 15, power: 105, need: Infinity, color: '#ffffff' },
 ];
 // signature techniques, unlocked by tier (they scale fully with the body's power, unlike ordinary punches)
 export const BODY_MOVES = {
@@ -23,6 +24,6 @@ export const BODY_MOVES = {
   bone_crush:       { tier: 2, icon: 'fist', name: 'Bone Crusher', cost: 10, dmg: [16, 24], acc: 0.88, stat: 'strength', body: true, pierce: true, info: 'Ignores Guard and Iron Skin.' },
   mountain_breaker: { tier: 3, icon: 'hammer', name: 'Mountain Breaker', cost: 14, dmg: [24, 36], acc: 0.8, stat: 'strength', body: true, stun: 0.25, info: 'A blow that can split stone. May stun.' },
   blood_rush:       { tier: 5, icon: 'heart', name: 'Blood Rush', cost: -20, dmg: [0, 0], acc: 1, guard: true, info: 'Force your heart to race: recover stamina and brace.' },
-  heaven_splitter:  { tier: 9, icon: 'lightning', name: 'Heaven Splitter', cost: 26, dmg: [70, 100], acc: 0.8, stat: 'strength', body: true, pierce: true, info: 'A blow that splits clouds. Ignores defences.' },
-  unbound_strike:   { tier: 6, icon: 'star', name: 'Unbound Strike', cost: 22, dmg: [44, 64], acc: 0.85, stat: 'strength', body: true, pierce: true, stun: 0.3, info: 'Everything you are in one strike. Ignores defences, may stun.' },
+  heaven_splitter:  { tier: 9, icon: 'lightning', name: 'Heaven Splitter', cost: 26, dmg: [62, 88], acc: 0.8, stat: 'strength', body: true, pierce: true, info: 'A blow that splits clouds. Ignores defences.' },
+  unbound_strike:   { tier: 6, icon: 'star', name: 'Unbound Strike', cost: 22, dmg: [42, 60], acc: 0.84, stat: 'strength', body: true, pierce: true, stun: 0.3, info: 'Everything you are in one strike. Ignores defences, may stun.' },
 };

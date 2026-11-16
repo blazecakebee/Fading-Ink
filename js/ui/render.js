@@ -486,11 +486,11 @@ async function enterGate(i, sweep) {
     else for (let f = 0; f < R.fights; f++) {
       const boss = f === R.fights - 1;
       const e = ENEMIES.find(x => x.id === (boss ? T.boss[g.rank] || pick(T.pool) : pick(T.pool)));
-      const er = Math.max(e.realm || 0, R.realm + (boss ? 1 : 0));
       // bosses of C-rank and up may be AWAKENED: much tougher, much richer. Big bosses get an entrance.
       if (boss && GATE_RANKS.indexOf(R) >= 2 && chance(0.25)) awakened = true;
+      const er = Math.max(e.realm || 0, R.realm + (boss && awakened ? 1 : 0));
       if (boss && (awakened || GATE_RANKS.indexOf(R) >= 4)) await ui.cinematic?.({ motif: awakened ? 'crack' : 'seal', color: awakened ? '#ff3a4a' : R.color, threads: 9, lines: [awakened ? 'The air in the Gate turns to iron.' : 'The deepest chamber of the Gate.', `${e.name} rises${awakened ? ', eyes burning — AWAKENED' : ''}.`], title: e.name, sub: awakened ? 'Awakened Boss' : `${g.rank}-rank Boss`, sound: 'heavy', hold: 1.6 });
-      let def = boss ? { ...e, realm: er, hp: Math.round(e.hp * (awakened ? 2.1 : 1.3)), str: Math.round(e.str * (awakened ? 1.4 : 1.1)), name: `${awakened ? 'AWAKENED' : 'BOSS'} · ${e.name}` } : { ...e, realm: Math.max(e.realm || 0, R.realm), name: `${e.name} (${f + 1}/${R.fights})` };
+      let def = boss ? { ...e, realm: er, hp: Math.round(e.hp * (awakened ? 1.6 : 1.4)), str: Math.round(e.str * (awakened ? 1.3 : 1.1)), name: `${awakened ? 'AWAKENED' : 'BOSS'} · ${e.name}` } : { ...e, realm: Math.max(e.realm || 0, R.realm), name: `${e.name} (${f + 1}/${R.fights})` };
       if (boss && (awakened || GATE_RANKS.indexOf(R) >= 4)) def = await bossPhase(cc, def, e, awakened);
       const r = await import('./combat.js').then(m => m.fight(def));
       if (r === 'win' && boss && (awakened || GATE_RANKS.indexOf(R) >= 4)) await ui.cinematic?.({ motif: 'triangle', color: awakened ? '#ff3a4a' : R.color, threads: 0, lines: [`${e.name} drops to one knee.`, awakened ? 'The burning light in its eyes gutters out.' : 'The Gate begins to close around you.'], title: 'Victory', sub: `${g.rank}-rank ${T.name}`, sound: 'milestone', hold: 1.6 });

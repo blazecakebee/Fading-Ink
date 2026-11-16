@@ -33,8 +33,8 @@ export const canRunStage = c => c.hunt && c.hunt.last !== G.world.year && c.acti
 export async function huntStage(c) {
   const H = HUNT[c.hunt.id], i = c.hunt.stage, last = i === H.stages.length - 1, e = ENEMIES.find(x => x.id === H.enemy) || ENEMIES[0];
   c.hunt.last = G.world.year; c.actions -= 1; // the runActivity wrapper takes the other action
-  const er = clamp(H.realm + Math.floor(i * 0.6), 0, REALMS.length - 1);
-  let def = { ...e, realm: er, hp: Math.round(e.hp * (2 + i * 0.6)), str: Math.round(e.str * (1.3 + i * 0.12)), name: `${last ? 'FINAL · ' : ''}${H.boss} — ${H.stages[i]}` };
+  const er = clamp(H.minEq + (last ? 1 : 0), 0, REALMS.length - 1); // the final stage is a realm above you
+  let def = { ...e, realm: er, hp: Math.round(e.hp * (2.2 + i * 0.3)), str: Math.round(e.str * (1.3 + i * 0.08)), name: `${last ? 'FINAL · ' : ''}${H.boss} — ${H.stages[i]}` };
   ui.cinematic?.({ motif: last ? 'triangle' : 'crack', color: H.color, lines: [`Year ${i + 1} of the hunt.`, H.stages[i] + '.'], title: H.boss, sub: last ? 'Final stage' : `Stage ${i + 1} / ${H.stages.length}`, sound: 'heavy', hold: 1.4 });
   if (ui.bossPhase) def = await ui.bossPhase(c, def, { ...e, name: H.boss }, last);
   const r = await ui.fight(def);
@@ -59,10 +59,10 @@ export async function huntStage(c) {
 
 // ---------------- Gods (super rare). They may bless you, or you may fight them for a sliver of their power.
 export const GODS = [
-  { id: 'pyre', name: 'The Ashen Sovereign', title: 'God of the Western Pyre', color: '#ff6a3d', motif: 'crack', bless: { power: 1.15, heal: 3, life: 15 }, shard: { power: 1.1, train: 1.1 }, blessTxt: '+15% power, +3 Health a year, +15 years', shardTxt: '+10% power, +10% training' },
+  { id: 'pyre', name: 'The Ashen Sovereign', title: 'God of the Western Pyre', color: '#ff6a3d', motif: 'crack', bless: { power: 1.15, heal: 2, life: 12 }, shard: { power: 1.06, train: 1.1 }, blessTxt: '+15% power, +2 Health a year, +12 years', shardTxt: '+6% power, +10% training' },
   { id: 'tide', name: 'Mother of Ten Thousand Tides', title: 'Goddess of the Deep', color: '#4fb3ff', motif: 'lotus', bless: { qi: 1.25, stressMult: 0.7, life: 20 }, shard: { qi: 1.12, breakthrough: 0.03 }, blessTxt: '+25% Qi, stress 30% slower, +20 years', shardTxt: '+12% Qi, +3% breakthrough' },
   { id: 'loom', name: 'The Weaver of Fates', title: 'Goddess of the Loom', color: '#c39bff', motif: 'helix', bless: { loot: 1.5, refund: 0.06, breakthrough: 0.08 }, shard: { loot: 1.2, breakthrough: 0.03 }, blessTxt: '+50% loot, 6% refunded actions, +8% breakthrough', shardTxt: '+20% loot, +3% breakthrough' },
-  { id: 'iron', name: 'The Iron Patriarch', title: 'God of War and Forges', color: '#cfd8e3', motif: 'sword', bless: { power: 1.3, train: 1.25 }, shard: { power: 1.15 }, blessTxt: '+30% power, +25% training', shardTxt: '+15% power' },
+  { id: 'iron', name: 'The Iron Patriarch', title: 'God of War and Forges', color: '#cfd8e3', motif: 'sword', bless: { power: 1.25, train: 1.2 }, shard: { power: 1.1 }, blessTxt: '+25% power, +20% training', shardTxt: '+10% power' },
   { id: 'jade', name: 'The Jade Emperor of the Ninth Sky', title: 'Ruler of Heaven', color: '#7fffb0', motif: 'seal', bless: { breakthrough: 0.12, qi: 1.15, pay: 1.3, life: 25 }, shard: { breakthrough: 0.05, pay: 1.1 }, blessTxt: '+12% breakthrough, +15% Qi, +30% income, +25 years', shardTxt: '+5% breakthrough, +10% income' },
   { id: 'moon', name: 'She Who Eats the Moon', title: 'Goddess of Night', color: '#e0d0f0', motif: 'enso', bless: { social: 1.4, study: 1.3, stressMult: 0.75 }, shard: { study: 1.15, social: 1.1 }, blessTxt: '+40% closeness, +30% study, stress 25% slower', shardTxt: '+15% study, +10% closeness' },
 ];
@@ -82,7 +82,7 @@ export const GOD_EVENT = { id: 'god', cond: c => c.age >= 16 && !c.flags.metGod,
   if (v === 'pray') { if (chance(0.03 + Math.max(0, c.stats.charisma - 50) / 2000)) return bless(c, g); stat(c, 'happiness', 5); return ui.log(`I prayed. ${g.name} did not answer, but the air felt warm for a while.`); }
   if (v !== 'fight') return ui.log(`I looked away. When I looked back, ${g.name} was gone.`);
   const e = ENEMIES.find(x => x.id === 'fallen_immortal');
-  let def = { ...e, kind: 'human', realm: REALMS.length - 1, hp: 2600, str: 240, agi: 130, name: g.name, moves: ['star_fall', 'void_rend', 'qilin_flame', 'thunder_fist'] };
+  let def = { ...e, kind: 'human', realm: REALMS.length - 1, hp: 7000, str: 340, agi: 130, name: g.name, moves: ['star_fall', 'void_rend', 'qilin_flame', 'thunder_fist'] };
   if (ui.bossPhase) def = await ui.bossPhase(c, def, { ...e, name: g.name }, true);
   const r = await ui.fight(def, { noFlee: true });
   if (r === 'win') {
