@@ -27,6 +27,7 @@ import { META } from '../core/state.js';
 import { GOD_EVENT, GOD_ACHIEVEMENTS } from './endgame.js';
 import { FORTUNE_EVENTS } from './fortune.js';
 import { TRAINER_SOCIAL, trainersYear } from './trainers.js';
+import { AGENT_SOCIAL, jobsYear } from './jobs.js';
 import { REJECT, BODY_ACTS, bodyYear, startPath, SEVERED_EVENTS, migrateBody } from './bodypath.js';
 import { ACHIEVEMENTS, ACH_BY_ID } from '../data/achievements.js';
 
@@ -34,7 +35,7 @@ import { ACHIEVEMENTS, ACH_BY_ID } from '../data/achievements.js';
 for (const t of TRAITS2) if (!TRAIT_BY_ID[t.id]) { TRAITS.push(t); TRAIT_BY_ID[t.id] = t; }
 
 // ---- social actions (children, blessing, moving in)
-SOCIAL.push(...FAMILY_SOCIAL, MOVE_IN, ...TRAINER_SOCIAL);
+SOCIAL.push(...FAMILY_SOCIAL, MOVE_IN, ...TRAINER_SOCIAL, ...AGENT_SOCIAL);
 // ---- more names (fewer repeats)
 for (const cty of COUNTRIES) { const x = MORE_NAMES[cty.id]; if (x && !cty._more) { cty._more = 1; cty.m = [...new Set([...cty.m, ...x.m.split(' ')])]; cty.f = [...new Set([...cty.f, ...x.f.split(' ')])]; } }
 // ---- martial arts schools replace the old all-you-can-eat class; private school, migration
@@ -106,7 +107,7 @@ HOOKS.inherit.push((old, c, ch) => {
   c.flags.intro = { motif: 'tree', color: '#7fe3a0', lines: [`${fullName(old)} has died: ${old.cause || 'their story ended'}.`, 'The ink of their life dries on the page.', 'Their blood runs on in you.'], title: fullName(c), sub: `Generation ${c.generation}`, sound: 'birth' };
 });
 HOOKS.yearStart.push(c => { newsYear(c); portfolioYear(c); birthYear(c, haveChild); });
-HOOKS.yearEnd.push(c => { if (c.alive) trainersYear(c); });
+HOOKS.yearEnd.push(c => { if (c.alive) { trainersYear(c); jobsYear(c); } });
 HOOKS.yearEnd.push(async c => {
   grantPoints(c); schoolYear(c); ownSectYear(c); bodyYear(c);
   if (!canGetQiIllness(c) && clearQiIllness(c)) ui.log('Without cultivated Qi in my body, the Qi sickness simply faded away.', 'good');

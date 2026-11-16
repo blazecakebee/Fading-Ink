@@ -1,7 +1,12 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.8.0';
+export const VERSION = '0.8.1';
 export const CHANGELOG = [
+  { v: '0.8.1', date: '2026-11-15', title: 'A tougher job market', notes: [
+    'Salaries cut by about 30% across the board. The top jobs were cut harder: Doctor, Lawyer, Software Engineer, Manager, Architect, and above all Sect Enforcer and Sect Elder.',
+    'Only some jobs are hiring each year, and the best-paid ones open rarely. The listings change every year, and getting hired is harder.',
+    'Job agents: hire a rookie agent, a seasoned recruiter or an elite headhunter for a yearly fee. They appear in the People tab under Teachers & Agents. They bring more openings each year, find leads tailored to you (ask them once a year), and raise your chance of being hired. If you can\'t pay the fee, they drop you.',
+  ] },
   { v: '0.8.0', date: '2026-11-15', title: 'Masters & craftsmanship', notes: [
     'Your teachers are real people now: your martial arts master, your Severed Path mentor and your sect master appear under Teachers in the People tab. Talk to them, take private lessons, and once they trust you (closeness 70+) and you are far enough along (Brown belt, Steel Sinew, or an inner disciple at Foundation Establishment), ask them for a hidden technique: eight in total, one per art. Teachers grow old and die, sometimes violently. When one dies, a senior student takes over.',
     'Item grades: gear and pills now come as Low, Mid or High grade. High-grade items are 20% stronger and Low-grade ones 20% weaker. Gate and Hunt loot rolls a grade, and luck helps a little.',

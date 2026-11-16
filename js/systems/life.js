@@ -40,7 +40,7 @@ export const fxRate = c => FX[c?.country] ?? 1;
 // Wages follow the local economy (a doctor in Cairo earns far less than one in New York) and are deliberately
 // modest: getting rich should take a career, luck or a cultivation empire — not a few years of clicking.
 export const WAGE = { us: 1.2, gb: 1.05, fr: 1.0, jp: 0.95, kr: 0.9, cn: 0.5, ru: 0.4, br: 0.3, mx: 0.3, in: 0.2, eg: 0.17, ng: 0.15 };
-export const INCOME = 0.45; // v0.7.9: harder (was 0.6)
+export const INCOME = 0.32; // v0.8.1: nerfed again (0.6 → 0.45 → 0.32)
 export const wage = c => (WAGE[c?.country] ?? country(c).econ) * INCOME;
 export const fmtMoney = (c, n) => { const v = Math.round(n * fxRate(c)); return (v < 0 ? '-' : '') + country(c).currency + Math.abs(v).toLocaleString(); };
 export function lifeStage(age) {

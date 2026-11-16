@@ -13,6 +13,7 @@ import { COND_BY_ID } from '../data/conditions.js';
 import { ITEMS } from '../data/items.js';
 import { METHODS } from '../data/realms.js';
 import { wage, rollQuality, tiered, QUALITY } from '../systems/life.js';
+import * as J from '../systems/jobs.js';
 import { comfort, willInfo, giftToChild, wealthLabel, statCap, softCap, gainMult, CAPPED, discount, priceFor, country, lifeStage, fullName, fmtMoney, realm as realmOf, lifespan, ageUp, money, stat, addItem, ACTIONS_PER_YEAR, SOCIAL_PER_YEAR } from '../systems/life.js';
 import { fatigueMult, realmName, qiCap, power, learnManual, breakthroughInfo, meridianInfo, meditateRange, HELPFUL_ITEMS, sectName, foundReq, foundSect, method, learnMethod } from '../systems/cultivation.js';
 import { relLabel, isFamily, bonds, bondList, favor } from '../systems/people.js';
@@ -317,7 +318,7 @@ export const TABS = {
 
   people() {
     const c = G.char;
-    const groups = [['Family', p => isFamily(p) && p.role !== 'Spouse'], ['Love', p => ['Spouse', 'Partner', 'Crush', 'Ex'].includes(p.role)], ['Friends & Players', p => p.role === 'Friend' || p.role === 'Co-op Friend'], ['School & Work', p => ['Classmate', 'Coworker', 'Acquaintance'].includes(p.role)], ['Teachers', p => !!p.trainer], ['Enemies', p => p.role === 'Enemy']];
+    const groups = [['Family', p => isFamily(p) && p.role !== 'Spouse'], ['Love', p => ['Spouse', 'Partner', 'Crush', 'Ex'].includes(p.role)], ['Friends & Players', p => p.role === 'Friend' || p.role === 'Co-op Friend'], ['School & Work', p => ['Classmate', 'Coworker', 'Acquaintance'].includes(p.role)], ['Teachers & Agents', p => !!p.trainer || !!p.agent], ['Enemies', p => p.role === 'Enemy']];
     const bl = bondList(c), best = bonds(c).best;
     return [h('h2', { class: 'display' }, 'People'), h('p', { class: 'muted' }, `Social actions left: ${c.social}/${c.maxSocial || SOCIAL_PER_YEAR}. Click someone to interact. Socialising trains Charisma; people at 75%+ may gift you things or teach you skills, recipes and cultivation methods.`),
       h('div', { class: 'box' }, h('h3', {}, 'Bonds'), bl.length ? bl.map(b => h('div', { style: { margin: '4px 0' } }, h('b', {}, `${b.label}: ${b.who.first}`), h('span', { class: 'muted' }, ' — ' + b.perks.join(' · ')))) : h('div', { class: 'muted' }, 'Get a friend to 80% closeness to make them your Best Friend, or a partner to 50%+, to unlock training, study, Qi and salary bonuses.')),
@@ -330,16 +331,25 @@ export const TABS = {
   career() {
     const c = G.char; const cur = c.job && CAREERS.find(j => j.id === c.job.id);
     // degree jobs need the matching major; university students can only work part-time
-    const eligible = j => c.age >= j.minAge && c.age <= (j.maxAge || 99) && c.edu.level >= j.edu && (!j.major || j.major.includes(c.edu.major)) && (c.edu.school !== 'University' || j.part) && Object.entries(j.stat || {}).every(([k, v]) => eff(c, k) >= v) && (!j.realm || c.qi.realm >= j.realm) && (!j.sect || c.sect === j.sect || true);
     return [h('h2', { class: 'display' }, 'Career'),
       cur ? h('div', { class: 'year-card', style: { marginTop: '10px' } }, h('h3', {}, `${cur.name}`), h('div', {}, `Years: ${c.job.years} · Performance ${c.job.perf}%`), bar('Performance', c.job.perf, 'var(--good)'),
         h('div', { class: 'row' }, h('button', { class: 'btn ghost', onclick: () => { logLine(`I quit my job as a ${cur.name}.`); c.job = null; render(); } }, 'Quit job')))
         : h('p', { class: 'muted' }, c.prison ? 'You are in prison.' : 'Unemployed.'),
-      h('h3', { class: 'display', style: { margin: '16px 0 8px' } }, 'Job listings'),
-      h('div', { class: 'grid2' }, CAREERS.map(j => h('div', { class: 'card' }, h('h4', {}, j.name, j.part ? h('span', { class: 'muted' }, ' (part-time)') : ''),
+      (() => { const A = J.agentOf(c);
+        return h('div', { class: 'box', style: { marginTop: '12px' } }, h('h3', {}, icon('career', 'sm'), ' Job agent'),
+          A ? [h('div', {}, h('b', {}, `${A.first} ${A.last}`), h('span', { class: 'muted' }, ` · ${J.AGENTS[A.agent.tier].name} · ${fmtMoney(c, J.agentFee(c, A.agent.tier))} a year`)),
+            h('div', { class: 'muted small' }, `+${Math.round(J.AGENTS[A.agent.tier].hire * 100)}% hiring chance, more openings each year. Ask them for leads in the People tab (1 social, once a year).`)]
+            : [h('div', { class: 'muted small' }, 'Only some jobs are hiring each year. A job agent finds openings you qualify for and talks you up — for a yearly fee.'),
+              h('div', { class: 'row', style: { marginTop: '8px', flexWrap: 'wrap' } }, Object.entries(J.AGENTS).map(([k, a]) => { const fee = J.agentFee(c, k);
+                return h('button', { class: 'btn ghost', title: a.desc, disabled: !c.alive || c.age < 15 || c.money < fee, onclick: () => { const t = J.hireAgent(c, k); if (t) { logLine(t, 'good'); fx('coin'); render(); } } }, `${a.name} · ${fmtMoney(c, fee)}/yr`); }))]); })(),
+      h('h3', { class: 'display', style: { margin: '16px 0 8px' } }, `Hiring this year (${J.listed(c).length} of ${CAREERS.length} jobs)`),
+      J.listed(c).length ? null : h('p', { class: 'muted' }, 'Nobody is hiring right now. Try again next year, or get a job agent.'),
+      h('div', { class: 'grid2' }, J.listed(c).map(j => { const ok = J.eligible(c, j), lead = J.jobBoard(c).leads.includes(j.id);
+        return h('div', { class: 'card' + (ok ? '' : ' locked') }, h('h4', {}, j.name, j.part ? h('span', { class: 'muted' }, ' (part-time)') : '', lead ? h('span', { class: 'grade', style: { background: '#7fd1ff' } }, 'Agent lead') : ''),
         h('div', { class: 'muted' }, `${fmtMoney(c, j.pay * wage(c) * (j.part ? 0.5 : 1))}/yr · age ${j.minAge}+ · ${EDUCATION[j.edu]}${j.major ? ' in ' + j.major.join(' or ') : ''}${j.stat ? ' · ' + Object.entries(j.stat).map(([k, v]) => `${k} ${v}+`).join(', ') : ''}${j.realm ? ' · ' + REALMS[j.realm].name : ''}`),
-        h('button', { class: 'btn', style: { marginTop: '8px' }, disabled: !c.alive || c.prison || c.actions <= 0 || !eligible(j) || c.job?.id === j.id,
-          onclick: () => runActivity({ id: 'apply_' + j.id, cat: 'work', run: cc => { if (chance(0.45 + cc.stats.charisma / 250 + cc.stats.smarts / 400)) { cc.job = { id: j.id, years: 0, perf: 50 }; return { text: `I was hired as a ${j.name}!`, cls: 'good', big: true }; } return { text: `My application to be a ${j.name} was rejected.`, cls: 'bad' }; } }) }, 'Apply (⚡1)'))))];
+        h('div', { class: 'row', style: { marginTop: '8px' } }, h('button', { class: 'btn', disabled: !c.alive || c.prison || c.actions <= 0 || !ok || c.job?.id === j.id,
+          onclick: () => runActivity({ id: 'apply_' + j.id, cat: 'work', run: cc => { const b = J.jobBoard(cc); if (chance(J.hireChance(cc, j))) { cc.job = { id: j.id, years: 0, perf: 50 }; b.ids = b.ids.filter(x => x !== j.id); b.leads = b.leads.filter(x => x !== j.id); return { text: `I was hired as a ${j.name}!`, cls: 'good', big: true }; } return { text: `My application to be a ${j.name} was rejected.`, cls: 'bad' }; } }) }, 'Apply (⚡1)'),
+          ok ? h('span', { class: 'muted small' }, `${Math.round(J.hireChance(c, j) * 100)}% chance`) : h('span', { class: 'muted small' }, 'Not qualified'))); }))];
   },
 
   education() {
