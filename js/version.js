@@ -1,7 +1,13 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.1';
+export const VERSION = '0.9.2';
 export const CHANGELOG = [
+  { v: '0.9.2', date: '2026-11-16', title: 'Story first', notes: [
+    'The Life tab is now a story stage: your last years scroll like a chronicle, with "Age N" dividers. Big moments stand out with a coloured edge, quiet ones fade back, and the current year glows.',
+    'No more walls of buttons: actions live in a compact dock of categories under the story. Tap one to open just those actions, tap again to close. Pins (up to 4), Repeat routine and the batch slider sit right above it.',
+    'Quiet years aren\'t empty any more: most years open with a short vignette suited to your age (childhood, teens, adult life, old age, or the life of a cultivator).',
+    'Cinematics have far more variety: over 120 new opening lines across breakthroughs, tribulations, bosses, victories, births, deaths, weddings, sects, hunts, gods, Qi changes and dark deeds. The visual motif varies too, and a sensory detail about the season, the weather and your city is woven in. Scenes are drawn like a shuffled deck, so you see every variation before any repeats.',
+  ] },
   { v: '0.9.1', date: '2026-11-16', title: 'Sect & Guild, redesigned', notes: [
     'The Sect & Guild tab has been rebuilt to match the rest of the game. Each organisation gets a header card with its emblem, your rank, stat tiles and a progress bar to your next rank.',
     'Missions, Guild contracts, the Exchange and Sect Halls are now card grids, with colour-coded difficulty and level pips for halls. Relations show as tidy cards, and Guild requirements as chips.',

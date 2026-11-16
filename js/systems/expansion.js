@@ -38,6 +38,7 @@ import { PRISON_ACTS, PRISON_CAT, lawYear } from './law.js';
 import { DARK_EVENTS, REHAB, addictionYear } from '../data/darkEvents.js';
 import { IDENTITY_ACTS, attractedTo, sexualityOf } from './selfhood.js';
 import { appearanceYear } from './appearance.js';
+import { ambientLine } from '../data/storyPool.js';
 import { CATEGORIES } from '../data/activities.js';
 import { onBodyPath as onBodyPathQ } from './path.js';
 import { rollTemper, temperYear, TEMPER } from '../data/temper.js';
@@ -123,6 +124,7 @@ HOOKS.inherit.push((old, c, ch) => {
   inheritHeirlooms(old, c); trainedHeir(ch, c);
   c.flags.intro = { motif: 'tree', color: '#7fe3a0', lines: [`${fullName(old)} has died: ${old.cause || 'their story ended'}.`, 'The ink of their life dries on the page.', 'Their blood runs on in you.'], title: fullName(c), sub: `Generation ${c.generation}`, sound: 'birth' };
 });
+HOOKS.yearStart.push(c => { if (c.alive && Math.random() < 0.7) ui.log(ambientLine(c), 'ambient'); }); // a quiet line of atmosphere for the new year
 HOOKS.yearStart.push(c => { newsYear(c); portfolioYear(c); birthYear(c, haveChild); });
 HOOKS.yearEnd.push(async c => { if (c.alive) { trainersYear(c); jobsYear(c); gigYear(c); appearanceYear(c); addictionYear(c); if (!c.alive) return; temperYear(c, ui, stat); legacyYear(c); renownYear(c); await lawYear(c); if (!c.alive) return; if (inOtherworld(c)) await otherworldYear(c); if (!c.alive) return; if (!isFinite(c.qi.qi) || isNaN(c.qi.qi)) c.qi.qi = (await import('./cultivation.js')).qiCap(c); if (c.qi.realm >= 1 && !c.qiType && !onBodyPathQ(c)) awakenQi(c); } });
 HOOKS.birth.push(c => { rollTemper(c); legacyBirth(c); c.birthSex = c.gender; sexualityOf(c); ui.log(`Personality: ${c.temper.map(id => TEMPER[id].name).join(', ')}.`); });
@@ -151,7 +153,7 @@ HOOKS.death.push(c => {
 // ---- install UI-side pieces (called by main.js once the UI hooks exist)
 export async function installExpansion() {
   const [{ cinematic }, { TABS, render, runActivity }, P] = await Promise.all([import('../ui/cinematic.js'), import('../ui/render.js'), import('../ui/expansionPanels.js')]);
-  ui.cinematic = o => cinematic(o);
+  const SP = await import('../data/storyPool.js'); ui.cinematic = o => cinematic(SP.varyCinematic(o)); // v0.9.2 varied scenes
   const AR = await import('../ui/arena.js'); const { S } = await import('../settings.js');
   ui.arena = o => AR.arena(o); ui.arenaOn = () => S().arenaFights !== false;
   ui.bossPhase = (await import('../ui/render.js')).bossPhase;

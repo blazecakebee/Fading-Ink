@@ -226,7 +226,7 @@ function actBtn(a) {
   const c = G.char, pins = (META.settings.pins ||= []), pinned = pins.includes(a.id);
   return h('button', { class: 'act' + (RISKY.includes(a.cat) ? ' risky' : ''), disabled: (a.cost === 's' ? c.social : c.actions) <= 0, onclick: e => runActivity(a, e.currentTarget) },
     icon(a.icon), h('span', {}, a.name, c.counts[a.id] ? h('span', { class: 'meta' }, `done ${c.counts[a.id]}×`) : null),
-    h('span', { class: 'pin' + (pinned ? ' on' : ''), title: pinned ? 'Unpin' : 'Pin to the top', onclick: e => { e.stopPropagation(); if (pinned) META.settings.pins = pins.filter(x => x !== a.id); else if (pins.length < 6) pins.push(a.id); else return toast('You can pin up to 6 actions.'); save(); render(); } }, pinned ? '★' : '☆'),
+    h('span', { class: 'pin' + (pinned ? ' on' : ''), title: pinned ? 'Unpin' : 'Pin to the top', onclick: e => { e.stopPropagation(); if (pinned) META.settings.pins = pins.filter(x => x !== a.id); else if (pins.length < 4) pins.push(a.id); else return toast('You can pin up to 4 actions.'); save(); render(); } }, pinned ? '★' : '☆'),
     h('span', { class: 'cost' }, a.cost === 's' ? '💬1' : '⚡1'));
 }
 async function runMany(list, el) { // runs a list of activities in order while actions last, with one combined popup
@@ -240,7 +240,7 @@ function quickBar(c) {
   const rep = av.filter(a => REPEATABLE.includes(a.id)); G.ui.batch = rep.find(a => a.id === G.ui.batch?.id) ? G.ui.batch : { id: top[0]?.id || rep[0]?.id, n: 1 };
   const n = Math.max(1, Math.min(G.ui.batch.n || 1, c.actions || 1));
   return h('div', { class: 'quickbar' },
-    pins.length ? h('div', { class: 'acts pinned' }, pins.map(actBtn)) : h('div', { class: 'muted small' }, 'Tip: tap ☆ on any action to pin it here.'),
+    pins.length ? h('div', { class: 'acts pinned' }, pins.slice(0, 4).map(actBtn)) : h('div', { class: 'muted small' }, 'Tap ☆ on any action to pin it here (up to 4).'),
     h('div', { class: 'qb-row' },
       top.length ? h('button', { class: 'btn ghost mini', disabled: c.actions <= 0, title: top.map(a => a.name).join(', '), onclick: e => { const seq = []; while (seq.length < c.actions) seq.push(...top); runMany(seq.slice(0, c.actions), e.currentTarget); } }, `↻ Repeat routine: ${top.map(a => a.name.replace(/ \(.*\)$/, '')).join(', ')}`) : null,
       rep.length ? h('span', { class: 'batch' }, h('select', { onchange: e => { G.ui.batch = { id: e.target.value, n }; render(); } }, rep.map(a => h('option', { value: a.id, selected: a.id === G.ui.batch.id }, a.name))),
@@ -248,23 +248,25 @@ function quickBar(c) {
         h('button', { class: 'btn mini', disabled: c.actions <= 0, onclick: e => { const a = rep.find(x => x.id === G.ui.batch.id); runMany(Array(Math.min(G.ui.batch.n || 1, c.actions)).fill(a), e.currentTarget); } }, 'Do it')) : null));
 }
 export const TABS = {
+  // v0.9.2 Story stage: the last years scroll like a chronicle; actions live in a compact dock below
   life() {
-    const c = G.char, cur = c.log[c.log.length - 1] || { lines: [] };
-    const flavor = c.age === 0 ? 'A new story begins in faded ink.' : c.prison ? 'Cold walls. Counting days.' : pick(['The city hums. Somewhere, a Gate whispers.', 'Another year written into the ledger.', 'The ink of your life is still wet.']);
-    const card = h('div', { class: 'year-card' }, h('h2', { class: 'display' }, `AGE ${c.age}`, h('small', {}, '· ' + lifeStage(c.age))),
-      h('div', { class: 'feed' }, cur.lines.length ? cur.lines.map((l, i) => h('p', { class: l.c + (i >= seenLines(c, cur) ? ' fresh' : '') }, l.t)) : h('p', { class: 'muted' }, flavor)),
-    );
-    if (!c.alive) return [card, h('div', { class: 'row', style: { marginTop: '16px' } }, h('button', { class: 'btn', onclick: () => import('./legacyPanel.js').then(m => m.deathScreen()) }, 'Continue your legacy'))];
-    const cats = CATEGORIES.map(cat => {
+    const c = G.char, cur = c.log[c.log.length - 1] || { lines: [] }, fresh = seenLines(c, cur);
+    const KEY = ['good', 'bad', 'big', 'qi', 'death'];
+    const years = c.log.slice(-7).map((y, yi, arr) => { const now = yi === arr.length - 1;
+      return h('div', { class: 'st-year' + (now ? ' now' : '') }, h('div', { class: 'st-age' }, h('span', {}, `Age ${y.age}`)),
+        ...(y.lines.length ? y.lines : [{ t: now ? (c.age === 0 ? 'A new story begins in faded ink.' : 'The year is still unwritten.') : 'A quiet year.', c: 'ambient' }]).map((l, li) =>
+          h('p', { class: 'st-line ' + (l.c || '') + (KEY.some(k => (l.c || '').includes(k)) ? ' key' : '') + (now && li >= fresh ? ' fresh' : '') }, l.t))); });
+    const stage = h('div', { class: 'story-stage' }, ...years);
+    requestAnimationFrame(() => { stage.scrollTop = stage.scrollHeight; });
+    if (!c.alive) return [stage, h('div', { class: 'row', style: { marginTop: '16px' } }, h('button', { class: 'btn', onclick: () => import('./legacyPanel.js').then(m => m.deathScreen()) }, 'Continue your legacy'))];
+    const cats = CATEGORIES.map(cat => { if (cat.id === 'cultivation' && (!c.qi.known || onBodyPath(c))) return null;
       const acts = ACTIVITIES.filter(a => a.cat === cat.id && c.age >= (a.minAge ?? 0) && c.age <= (a.maxAge ?? 999) && (!a.need || a.need(c)));
-      if (cat.id === 'cultivation' && (!c.qi.known || onBodyPath(c))) return null;
-      if (!acts.length) return null;
-      const d = h('details', { class: 'cat' + (RISKY.includes(cat.id) ? ' risky' : ''), open: G.ui.openCats[cat.id] ?? META.settings.autoOpenCats }, h('summary', {}, icon(cat.icon), cat.name, h('span', { class: 'n' }, `${acts.length} activit${acts.length === 1 ? 'y' : 'ies'}`)),
-        h('div', { class: 'acts' }, acts.map(actBtn)));
-      d.addEventListener('toggle', () => { G.ui.openCats[cat.id] = d.open; });
-      return d;
-    }).filter(Boolean);
-    return [card, quickBar(c), h('div', { class: 'section-title display' }, 'What do you do this year?', h('span', { class: 'count' }, `${c.actions} actions left`)), ...cats];
+      return acts.length ? { cat, acts } : null; }).filter(Boolean);
+    let open = cats.find(x => x.cat.id === G.ui.dock);
+    const dock = h('div', { class: 'dock' }, cats.map(({ cat, acts }) => h('button', { class: 'dock-chip' + (open?.cat.id === cat.id ? ' on' : '') + (RISKY.includes(cat.id) ? ' risky' : ''), onclick: () => { fx('click'); G.ui.dock = G.ui.dock === cat.id ? null : cat.id; render(); } }, icon(cat.icon, 'sm'), cat.name, h('span', { class: 'n' }, acts.length))));
+    const panel = open ? h('div', { class: 'dock-panel' + (RISKY.includes(open.cat.id) ? ' risky' : '') }, h('div', { class: 'row', style: { justifyContent: 'space-between' } }, h('b', {}, icon(open.cat.icon, 'sm'), ' ', open.cat.name), h('button', { class: 'btn ghost mini', onclick: () => { G.ui.dock = null; render(); } }, 'Close ✕')),
+      h('div', { class: 'acts' }, open.acts.map(actBtn))) : null;
+    return [stage, h('div', { class: 'year-bar' }, h('span', { class: 'display' }, `This year`), h('span', { class: 'muted small' }, `${c.actions} action${c.actions === 1 ? '' : 's'} · ${c.social} social left`)), quickBar(c), dock, panel];
   },
 
   character() {
