@@ -48,8 +48,20 @@ export function familyAtBirth(c, wealth, parents) {
   c.people.filter(p => p.role === 'Brother').forEach(p => p.gender = 'M');
 }
 
+// Grief: losing someone you're close to hurts for years, raises stress, and can tip you into depression.
+export function grieve(c, p, fam) {
+  const close = p.close ?? 50; const core = ['Father', 'Mother', 'Spouse', 'Son', 'Daughter'].includes(p.role) || p.id === c.partnerId;
+  const weight = (core ? 1 : fam ? 0.7 : 0.5) * (0.4 + close / 100); if (!fam && close < 50) return; // acquaintances don't break your heart
+  c.stats.happiness = clamp(c.stats.happiness - Math.round(20 + 25 * weight)); c.stats.stress = clamp(c.stats.stress + Math.round(10 + 20 * weight));
+  c.grief = { who: p.first, years: core ? 3 : 2, weight: Math.max(c.grief?.weight || 0, weight) };
+  ui.log(core ? `Losing ${p.first} broke something in me. The house is too quiet.` : `${p.first}'s death hit me harder than I expected.`, 'bad');
+  import('./health.js').then(m => { if (chance(0.12 * weight + (c.stats.happiness < 30 ? 0.15 : 0))) m.addCondition(c, 'depression'); if (core) m.trauma(c, 0.15); });
+}
+// mourning lingers for a few years
+export function griefYear(c) { const g = c.grief; if (!g || g.years <= 0) return; c.stats.happiness = clamp(c.stats.happiness - Math.round(4 + 6 * g.weight)); c.stats.stress = clamp(c.stats.stress + 3); g.years--; if (!g.years) { ui.log(`The ache of losing ${g.who} has finally dulled.`); c.grief = null; } else ui.log(`I still think about ${g.who} every day.`, 'bad'); }
 // Each year: everyone ages, relationships drift, new people appear, some die.
 export function yearlyPeople(c) {
+  griefYear(c);
   for (const p of c.people) {
     if (!p.alive) continue;
     p.age++;
@@ -60,7 +72,7 @@ export function yearlyPeople(c) {
       p.alive = false;
       const fam = ['Father', 'Mother', 'Brother', 'Sister', 'Spouse', 'Son', 'Daughter'].includes(p.role);
       ui.log(`My ${p.role.toLowerCase()} ${p.first} died at age ${p.age}.`, fam ? 'death' : 'bad');
-      if (fam) { c.stats.happiness = clamp(c.stats.happiness - 30); if (['Father', 'Mother', 'Spouse', 'Son', 'Daughter'].includes(p.role)) import('./health.js').then(m => m.trauma(c, 0.15)); }
+      grieve(c, p, fam);
       if (p.id === c.partnerId) c.partnerId = null;
       if (['Father', 'Mother'].includes(p.role) && c.age < 18 && !c.people.some(q => ['Father', 'Mother'].includes(q.role) && q.alive)) c.flags.orphan = true;
     }

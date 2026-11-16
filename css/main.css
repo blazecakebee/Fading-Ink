@@ -577,3 +577,8 @@ body:not([data-theme='clean']):not([data-theme='parchment']):not([data-theme='pa
 /* artificial (prosthetic) parts */
 .bpart.artificial { stroke: #bfe4ff; stroke-width: 1.2; filter: drop-shadow(0 0 3px #5fb4ff); }
 .blist-inj.artificial { background: linear-gradient(90deg, #1f5a8a88, transparent); color: #d6ecff; }
+/* trait codex tiers fold away */
+.codex-tier { border-top: 1px solid var(--border-soft, #ffffff14); padding: 4px 0; }
+.codex-tier > summary { cursor: pointer; list-style: none; padding: 6px 0; }
+.codex-tier > summary::before { content: '▸ '; } .codex-tier[open] > summary::before { content: '▾ '; }
+.codex-tier > summary::-webkit-details-marker { display: none; }

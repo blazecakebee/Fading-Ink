@@ -69,7 +69,7 @@ export function stat(c, k, d) {
     if (d > 0) { (c.lastTrained ||= {})[k] = c.age; const x = d * gainMult(c, k); d = Math.floor(x) + (Math.random() < x % 1 ? 1 : 0); }
     c.stats[k] = clamp(Math.round((c.stats[k] ?? 50) + d), 0, statCap(c)); return c.stats[k];
   }
-  if (k === 'stress' && d > 0) d *= traitMult(c, 'stressMult');
+  if (k === 'stress' && d > 0) d *= 1.6 * traitMult(c, 'stressMult'); // stress piles up fast
   if (d > 0 && TRAINABLE.includes(k)) (c.lastTrained ||= {})[k] = c.age; // training resets decay
   c.stats[k] = clamp(Math.round((c.stats[k] ?? 50) + d));
   return c.stats[k];
@@ -188,7 +188,7 @@ export async function ageUp() {
   if (c.stats.health < target) stat(c, 'health', Math.round((c.stats.health < 40 ? ri(5, 10) : c.age < 18 ? ri(3, 7) : ri(2, 5)) * healMult(c))); // kidneys & gut matter // the lower you are, the harder your body fights back else if (c.age > 30) stat(c, 'health', -ri(0, c.age > 65 ? 4 : 2));
   if (c.qi.realm) stat(c, 'health', c.qi.realm * 2);
   if (traitVal(c, 'heal')) stat(c, 'health', traitVal(c, 'heal'));
-  stat(c, 'stress', -ri(2, 6));
+  stat(c, 'stress', -ri(1, 4)); // and drains slowly
   if (c.stats.stress > 75) { stat(c, 'health', -3); stat(c, 'happiness', -5); }
   if (has(c, 'null_ptr')) { const k = pick(STAT_KEYS.filter(k => k !== 'stress')); c.stats[k] = CAPPED.includes(k) ? statCap(c) : 100; ui.log(`ERR 0x${ri(4096, 65535).toString(16)}: ${k} = 100`, 'glitch'); }
 
