@@ -1,3 +1,4 @@
+import { gearSprite } from './gearSprites.js';
 // Inventory, Crafting & Gear, and Health tabs.
 import { G } from '../core/state.js';
 import { h, icon } from './dom.js';
@@ -24,7 +25,7 @@ export function inventoryTab() {
   const c = G.char; c.gear ||= {};
   const items = Object.entries(c.inv).filter(([, n]) => n > 0);
   const card = (id, n) => { const it = ITEMS[id] || { name: id, icon: 'chest', desc: '' };
-    return h('div', { class: 'card item' }, h('div', { class: 'row' }, icon(it.icon, 'lg'), h('div', { style: { flex: 1 } }, h('b', {}, it.name), h('span', { class: 'qty' }, `×${n}`), h('div', { class: 'muted small' }, it.desc || statLine(it.stats)))),
+    return h('div', { class: 'card item' }, h('div', { class: 'row' }, it.type === 'gear' ? gearSprite(id, 40) : icon(it.icon, 'lg'), h('div', { style: { flex: 1 } }, h('b', {}, it.name), h('span', { class: 'qty' }, `×${n}`), h('div', { class: 'muted small' }, it.desc || statLine(it.stats)))),
       h('div', { class: 'row', style: { marginTop: '6px' } },
         it.type === 'gear' ? h('button', { class: 'btn', onclick: () => { equip(c, id); fx('action'); render(); } }, `Equip (${SLOTS[it.slot]})`) : null,
         ['heal', 'marrow', 'incense', 'ink', 'recipe'].includes(it.use) ? h('button', { class: 'btn', onclick: () => { const t = useItem(c, id); if (t) { logLine(t, 'good'); fx('action'); } render(); } }, 'Use') : null,
@@ -37,7 +38,7 @@ export function inventoryTab() {
     h('div', { class: 'grid3', style: { marginTop: '10px' } },
       h('div', { class: 'box' }, h('h3', {}, 'Wallet'), h('table', { class: 'kv' }, [['Cash', fmtMoney(c, c.money)], ['Investments', fmtMoney(c, c.stocks)], ['Net worth', fmtMoney(c, c.money + c.stocks + c.assets.reduce((s, a) => s + a.value, 0))]].map(([a, b]) => h('tr', {}, h('td', {}, a), h('td', {}, b))))),
       h('div', { class: 'box' }, h('h3', {}, 'Equipped'), Object.entries(SLOTS).map(([slot, label]) => { const id = c.gear[slot];
-        return h('div', { class: 'row', style: { margin: '4px 0' } }, h('span', { class: 'muted', style: { width: '70px' } }, label), id ? [icon(ITEMS[id].icon, 'sm'), h('b', {}, ITEMS[id].name), h('button', { class: 'btn ghost mini', onclick: () => { unequip(c, slot); render(); } }, 'Remove')] : h('span', { class: 'muted' }, '—')); }),
+        return h('div', { class: 'row', style: { margin: '4px 0' } }, h('span', { class: 'muted', style: { width: '70px' } }, label), id ? [gearSprite(id, 22), h('b', {}, ITEMS[id].name), h('button', { class: 'btn ghost mini', onclick: () => { unequip(c, slot); render(); } }, 'Remove')] : h('span', { class: 'muted' }, '—')); }),
         h('div', { class: 'muted small', style: { marginTop: '6px' } }, statLine(gs) ? 'In combat: ' + statLine(Object.fromEntries(Object.entries(gs).filter(([, v]) => v))) : 'No gear bonuses.'))),
     ...TYPE_ORDER.map(([type, label]) => { const list = items.filter(([id]) => (ITEMS[id]?.type || 'material') === type); if (!list.length) return null;
       return [h('h3', { class: 'display', style: { margin: '18px 0 8px' } }, label), h('div', { class: 'grid2' }, list.map(([id, n]) => card(id, n)))]; }),

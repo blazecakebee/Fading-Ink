@@ -9,6 +9,7 @@ import { ITEMS } from '../data/items.js';
 import { BODY_TIERS, BODY_MOVES } from '../data/bodypath.js';
 import { REALMS } from '../data/realms.js';
 import { drawFullBody } from './portrait.js';
+import { gearSprite } from './gearSprites.js';
 import { heightNow } from '../systems/body.js';
 import { outfitFor } from '../data/clothing.js';
 import { onBodyPath, bodyTier } from '../systems/path.js';
@@ -114,7 +115,7 @@ export function wardrobeTab() {
       h('p', { class: 'muted small' }, 'Everyday weapons and armour. Hover to see them on you. Legendary gear only drops in high-rank Gates. Equip gear from your Inventory.'),
       h('div', { class: 'grid2' }, armory.map(([id, it]) => { const pr = priceFor(c, Math.round(it.price * country(c).econ));
         return h('div', { class: 'card', style: { cursor: 'pointer' }, ...hover({ gear: id }, it.name), onclick: e => { if (e.target.tagName !== 'BUTTON') look({ gear: id }, it.name); } },
-          h('div', { class: 'row', style: { alignItems: 'center', flexWrap: 'nowrap' } }, h('span', { style: { background: '#0003', borderRadius: '6px', padding: '3px', marginRight: '6px', display: 'inline-flex' } }, icon(it.icon)), h('div', {}, h('b', {}, it.name), h('div', { class: 'muted small' }, `${it.desc} · ${fmtMoney(c, pr)}${c.inv[id] ? ` · owned ×${c.inv[id]}` : ''}`))),
+          h('div', { class: 'row', style: { alignItems: 'center', flexWrap: 'nowrap' } }, h('span', { style: { background: '#0004', borderRadius: '8px', padding: '3px', marginRight: '8px', display: 'inline-flex' } }, gearSprite(id, 40)), h('div', {}, h('b', {}, it.name), h('div', { class: 'muted small' }, `${it.desc} · ${fmtMoney(c, pr)}${c.inv[id] ? ` · owned ×${c.inv[id]}` : ''}`))),
           h('button', { class: 'btn mini', style: { marginTop: '6px' }, disabled: c.money < pr || c.age < 12, onclick: () => R.run({ id: 'buy_gear', cost: 'free', run: cc => { money(cc, -pr); addItem(cc, id); return `I bought a ${it.name}.`; } }) }, 'Buy')); }))))];
 }
 
