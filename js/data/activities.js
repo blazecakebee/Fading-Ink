@@ -1,14 +1,15 @@
+import { eff } from '../systems/body.js';
 // Activities the player can spend Actions on. cost: 'a' = Action, 's' = Social Action.
 // run(c) returns a string (chronicle text) or {text, cls, big}. Returning null means "cancelled, refund".
 import { ui } from '../core/bus.js';
 import { ri, pick, chance, clamp } from '../core/rng.js';
-import { stat, money, fmtMoney, country, addItem, die, priceFor } from '../systems/life.js';
+import { stat, money, fmtMoney, country, addItem, die, priceFor, wage } from '../systems/life.js';
 import { meditate, openMeridian, breakthrough, learnManual, qiCap, learnMethod } from '../systems/cultivation.js';
 import { METHODS } from './realms.js';
 import { traitMult, has, earnTrait } from '../systems/traits.js';
 import { makePerson, gainClose, bondBonus } from '../systems/people.js';
 import { moodMult, addCondition } from '../systems/health.js';
-import { addMuscle } from '../systems/body.js';
+import { addMuscle, studyMult } from '../systems/body.js';
 import { known as knownRecipes } from '../systems/crafting.js';
 import { RECIPES, ITEMS } from './items.js';
 import { ENEMIES, GATE_RANKS, makeGate, GATE_TYPES } from './combat.js';
@@ -36,7 +37,7 @@ const fight = async (c, id, mods = {}) => {
   if (r === 'win') { c.wins++; if (c.wins >= 5) earnTrait(c, 'brawler'); }
   return r;
 };
-const study = c => traitMult(c, 'study') * bondBonus(c, 'study') * moodMult(c);
+const study = c => traitMult(c, 'study') * bondBonus(c, 'study') * moodMult(c) * studyMult(c);
 const train = c => traitMult(c, 'train') * bondBonus(c, 'train') * moodMult(c);
 const g = (c, a, b) => Math.max(1, Math.round(ri(a, b) * train(c)));
 
@@ -98,7 +99,7 @@ export const ACTIVITIES = [
   { id: 'study', cat: 'school', name: 'Study harder', icon: 'education', minAge: 6, need: c => !!c.edu.school, run: c => { c.edu.grades = clamp(c.edu.grades + Math.round(ri(4, 9) * study(c))); stat(c, 'smarts', 2); stat(c, 'stress', 4); return `I studied late into the night. Grades: ${c.edu.grades}%.`; } },
   { id: 'skip', cat: 'school', name: 'Skip class', icon: 'beer', minAge: 10, need: c => !!c.edu.school, run: c => { c.edu.grades = clamp(c.edu.grades - 6); stat(c, 'happiness', 6); return chance(0.3) ? { text: 'I skipped class and got caught. Detention.', cls: 'bad' } : 'I skipped class and spent the day at the arcade.'; } },
   { id: 'university', cat: 'school', name: 'Apply to university', icon: 'education', minAge: 18, maxAge: 60, need: c => c.edu.level === 1 && c.edu.school !== 'University', run: async c => {
-      if (c.edu.grades < 55 && c.stats.smarts < 60) return { text: 'My university application was rejected.', cls: 'bad' };
+      if (c.edu.grades < 55 && eff(c, 'smarts') < 60) return { text: 'My university application was rejected.', cls: 'bad' };
       if (!chance({ developing: 0.5, emerging: 0.85 }[country(c).tier] ?? 1)) return { text: 'There were far too few university places for everyone who applied. I didn\'t get one this year.', cls: 'bad' };
       const major = await ui.choice({ title: 'Accepted!', text: 'Choose your major.', icon: 'education', options: MAJORS.map(m => ({ label: m, value: m })) });
       if (!major) return null;
@@ -107,8 +108,8 @@ export const ACTIVITIES = [
 
   // ---- WORK & MONEY
   { id: 'work_hard', cat: 'work', name: 'Work harder', icon: 'career', minAge: 12, need: c => !!c.job, run: c => { c.job.perf = clamp(c.job.perf + ri(8, 15)); stat(c, 'stress', 5);
-      if (c.job.perf > 85 && chance(0.4)) { const b = Math.round(2000 * country(c).econ); money(c, b); return { text: `I got a bonus of ${fmtMoney(c, b)}!`, cls: 'good' }; } return `I put in extra hours. Performance: ${c.job.perf}%.`; } },
-  { id: 'odd_jobs', cat: 'work', name: 'Do odd jobs', icon: 'hammer', minAge: 8, run: c => { const g = Math.round(ri(20, 120) * country(c).econ); money(c, g); return `I ${pick(['washed cars', 'walked dogs', 'swept the temple', 'carried groceries'])} for ${fmtMoney(c, g)}.`; } },
+      if (c.job.perf > 85 && chance(0.4)) { const b = Math.round(1500 * wage(c)); money(c, b); return { text: `I got a bonus of ${fmtMoney(c, b)}!`, cls: 'good' }; } return `I put in extra hours. Performance: ${c.job.perf}%.`; } },
+  { id: 'odd_jobs', cat: 'work', name: 'Do odd jobs', icon: 'hammer', minAge: 8, run: c => { const g = Math.round(ri(15, 80) * wage(c)); money(c, g); return `I ${pick(['washed cars', 'walked dogs', 'swept the temple', 'carried groceries'])} for ${fmtMoney(c, g)}.`; } },
   { id: 'invest', cat: 'work', name: 'Open the stock market', icon: 'stocks', minAge: 18, run: () => { ui.openTab?.('market'); return null; } },
   { id: 'casino', cat: 'leisure', name: 'Gamble at the casino', icon: 'cards', minAge: 18, run: async c => {
       const bet = await ui.choice({ title: 'Casino', text: `Cash: ${fmtMoney(c, c.money)}. Place a bet on blackjack.`, icon: 'cards', options: [50, 500, 5000].filter(b => b <= c.money).map(b => ({ label: `Bet ${fmtMoney(c, b)}`, value: b })) });
@@ -118,7 +119,7 @@ export const ACTIVITIES = [
   // ---- LEISURE
   { id: 'party', cat: 'leisure', name: 'Go to a party', icon: 'beer', minAge: 15, run: c => { stat(c, 'happiness', 8); stat(c, 'stress', -6); stat(c, 'happiness', 10); if (chance(0.5)) { const p = makePerson(c, { role: 'Friend', close: ri(30, 55) }); c.people.push(p); return `I met ${p.first} at a party and we hit it off.`; } return 'I danced until the lights came on.'; } },
   { id: 'vacation', cat: 'leisure', name: 'Go on vacation', icon: 'travel', minAge: 18, run: c => { const cost = priceFor(c, 1500 * country(c).econ); if (c.money < cost) return null; money(c, -cost); stat(c, 'happiness', 15); stat(c, 'stress', -20); stat(c, 'happiness', 18); return `I took a trip to ${pick(['the mountains of Wudang', 'a beach in Bali', 'Kyoto in autumn', 'Paris', 'a desert monastery'])}. (${fmtMoney(c, cost)})`; } },
-  { id: 'social_media', cat: 'leisure', name: 'Post on social media', icon: 'phone', minAge: 13, need: c => c.age >= ({ developing: 18, emerging: 14, developed: 12 }[country(c).tier] || 12) || ['wealthy', 'rich', 'royal'].includes(c.wealth), run: c => { const g = Math.max(0, Math.round(ri(-2, 6) + (c.stats.looks + c.stats.charisma - 100) / 20)); c.fame = clamp((c.fame || 0) + g); if (g > 3) c.flags.viral = true; return g > 3 ? { text: `My post went viral! Fame +${g}.`, cls: 'good' } : 'Nobody liked my post.'; } },
+  { id: 'social_media', cat: 'leisure', name: 'Post on social media', icon: 'phone', minAge: 13, need: c => c.age >= ({ developing: 18, emerging: 14, developed: 12 }[country(c).tier] || 12) || ['wealthy', 'rich', 'royal'].includes(c.wealth), run: c => { const g = Math.max(0, Math.round(ri(-2, 6) + (c.stats.looks + eff(c, 'charisma') - 100) / 20)); c.fame = clamp((c.fame || 0) + g); if (g > 3) c.flags.viral = true; return g > 3 ? { text: `My post went viral! Fame +${g}.`, cls: 'good' } : 'Nobody liked my post.'; } },
   { id: 'adopt_pet', cat: 'leisure', name: 'Adopt a pet', icon: 'pet', minAge: 10, need: c => !c.assets.some(a => a.type === 'pet'), run: c => { const kind = pick(['cat', 'dog', 'rabbit', 'crow', 'koi fish']); c.assets.push({ type: 'pet', name: `${pick(['Mochi', 'Ink', 'Bao', 'Pepper', 'Luna', 'Ghost'])} the ${kind}`, value: 0 }); stat(c, 'happiness', 10); return `I adopted a ${kind}.`; } },
 
   // ---- CRIME
@@ -146,12 +147,12 @@ export const ACTIVITIES = [
 ];
 
 async function crime(c, risk, loot, text, years) {
-  const caught = chance(risk * 1.5 * traitMult(c, 'crime') * (1 - c.stats.agility / 300));
+  const caught = chance(risk * 1.5 * traitMult(c, 'crime') * (1 - eff(c, 'agility') / 300));
   if (caught) {
     if (years && c.age >= 18) { c.prison = years + ri(0, years); c.flags.prisonEver = true; return { text: `${text}... and got caught. Sentenced to ${c.prison} years in prison.`, cls: 'bad', big: true }; }
     stat(c, 'happiness', -8); return { text: `${text}... but got caught. ${c.age < 18 ? 'My parents were called.' : 'I paid a fine.'}`, cls: 'bad' };
   }
-  const g = Math.round(ri(...loot) * country(c).econ); money(c, g); c.flags.crimeWin = true; return { text: `${text}. Got away with ${fmtMoney(c, g)}.`, cls: 'good' };
+  const g = Math.round(ri(...loot) * wage(c)); money(c, g); c.flags.crimeWin = true; return { text: `${text}. Got away with ${fmtMoney(c, g)}.`, cls: 'good' };
 }
 
 // Social actions (cost a Social point) — used from the People tab.
@@ -163,14 +164,14 @@ export const SOCIAL = [
   { id: 'train_together', emoji: '🏋️', name: 'Train together', icon: 'gym', age: 10, run: (c, p) => { stat(c, 'strength', g(c, 2, 3)); stat(c, 'agility', g(c, 1, 2)); gainClose(c, p, 6); return `${p.first} and I trained together.`; } },
   { id: 'spar_p', emoji: '⚔️', name: 'Spar', icon: 'combat', age: 8, run: async (c, p) => { const r = await fight(c, 'bully', { name: p.first, hp: 30 + p.age, str: p.stats.strength, agi: p.stats.agility, realm: p.realm, sparring: true }); gainClose(c, p, 3);
       // sparring with someone teaches you: more from people stronger than you, and cultivators may pass on a technique
-      const better = (p.stats.strength || 40) > c.stats.strength || (p.realm || 0) > c.qi.realm;
+      const better = (p.stats.strength || 40) > eff(c, 'strength') || (p.realm || 0) > c.qi.realm;
       const gs = ri(1, 3) + (better ? 1 : 0), ga = ri(1, 2); stat(c, 'strength', gs); stat(c, 'agility', ga); addMuscle(c, 1);
       let extra = ''; if ((p.realm || 0) > c.qi.realm && chance(0.15)) { const t = (await import('./realms.js')).MANUALS.filter(m => m.tech && !m.demonic && !c.qi.manuals.includes(m.id)); if (t.length) { const m = pick(t); learnManual(c, m.id); extra = ` ${p.first} showed me ${m.name}!`; } }
       if (['Father', 'Mother'].includes(p.role) && c.age < 18) { stat(c, 'happiness', 3); extra += ' They looked proud.'; }
       return `Spar vs ${p.first}: ${r === 'win' ? 'VICTORY' : 'DEFEAT'}. Strength +${gs}, Agility +${ga}.${extra}`; } },
   { id: 'argue', emoji: '😠', name: 'Argue', icon: 'brokenheart', run: (c, p) => { p.close = clamp(p.close - ri(8, 18)); stat(c, 'stress', 4); if (p.close < 5 && p.role !== 'Enemy' && !['Father', 'Mother'].includes(p.role)) { p.role = 'Enemy'; return { text: `${p.first} and I are enemies now.`, cls: 'bad' }; } return `I argued with ${p.first}.`; } },
   { id: 'date', emoji: '🌹', name: 'Ask out', icon: 'flower', age: 14, need: (c, p) => !c.partnerId && !['Father', 'Mother', 'Brother', 'Sister', 'Son', 'Daughter'].includes(p.role) && Math.abs(p.age - c.age) < 10 && p.age >= 14,
-    run: (c, p) => { const ok = chance(0.25 + p.close / 200 + (c.stats.looks - 50) / 200 + (c.stats.charisma - 50) / 300); if (ok) { p.role = 'Partner'; c.partnerId = p.id; gainClose(c, p, 15); return { text: `${p.first} said yes! We're dating.`, cls: 'good', big: true }; } p.close = clamp(p.close - 5); return { text: `${p.first} turned me down.`, cls: 'bad' }; } },
+    run: (c, p) => { const ok = chance(0.25 + p.close / 200 + (c.stats.looks - 50) / 200 + (eff(c, 'charisma') - 50) / 300); if (ok) { p.role = 'Partner'; c.partnerId = p.id; gainClose(c, p, 15); return { text: `${p.first} said yes! We're dating.`, cls: 'good', big: true }; } p.close = clamp(p.close - 5); return { text: `${p.first} turned me down.`, cls: 'bad' }; } },
   { id: 'propose', emoji: '💍', name: 'Propose', icon: 'ring', age: 18, need: (c, p) => p.role === 'Partner', run: async (c, p) => {
       const ok = chance(0.35 + p.close / 150); if (!ok) { p.close = clamp(p.close - 15); return { text: `${p.first} said no...`, cls: 'bad' }; }
       const pre = c.money > 50000 ? await ui.choice({ title: 'Prenup?', text: 'You have significant assets. Ask for a prenup?', icon: 'paper', options: [{ label: 'Yes, prenup', value: true }, { label: 'No', value: false }] }) : false;

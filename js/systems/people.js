@@ -12,6 +12,7 @@ import { METHODS, MANUALS } from '../data/realms.js';
 import { ITEMS, RECIPES } from '../data/items.js';
 import { perk as _perk } from '../data/legacyTree.js';
 import { npcDna } from './genetics.js';
+import { socialMult } from './body.js';
 
 const JOBS = ['teacher', 'factory worker', 'nurse', 'shopkeeper', 'taxi driver', 'accountant', 'farmer', 'chef', 'police officer', 'tea house owner', 'mechanic'];
 
@@ -113,7 +114,7 @@ export function bondList(c) {
 }
 // Positive closeness changes scale with Social traits.
 // Bonds build slowly now: deep trust takes years of effort, not a handful of chats.
-export function gainClose(c, p, d) { p.close = clamp(p.close + (d > 0 ? Math.round(d * 0.85 * _tm(c, 'social') * (_perk('m2') ? 1.1 : 1)) : d)); return p.close; }
+export function gainClose(c, p, d) { p.close = clamp(p.close + (d > 0 ? Math.round(d * 0.85 * (c.body ? socialMult(c) : 1) * _tm(c, 'social') * (_perk('m2') ? 1.1 : 1)) : d)); return p.close; }
 
 // People who like you a lot sometimes give you things, teach you skills, recipes, or even cultivation methods.
 export function favor(c, p) {

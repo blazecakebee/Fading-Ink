@@ -17,7 +17,7 @@ import { randomGenes, mixGenes } from '../ui/portrait.js';
 import { yearlyEvents } from '../data/events.js';
 import { cultivationYear } from './cultivation.js';
 import { healthYear, TRAINABLE, trauma, geneticCheck, suddenDeathChance } from './health.js';
-import { ensureBody, bodyYear, adultHeight } from './body.js';
+import { ensureBody, bodyYear, adultHeight, eff, workMult, healMult } from './body.js';
 import { bonds, bondBonus } from './people.js';
 import { checkEarned } from './traits.js';
 import { bonusVal } from './bonus.js';
@@ -35,6 +35,11 @@ export const realm = c => REALMS[c.qi.realm];
 // so 3 euros and 3 yuan are no longer the same thing.
 export const FX = { cn: 7.2, kr: 1350, jp: 150, us: 1, gb: 0.79, br: 5, ng: 1500, in: 83, ru: 90, mx: 17, fr: 0.92, eg: 48 };
 export const fxRate = c => FX[c?.country] ?? 1;
+// Wages follow the local economy (a doctor in Cairo earns far less than one in New York) and are deliberately
+// modest: getting rich should take a career, luck or a cultivation empire — not a few years of clicking.
+export const WAGE = { us: 1.2, gb: 1.05, fr: 1.0, jp: 0.95, kr: 0.9, cn: 0.5, ru: 0.4, br: 0.3, mx: 0.3, in: 0.2, eg: 0.17, ng: 0.15 };
+export const INCOME = 0.6;
+export const wage = c => (WAGE[c?.country] ?? country(c).econ) * INCOME;
 export const fmtMoney = (c, n) => { const v = Math.round(n * fxRate(c)); return (v < 0 ? '-' : '') + country(c).currency + Math.abs(v).toLocaleString(); };
 export function lifeStage(age) {
   if (age < 3) return 'Infancy'; if (age < 13) return 'Childhood'; if (age < 18) return 'Adolescence';
@@ -70,7 +75,7 @@ export function stat(c, k, d) {
   return c.stats[k];
 }
 // Charisma (and a few traits) get you better prices from merchants: up to 25% off.
-export function discount(c) { return clamp(Math.max(0, (c.stats.charisma - 40) / 240) + (traitMult(c, 'social') > 1 ? 0.03 : 0) + (perk('f4') ? 0.05 : 0), 0, 0.3); }
+export function discount(c) { return clamp(Math.max(0, (eff(c, 'charisma') - 40) / 240) + (traitMult(c, 'social') > 1 ? 0.03 : 0) + (perk('f4') ? 0.05 : 0), 0, 0.3); }
 export function priceFor(c, base) { return Math.round(base * (1 - discount(c))); }
 // Current wealth status from net worth (adjusted for the country's economy). Kids show their family's class.
 export function netWorth(c) { return c.money + (c.stocks || 0) + c.assets.reduce((s, a) => s + (a.value || 0), 0); }
@@ -180,7 +185,7 @@ export async function ageUp() {
   // passive stat drift
   // bodies recover toward a baseline that drops with age; old age wears you down
   const target = c.age < 40 ? 88 : c.age < 60 ? 72 : 58;
-  if (c.stats.health < target) stat(c, 'health', c.stats.health < 40 ? ri(5, 10) : c.age < 18 ? ri(3, 7) : ri(2, 5)); // the lower you are, the harder your body fights back else if (c.age > 30) stat(c, 'health', -ri(0, c.age > 65 ? 4 : 2));
+  if (c.stats.health < target) stat(c, 'health', Math.round((c.stats.health < 40 ? ri(5, 10) : c.age < 18 ? ri(3, 7) : ri(2, 5)) * healMult(c))); // kidneys & gut matter // the lower you are, the harder your body fights back else if (c.age > 30) stat(c, 'health', -ri(0, c.age > 65 ? 4 : 2));
   if (c.qi.realm) stat(c, 'health', c.qi.realm * 2);
   if (traitVal(c, 'heal')) stat(c, 'health', traitVal(c, 'heal'));
   stat(c, 'stress', -ri(2, 6));
@@ -191,7 +196,7 @@ export async function ageUp() {
   educationYear(c);
   if (c.job && !c.prison) {
     const job = CAREERS.find(j => j.id === c.job.id);
-    const pay = Math.round(job.pay * country(c).econ * (1 + c.job.years * 0.04) * (job.part ? 0.5 : 1) * traitMult(c, 'pay') * bondBonus(c, 'work') * (perk('f5') ? 1.1 : 1));
+    const pay = Math.round(job.pay * wage(c) * Math.min(1.6, 1 + c.job.years * 0.02) * (job.part ? 0.5 : 1) * traitMult(c, 'pay') * bondBonus(c, 'work') * (perk('f5') ? 1.1 : 1) * workMult(c)); // an injured body earns less
     money(c, pay); c.job.years++; c.job.perf = clamp(c.job.perf - ri(0, 6));
     ui.log(`Earned ${fmtMoney(c, pay)} as a ${job.name}.`);
     if (c.job.perf < 15 && chance(0.4)) { ui.log(`I was fired from my job as a ${job.name}.`, 'bad'); c.job = null; }
@@ -224,7 +229,7 @@ export async function ageUp() {
   // your own sect grows and pays tithes
   if (c.ownSect) {
     const o = c.ownSect; const gain = Math.max(0, ri(-1, 3) + Math.floor(c.stats.charisma / 40) + c.qi.realm);
-    o.disciples += gain; const tithe = Math.round(o.disciples * 150 * country(c).econ * traitMult(c, 'pay'));
+    o.disciples += gain; const tithe = Math.round(o.disciples * 60 * wage(c) * traitMult(c, 'pay'));
     money(c, tithe); ui.log(`The ${o.name} grew to ${o.disciples} disciples. Tithes: ${fmtMoney(c, tithe)}.`, 'qi');
   }
   yearlyPeople(c);

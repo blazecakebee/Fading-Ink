@@ -1,3 +1,4 @@
+import { eff } from './body.js';
 // Family life: arguments & disputes, training your children, allowances, and the longevity blessing.
 import { ui } from '../core/bus.js';
 import { ri, pick, chance, clamp } from '../core/rng.js';
@@ -40,10 +41,10 @@ export async function disputeYear(c) {
   if (!chance(heat)) return;
   const p = pick(pool);
   const topic = pick(isKid(p) && p.age < 18 ? ['their grades', 'curfew', 'the friends they keep', 'chores'] : ['money', 'old grudges', 'how you live your life', 'cultivation and secrets', 'who said what at dinner', 'an inheritance']);
-  const words = (c.stats.charisma + c.stats.smarts) / 2;
+  const words = (eff(c, 'charisma') + eff(c, 'smarts')) / 2;
   const v = await ui.choice({ title: `A fight with ${p.first}`, icon: 'brokenheart', text: `${p.first} (${p.role}) blows up at you about ${topic}.`,
-    options: [{ label: `Talk it through calmly (Charisma ${c.stats.charisma})`, value: 'talk' }, { label: `Out-argue them (Smarts ${c.stats.smarts})`, value: 'argue' }, { label: 'Apologise, even if you were right', value: 'sorry' }, { label: 'Let it come to blows', value: 'fight' }] });
-  if (v === 'talk') { if (chance(clamp(0.3 + (c.stats.charisma - 40) / 120, 0.2, 0.9))) { gainClose(c, p, 4); stat(c, 'stress', -3); ui.log(`I talked ${p.first} down. We understand each other a little better now.`, 'good'); } else { p.close = clamp(p.close - 6); ui.log(`I tried to stay calm, but ${p.first} stormed off.`, 'bad'); } }
+    options: [{ label: `Talk it through calmly (Charisma ${eff(c, 'charisma')})`, value: 'talk' }, { label: `Out-argue them (Smarts ${eff(c, 'smarts')})`, value: 'argue' }, { label: 'Apologise, even if you were right', value: 'sorry' }, { label: 'Let it come to blows', value: 'fight' }] });
+  if (v === 'talk') { if (chance(clamp(0.3 + (eff(c, 'charisma') - 40) / 120, 0.2, 0.9))) { gainClose(c, p, 4); stat(c, 'stress', -3); ui.log(`I talked ${p.first} down. We understand each other a little better now.`, 'good'); } else { p.close = clamp(p.close - 6); ui.log(`I tried to stay calm, but ${p.first} stormed off.`, 'bad'); } }
   else if (v === 'argue') { if (chance(clamp(0.25 + (words - 40) / 110, 0.15, 0.9))) { p.close = clamp(p.close - 3); stat(c, 'happiness', 3); ui.log(`I won the argument with ${p.first}. They grudgingly admitted I had a point.`); } else { p.close = clamp(p.close - 10); stat(c, 'happiness', -4); ui.log(`${p.first} tore my arguments apart. That stung.`, 'bad'); } }
   else if (v === 'sorry') { gainClose(c, p, 2); stat(c, 'happiness', -2); ui.log(`I apologised to ${p.first}. Peace, for now.`); }
   else { p.close = clamp(p.close - 25); stat(c, 'health', -ri(2, 6)); stat(c, 'stress', 6); ui.log(`It turned physical with ${p.first}. Nobody won.${p.close < 10 && !isFamily(p) ? ` ${p.first} never spoke to me again.` : ''}`, 'bad'); if (p.close < 10 && !isFamily(p)) p.role = 'Enemy'; }

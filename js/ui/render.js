@@ -12,6 +12,7 @@ import { moodFace, TRAINABLE, decayRate } from '../systems/health.js';
 import { COND_BY_ID } from '../data/conditions.js';
 import { ITEMS } from '../data/items.js';
 import { METHODS } from '../data/realms.js';
+import { wage } from '../systems/life.js';
 import { comfort, willInfo, giftToChild, wealthLabel, statCap, softCap, gainMult, CAPPED, discount, priceFor, country, lifeStage, fullName, fmtMoney, realm as realmOf, lifespan, ageUp, money, stat, addItem, ACTIONS_PER_YEAR, SOCIAL_PER_YEAR } from '../systems/life.js';
 import { fatigueMult, realmName, qiCap, power, learnManual, breakthroughInfo, meridianInfo, meditateRange, HELPFUL_ITEMS, sectName, foundReq, foundSect, method, learnMethod } from '../systems/cultivation.js';
 import { relLabel, isFamily, bonds, bondList, favor } from '../systems/people.js';
@@ -23,7 +24,9 @@ import { CAREERS, EDUCATION } from '../data/careers.js';
 import { GATE_RANKS, ENEMIES, LOOT, GATE_TYPES, makeGate } from '../data/combat.js';
 import { bonusMult } from '../systems/bonus.js';
 import { geneName } from '../systems/genetics.js';
-import { gainHeirloom, gateHeirloomChance } from '../systems/heirlooms.js';
+import { gainHeirloom, gateHeirloomChance, heirloomsOf } from '../systems/heirlooms.js';
+import { S } from '../settings.js';
+import { eff, statLimits, STAT_SYSTEMS } from '../systems/body.js';
 import { HEIRLOOMS } from '../data/heirlooms.js';
 import { WEALTH, TIERS as TIERS_C, BIOMES as BIOMES_C } from '../data/countries.js';
 import { ri, pick, chance, weighted } from '../core/rng.js';
@@ -109,7 +112,11 @@ net.doAgeUp = () => realAgeUp();
 let aging = false;
 async function onAgeUp() {
   const c = G.char; if (aging || !c.alive && !inCoopRoom()) return;
-  if (META.settings.confirmAgeUp && (c.actions || c.social)) { const ok = await choice({ title: 'Age up?', text: `You still have ${c.actions} actions and ${c.social} social actions left.`, options: [{ label: 'Age up anyway', value: true }, { label: 'Wait', value: false, ghost: true }] }); if (!ok) return; }
+  if (S().confirmAgeUp && (c.actions > 0 || c.social > 0)) {
+    const ok = await choice({ title: 'Age up?', icon: 'clock', text: `You still have ${c.actions} action${c.actions === 1 ? '' : 's'} and ${c.social} social action${c.social === 1 ? '' : 's'} left this year. Unused actions are lost.`,
+      options: [{ label: 'Age up anyway', value: true }, { label: 'Wait — use them first', value: false, ghost: true }, { label: 'Age up, and stop asking me', value: 'never', ghost: true }] });
+    if (!ok) return; if (ok === 'never') { META.settings.confirmAgeUp = false; save(); }
+  }
   if (inCoopRoom()) { voteAgeUp(); return; }
   return realAgeUp();
 }
@@ -140,10 +147,10 @@ function rightCol() {
   const c = G.char, s = c.stats;
   const out = [
     h('div', {}, bar('Health', s.health, '#ff5a6a', 'heart'), bar(`Happiness ${moodFace(s.happiness)}`, s.happiness, '#ffd84a', 'sun'), bar('Stress', s.stress, '#ff8a3a', 'brokenheart'),
-      bar('Smarts', s.smarts, '#6ab0ff', 'mind'), bar('Looks', s.looks, '#ff8ad0', 'flower'),
+      bar('Smarts', eff(c, 'smarts'), '#6ab0ff', 'mind', 100, eff(c, 'smarts') < s.smarts ? `${eff(c, 'smarts')} (${s.smarts})` : undefined), bar('Looks', s.looks, '#ff8ad0', 'flower'),
       c.qi.known ? bar('Qi', c.qi.qi, 'var(--qi)', 'cultivation', qiCap(c), `${c.qi.qi}/${qiCap(c)}`) : null),
     h('div', { class: 'box' }, h('h3', {}, 'Your Stats'), h('div', { class: 'realm-line' }, icon('cultivation', 'sm'), ' ', h('b', {}, c.qi.known || onBodyPath(c) ? realmName(c) : 'Realm: ???')), h('div', { class: 'stats' },
-      ...[['fist', 'Strength', s.strength], ['combat', 'Battle IQ', s.battle ?? 0], ['kick', 'Agility', s.agility], ['people', 'Charisma', s.charisma], ['star', 'Luck', s.luck],
+      ...[['fist', 'Strength', effShow(c, 'strength')], ['combat', 'Battle IQ', effShow(c, 'battle')], ['kick', 'Agility', effShow(c, 'agility')], ['people', 'Charisma', effShow(c, 'charisma')], ['star', 'Luck', s.luck],
         ['combat', 'Power', power(c).toFixed(1)], ['trophy', 'Fights won', c.wins], ['gates', 'Gates', c.gatesCleared],
         ['market', 'Gold', fmtMoney(c, c.money)], ['star', 'Fame', c.fame || 0]].map(([ic, k, v]) => h('div', {}, icon(ic, 'sm'), k, h('b', {}, v))))),
     (c.conditions || []).length ? h('div', { class: 'box' }, h('h3', {}, 'Conditions'), c.conditions.map(x => h('span', { class: 'chip', style: { '--tc': 'var(--bad)', cursor: 'pointer' }, onclick: () => { G.ui.tab = 'health'; render(); } }, COND_BY_ID[x.id].name))) : null,
@@ -175,6 +182,8 @@ function seenLines(c, cur) { const k = c.id + ':' + cur.age; const n = seen.key 
 // GPA on a 4.0 scale from the 0-100 grade average (90+ = A = 4.0)
 export const gpa = g => Math.max(0, Math.min(4, (g - 50) / 10)).toFixed(2);
 const gpaText = g => { const v = +gpa(g); const L = v >= 3.7 ? 'A' : v >= 3.3 ? 'A-' : v >= 3 ? 'B+' : v >= 2.7 ? 'B' : v >= 2.3 ? 'B-' : v >= 2 ? 'C' : v >= 1 ? 'D' : 'F'; return `${v.toFixed(2)} / 4.0 (${L}) — the higher the better`; };
+// effective (usable) stat, with the trained value shown when injuries hold it back
+const effShow = (c, k) => { const e = eff(c, k), b = c.stats[k] ?? 0; return e < b ? h('span', { 'data-tip': `Trained ${b}, but your body only lets you use ${e}. ${statLimits(c, k).map(([n, x]) => `${n} ${Math.round(x * 100)}%`).join(', ')}`, style: { color: 'var(--bad, #ff7a6a)' } }, `${e}`, h('small', { class: 'muted' }, ` /${b}`)) : b; };
 export const TABS = {
   life() {
     const c = G.char, cur = c.log[c.log.length - 1] || { lines: [] };
@@ -203,7 +212,7 @@ export const TABS = {
       h('div', { style: { flex: 1, minWidth: '240px' } }, h('h2', { class: 'display', style: { fontSize: '2.2rem' } }, fullName(c)),
         h('table', { class: 'kv' }, [['Born', `${c.city}, ${cty.name} (year ${c.birthYear})`], ['Family wealth', WEALTH.find(w => w.id === c.wealth).name], ['Age', `${c.age} · ${lifeStage(c.age)}`],
           ['Expected lifespan', `~${lifespan(c)} years`], ['Hair', `${(c.hair?.style || c.genes.style)} · ${(c.hair?.color || c.genes.hairColor)}`], ['Base looks', c.genes.looks + ' (fixed at birth)'],
-          ['Generation', c.generation], ['Heirlooms', c.heirlooms.join(', ') || '—']].map(([k, v]) => h('tr', {}, h('td', {}, k), h('td', {}, v)))),
+          ['Generation', c.generation], ['Heirlooms', heirloomsOf(c).map(x => HEIRLOOMS[x.id].name).join(', ') || '—']].map(([k, v]) => h('tr', {}, h('td', {}, k), h('td', {}, v)))),
         h('div', { class: 'row', style: { marginTop: '12px' } }, h('button', { class: 'btn', disabled: c.age < 13 || !c.alive, onclick: openSalon }, icon('salon', 'sm'), ' Visit the salon'), h('button', { class: 'btn ghost', disabled: c.age < 18 || !c.alive || c.actions <= 0, onclick: openSurgery }, icon('doctor', 'sm'), ' Plastic surgery')),
         h('p', { class: 'muted' }, 'You\'re born with your face and base looks. The salon changes your hair; plastic surgery (18+) can raise your Looks — at a price, and with a risk of going wrong. Cultivation and fitness help too.'))),
       h('div', { class: 'box', style: { marginTop: '16px' } }, h('h3', {}, 'Traits'), c.traits.map(id => { const t = TRAIT_BY_ID[id]; return h('div', { style: { margin: '6px 0' } }, traitChip(id), ' ', h('span', { class: 'muted' }, t.desc)); }))];
@@ -216,7 +225,8 @@ export const TABS = {
       h('div', { class: 'grid2', style: { marginTop: '12px' } }, Object.entries(c.stats).map(([k, v]) => { const label = k === 'battle' ? 'Battle Knowledge' : k[0].toUpperCase() + k.slice(1); const tr = TRAINABLE.includes(k); const idle = tr ? c.age - ((c.lastTrained || {})[k] ?? Math.min(c.age, 6)) : 0;
         const loss = tr && v > 15 ? decayRate(c, k) : 0;
         const capped = CAPPED.includes(k), cap = capped ? statCap(c) : 100;
-        return h('div', { class: 'card' }, bar(label, v, v >= softCap(c) && capped ? 'var(--legend)' : 'var(--accent2)', null, cap, capped ? `${v} / ${cap}` : undefined), capped && v >= softCap(c) ? h('div', { class: 'small', style: { color: 'var(--legend)' } }, `Soft cap: gains ×${gainMult(c, k).toFixed(2)} — break through to raise the cap`) : null, k === 'battle' ? h('div', { class: 'muted small' }, `+${Math.round(v / 4)}% hit chance, +${Math.round(v / 2.5)}% damage, +${(v / 20).toFixed(1)}% crit in fights`) : null, tr ? h('div', { class: 'muted small' }, idle <= 0 ? 'Trained this year ✓' : `Last trained ${idle}y ago${loss ? ` · fading ~${loss}/yr` : idle < 5 ? ' · safe for now' : ''}`) : k === 'looks' ? h('div', { class: 'muted small' }, 'Fades with age only') : null); })),
+        const ev = STAT_SYSTEMS[k] ? eff(c, k) : v, lim = ev < v ? statLimits(c, k) : [];
+        return h('div', { class: 'card' }, lim.length ? h('div', { class: 'small', style: { color: 'var(--bad, #ff7a6a)' } }, `Usable: ${ev} of ${v} — held back by ${lim.map(([n, x]) => `${n} ${Math.round(x * 100)}%`).join(', ')}`) : null, bar(label, v, v >= softCap(c) && capped ? 'var(--legend)' : 'var(--accent2)', null, cap, capped ? `${v} / ${cap}` : undefined), capped && v >= softCap(c) ? h('div', { class: 'small', style: { color: 'var(--legend)' } }, `Soft cap: gains ×${gainMult(c, k).toFixed(2)} — break through to raise the cap`) : null, k === 'battle' ? h('div', { class: 'muted small' }, `+${Math.round(v / 4)}% hit chance, +${Math.round(v / 2.5)}% damage, +${(v / 20).toFixed(1)}% crit in fights`) : null, tr ? h('div', { class: 'muted small' }, idle <= 0 ? 'Trained this year ✓' : `Last trained ${idle}y ago${loss ? ` · fading ~${loss}/yr` : idle < 5 ? ' · safe for now' : ''}`) : k === 'looks' ? h('div', { class: 'muted small' }, 'Fades with age only') : null); })),
       h('div', { class: 'box', style: { marginTop: '14px' } }, h('h3', {}, 'Records'), h('table', { class: 'kv' },
         [['Fights won', c.wins], ['Lives taken', c.kills], ['Gates cleared', c.gatesCleared], ['Combat power', power(c).toFixed(2)], ['Most repeated activity', Object.entries(c.counts).sort((a, b) => b[1] - a[1])[0]?.join(' × ') || '—']].map(([k, v]) => h('tr', {}, h('td', {}, k), h('td', {}, v))))),
       h('div', { class: 'box', style: { marginTop: '14px' } }, h('h3', {}, 'Trait Codex'), h('p', { class: 'muted' }, 'Traits come in 8 tiers. Some can only be earned by doing specific things.'),
@@ -313,14 +323,14 @@ export const TABS = {
   career() {
     const c = G.char; const cur = c.job && CAREERS.find(j => j.id === c.job.id);
     // degree jobs need the matching major; university students can only work part-time
-    const eligible = j => c.age >= j.minAge && c.age <= (j.maxAge || 99) && c.edu.level >= j.edu && (!j.major || j.major.includes(c.edu.major)) && (c.edu.school !== 'University' || j.part) && Object.entries(j.stat || {}).every(([k, v]) => c.stats[k] >= v) && (!j.realm || c.qi.realm >= j.realm) && (!j.sect || c.sect === j.sect || true);
+    const eligible = j => c.age >= j.minAge && c.age <= (j.maxAge || 99) && c.edu.level >= j.edu && (!j.major || j.major.includes(c.edu.major)) && (c.edu.school !== 'University' || j.part) && Object.entries(j.stat || {}).every(([k, v]) => eff(c, k) >= v) && (!j.realm || c.qi.realm >= j.realm) && (!j.sect || c.sect === j.sect || true);
     return [h('h2', { class: 'display' }, 'Career'),
       cur ? h('div', { class: 'year-card', style: { marginTop: '10px' } }, h('h3', {}, `${cur.name}`), h('div', {}, `Years: ${c.job.years} · Performance ${c.job.perf}%`), bar('Performance', c.job.perf, 'var(--good)'),
         h('div', { class: 'row' }, h('button', { class: 'btn ghost', onclick: () => { logLine(`I quit my job as a ${cur.name}.`); c.job = null; render(); } }, 'Quit job')))
         : h('p', { class: 'muted' }, c.prison ? 'You are in prison.' : 'Unemployed.'),
       h('h3', { class: 'display', style: { margin: '16px 0 8px' } }, 'Job listings'),
       h('div', { class: 'grid2' }, CAREERS.map(j => h('div', { class: 'card' }, h('h4', {}, j.name, j.part ? h('span', { class: 'muted' }, ' (part-time)') : ''),
-        h('div', { class: 'muted' }, `${fmtMoney(c, j.pay * country(c).econ * (j.part ? 0.5 : 1))}/yr · age ${j.minAge}+ · ${EDUCATION[j.edu]}${j.major ? ' in ' + j.major.join(' or ') : ''}${j.stat ? ' · ' + Object.entries(j.stat).map(([k, v]) => `${k} ${v}+`).join(', ') : ''}${j.realm ? ' · ' + REALMS[j.realm].name : ''}`),
+        h('div', { class: 'muted' }, `${fmtMoney(c, j.pay * wage(c) * (j.part ? 0.5 : 1))}/yr · age ${j.minAge}+ · ${EDUCATION[j.edu]}${j.major ? ' in ' + j.major.join(' or ') : ''}${j.stat ? ' · ' + Object.entries(j.stat).map(([k, v]) => `${k} ${v}+`).join(', ') : ''}${j.realm ? ' · ' + REALMS[j.realm].name : ''}`),
         h('button', { class: 'btn', style: { marginTop: '8px' }, disabled: !c.alive || c.prison || c.actions <= 0 || !eligible(j) || c.job?.id === j.id,
           onclick: () => runActivity({ id: 'apply_' + j.id, cat: 'work', run: cc => { if (chance(0.45 + cc.stats.charisma / 250 + cc.stats.smarts / 400)) { cc.job = { id: j.id, years: 0, perf: 50 }; return { text: `I was hired as a ${j.name}!`, cls: 'good', big: true }; } return { text: `My application to be a ${j.name} was rejected.`, cls: 'bad' }; } }) }, 'Apply (⚡1)'))))];
   },
@@ -478,7 +488,7 @@ async function enterGate(i, sweep) {
     const add = (name, k = 1) => { got[name] = (got[name] || 0) + k; };
     for (let k = 0; k < n; k++) {
       const L = weighted(table, x => x.w);
-      if (L.id === 'gold') { const m = Math.round(ri(200, 2000) * (1 + tier) * (1 + Math.max(0, tier - 5)) * yld * country(cc).econ); money(cc, m); add(fmtMoney(cc, m)); }
+      if (L.id === 'gold') { const m = Math.round(ri(100, 900) * (1 + tier) * (1 + Math.max(0, tier - 5)) * yld * wage(cc)); money(cc, m); add(fmtMoney(cc, m)); }
       else if (L.id === 'manual') { const mm = METHODS.filter(x => !(cc.qi.methods || ['basic']).includes(x.id) && (T.id === 'altar' || !x.demonic)); const m = pick(MANUALS.filter(x => x.id !== 'breathing' && !cc.qi.manuals.includes(x.id)));
         if (mm.length && (chance(0.5) || !m)) { const x = pick(mm); learnMethod(cc, x.id); add(x.name); } else if (m) { learnManual(cc, m.id); add(m.name); } }
       else { addItem(cc, L.id); add(ITEMS[L.id]?.name || L.id); }

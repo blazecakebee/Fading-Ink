@@ -1,3 +1,4 @@
+import { eff } from '../systems/body.js';
 // Turn-based 1v1 combat screen: two portraits, realm/level, HP bars, momentum chevrons,
 // stamina + Qi bars and vertical move buttons with "Move info".
 import { onBodyPath, effRealm, bodyTier } from '../systems/path.js';
@@ -30,8 +31,8 @@ export function fight(enemyDef, opts = {}) {
   return new Promise(resolve => {
     const pPow = power(c), gs = gearStats(c);
     const me = {
-      name: 'You', maxHp: Math.round((40 + c.stats.health * 0.5 + c.stats.strength * 0.3) * (1 + (pPow - 1) * 0.5) + gs.hp), gear: gs,
-      mods: combatMods(c), str: c.stats.strength, agi: (c.stats.agility + gs.agi) * combatMods(c).agi, bk: c.stats.battle || 0, pow: pPow, stam: 100, qi: c.qi.qi, maxQi: Math.max(1, c.qi.qi), mom: 0, guard: false, armor: 0, evade: false, burn: 0,
+      name: 'You', maxHp: Math.round((40 + c.stats.health * 0.5 + eff(c, 'strength') * 0.3) * (1 + (pPow - 1) * 0.5) + gs.hp), gear: gs,
+      mods: combatMods(c), str: eff(c, 'strength'), agi: eff(c, 'agility') + gs.agi, bk: eff(c, 'battle') || 0, pow: pPow, stam: 100, qi: c.qi.qi, maxQi: Math.max(1, c.qi.qi), mom: 0, guard: false, armor: 0, evade: false, burn: 0,
     };
     me.hp = me.maxHp;
     const ePow = REALMS[enemyDef.realm || 0].power * (enemyDef.kind === 'spirit' ? traitMult(c, 'spiritBane') ** -1 : 1);
@@ -56,7 +57,7 @@ export function fight(enemyDef, opts = {}) {
       ui[isMe ? 'meHp' : 'enHp'] = hp; ui[isMe ? 'meMom' : 'enMom'] = mom;
       const hpTxt = h('div', { class: 'flvl' }); ui[isMe ? 'meHpTxt' : 'enHpTxt'] = hpTxt;
       const info = h('div', { class: 'info' }, h('div', { class: 'fname' }, isMe ? 'You' : who.name),
-        h('div', { class: 'flvl' }, `${isMe ? (onBodyPath(c) ? bodyTier(c).name : realmLabel(c.qi.realm) + (c.qi.realm ? ' ' + c.qi.stage : '')) : realmLabel(who.realm || 0)} · Power ${Math.round(who.pow * 10) / 10}${isMe ? ` · ${bkLabel(c.stats.battle || 0)}` : ''}`),
+        h('div', { class: 'flvl' }, `${isMe ? (onBodyPath(c) ? bodyTier(c).name : realmLabel(c.qi.realm) + (c.qi.realm ? ' ' + c.qi.stage : '')) : realmLabel(who.realm || 0)} · Power ${Math.round(who.pow * 10) / 10}${isMe ? ` · ${bkLabel(eff(c, 'battle'))}` : ''}`),
         h('div', { class: 'hpbar' }, hp), hpTxt, mom);
       const pf = h('div', { class: 'fportrait' }, isMe ? mePortrait : ePortrait); ui[isMe ? 'mePf' : 'enPf'] = pf;
       return h('div', { class: 'fighter' + (isMe ? ' me' : '') }, isMe ? [pf, info] : [info, pf]);
@@ -110,7 +111,7 @@ export function fight(enemyDef, opts = {}) {
       dmg *= attIsMe ? P.me : P.them;
       if (attIsMe && onBodyPath(c) && ((enemyDef.realm || 0) > 0 || enemyDef.kind === 'spirit')) dmg *= 1.15; // Qi users can't sense the Severed coming
       if (def.guard && !mv.pierce) { dmg *= 0.5; def.guard = false; } if (def.armor && !mv.pierce) { dmg *= 0.5; def.armor--; }
-      const crit = chance(0.08 + (attIsMe ? (c.stats.luck + gs.luck) / 1000 + (c.stats.battle || 0) / 2000 : 0)); if (crit) dmg *= 1.7;
+      const crit = chance(0.08 + (attIsMe ? (c.stats.luck + gs.luck) / 1000 + eff(c, 'battle') / 2000 : 0)); if (crit) dmg *= 1.7;
       if (enemyDef.sparring && attIsMe === false) dmg *= 0.7;
       dmg = Math.max(1, Math.round(dmg)); def.hp -= dmg; att.mom = Math.min(3, att.mom + (mv.mom || 1)); def.mom = 0;
       if (mv.drain) att.hp = Math.min(att.maxHp, att.hp + dmg * mv.drain);
@@ -130,7 +131,7 @@ export function fight(enemyDef, opts = {}) {
       } else if (!def.isEnemy) { // the enemy hits YOUR body: real injuries
         const res = hitBody(c, { amount: dmg, type: mv.burn ? 'burn' : cuts ? 'cut' : 'blunt', ratio: en.pow / me.pow, sparring: !!enemyDef.sparring });
         if (res.text) extra = ` (${res.text})`;
-        if (res.lost) { me.mods = combatMods(c); me.agi = (c.stats.agility + gs.agi) * me.mods.agi; }
+        if (res.lost) { me.mods = combatMods(c); me.agi = eff(c, 'agility') + gs.agi; }
         if (res.fatal) fatal = res.part.name;
         if (dmg >= me.maxHp * 0.2) fx('heavy');
       }

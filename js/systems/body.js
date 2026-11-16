@@ -140,3 +140,27 @@ export function addMuscle(c, n) {
   return false;
 }
 export const muscleLabel = m => m >= 80 ? 'Herculean' : m >= 60 ? 'Muscular' : m >= 40 ? 'Athletic' : m >= 20 ? 'Fit' : 'Slender';
+
+// ---- v0.7.1: every body system feeds into your stats. Trained stats stay as your "base"; what you can
+// actually use (effective stat) is scaled by the capacities that stat depends on.
+export const STAT_SYSTEMS = {
+  agility:  [['moving', 1], ['sight', 0.2], ['consciousness', 0.3]],
+  strength: [['manipulation', 0.5], ['moving', 0.3], ['blood', 0.4], ['breathing', 0.3]],
+  battle:   [['manipulation', 0.4], ['moving', 0.4], ['sight', 0.5], ['consciousness', 0.5]],
+  smarts:   [['consciousness', 0.9], ['sight', 0.15]],
+  charisma: [['talking', 0.7], ['consciousness', 0.3]],
+};
+const _mcache = new WeakMap();
+export function statMult(c, k) {
+  const sys = STAT_SYSTEMS[k]; if (!sys || !c?.body) return 1;
+  return sys.reduce((m, [cap, w]) => m * Math.max(0.05, capacity(c, cap)) ** w, 1);
+}
+export const eff = (c, k) => { const v = c?.stats?.[k] ?? 0; const m = statMult(c, k); return m >= 0.999 ? v : Math.round(v * m); };
+// which system is holding a stat back (for tooltips)
+export function statLimits(c, k) { return (STAT_SYSTEMS[k] || []).map(([cap, w]) => [CAPACITIES[cap], capacity(c, cap)]).filter(([, v]) => v < 0.995); }
+// other systems
+export const healMult = c => (0.4 + 0.6 * capacity(c, 'filtration')) * (0.5 + 0.5 * capacity(c, 'digestion'));
+export const workMult = c => 0.4 + 0.6 * Math.min(1, (capacity(c, 'manipulation') + capacity(c, 'moving') + 2 * capacity(c, 'consciousness')) / 4);
+export const socialMult = c => 0.4 + 0.6 * capacity(c, 'talking');
+export const studyMult = c => (0.3 + 0.7 * capacity(c, 'consciousness')) * (0.7 + 0.3 * capacity(c, 'sight'));
+export const qiFlowMult = c => 0.3 + 0.7 * capacity(c, 'qi');

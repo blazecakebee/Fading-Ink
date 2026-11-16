@@ -54,7 +54,7 @@ export function marketTab() {
     h('div', { class: 'year-card' }, h('div', { class: 'row', style: { justifyContent: 'space-between' } },
       h('div', {}, h('div', { class: 'muted small' }, 'Portfolio value'), h('h3', {}, fmtMoney(c, val)), h('div', { class: 'muted small' }, `Cash ${fmtMoney(c, c.money)}${c.money < 0 ? ' — you can\'t invest while in debt' : ''}`)),
       (c.portHist || []).length > 1 ? chart(c.portHist.slice(-25), 260, 64, '#7fd1ff') : null),
-      h('div', { class: 'small', style: { marginTop: '6px' } }, 'This year: ', h('b', {}, NEWS_NAMES[n] || '—'), ' · prices move once a year with each company\'s risk and the world news. Trading is free.')),
+      h('div', { class: 'small', style: { marginTop: '6px' } }, 'This year: ', h('b', {}, NEWS_NAMES[n] || '—'), ' · prices move once a year with each company\'s risk and the world news. Each trade costs a 2% broker fee.')),
     c.age < 18 ? h('p', { class: 'muted' }, 'You can trade once you turn 18.') : null,
     h('div', { class: 'grid2' }, rows)];
 }

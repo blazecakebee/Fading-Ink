@@ -1,3 +1,4 @@
+import { eff } from './body.js';
 // Martial arts schools with belts, private schools & scholarships, and moving to another country.
 import { G } from '../core/state.js';
 import { ui } from '../core/bus.js';
@@ -38,7 +39,7 @@ export const SWITCH_ART = { id: 'martial_switch', cat: 'training', name: 'Switch
 export const tuition = c => Math.round(4000 * country(c).econ);
 export const PRIVATE = { id: 'private_school', cat: 'school', name: 'Transfer to a private school', icon: 'education', minAge: 6, maxAge: 17, need: c => ['Primary School', 'Secondary School'].includes(c.edu.school) && !c.edu.private, run: async c => {
   const g = Math.max(0, Math.min(4, (c.edu.grades - 50) / 10));
-  const sch = g >= 3.5 && c.stats.smarts >= 70;
+  const sch = g >= 3.5 && eff(c, 'smarts') >= 70;
   const fee = tuition(c);
   const ok = await ui.choice({ title: 'Private school', icon: 'education', text: `Smaller classes, better teachers: +grades and +smarts every year.\nTuition: ${fmtMoney(c, fee)} a year.${sch ? '\n\nYour GPA and smarts earn you a full SCHOLARSHIP — it\'s free!' : '\n(GPA 3.5+ and 70 Smarts would earn a scholarship.)'}`, options: [{ label: sch ? 'Accept the scholarship' : 'Enroll', value: true, disabled: !sch && c.money < fee }, { label: 'Stay where I am', value: false, ghost: true }] });
   if (!ok) return null;
@@ -54,7 +55,7 @@ export function schoolYear(c) {
     e.grades = clamp(e.grades + ri(1, 3)); stat(c, 'smarts', 1);
   }
   // university scholarships: refund part of tuition for excellent students
-  if (e.school === 'University' && !e.uniScholar && (e.grades - 50) / 10 >= 3.5 && c.stats.smarts >= 75) { e.uniScholar = true; const r = Math.round(8000 * country(c).econ * 2); money(c, r); ui.log(`My grades won a university scholarship: ${fmtMoney(c, r)} refunded.`, 'good'); }
+  if (e.school === 'University' && !e.uniScholar && (e.grades - 50) / 10 >= 3.5 && eff(c, 'smarts') >= 75) { e.uniScholar = true; const r = Math.round(8000 * country(c).econ * 2); money(c, r); ui.log(`My grades won a university scholarship: ${fmtMoney(c, r)} refunded.`, 'good'); }
 }
 
 // ---- migration

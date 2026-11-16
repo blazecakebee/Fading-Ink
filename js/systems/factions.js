@@ -1,10 +1,11 @@
+import { eff } from './body.js';
 // Sects (ranks, contribution, mission board, stipends, ousting, wars, inter-sect exchange),
 // personal disciples, and the Hunter Guild (harsh entry, contracts, ranks E → SSS).
 import { effRealm, onBodyPath } from './path.js';
 import { G } from '../core/state.js';
 import { ui } from '../core/bus.js';
 import { ri, pick, chance, clamp } from '../core/rng.js';
-import { stat, money, addItem, country, fmtMoney, priceFor } from './life.js';
+import { stat, money, addItem, country, fmtMoney, priceFor, wage } from './life.js';
 import { power } from './cultivation.js';
 import { ENEMIES, GATE_RANKS } from '../data/combat.js';
 import { SECTS, REALMS } from '../data/realms.js';
@@ -81,7 +82,7 @@ export function boards(c) {
 const diffLabel = d => d < 0 ? 'Easy' : d > 0 ? 'Hard' : 'Fair';
 export function missionInfo(c, m) {
   const mult = (m.er + 1) * (m.diff > 0 ? 1.6 : m.diff < 0 ? 0.6 : 1);
-  return { diff: diffLabel(m.diff), enemy: realmN(m.er), contrib: Math.round(12 * mult), money: Math.round(600 * mult * (m.org === 'guild' ? 2 : 1) * econ(c)), merit: Math.round(10 * mult) };
+  return { diff: diffLabel(m.diff), enemy: realmN(m.er), contrib: Math.round(12 * mult), money: Math.round(250 * mult * (m.org === 'guild' ? 2 : 1) * wage(c)), merit: Math.round(10 * mult) };
 }
 function enemyFor(m) {
   const id = pick(m.pool); const e = ENEMIES.find(x => x.id === id) || ENEMIES[1];
@@ -181,8 +182,8 @@ const MERIT = [0, 60, 180, 400, 800, 1500, 3000, 6000];
 export function guildJoinReq(c) {
   const why = [];
   if (c.age < 16) why.push('be 16 or older');
-  if ((c.stats.battle || 0) < 30) why.push(`Battle Knowledge 30 (you have ${c.stats.battle || 0})`);
-  if (c.stats.strength < 40) why.push(`Strength 40 (you have ${c.stats.strength})`);
+  if (eff(c, 'battle') < 30) why.push(`Battle Knowledge 30 (you have ${eff(c, 'battle') || 0})`);
+  if (eff(c, 'strength') < 40) why.push(`Strength 40 (you have ${eff(c, 'strength')})`);
   if (c.wins < 3) why.push(`win 3 real fights (you have ${c.wins})`);
   if (c.flags.guildTry === G.world.year) why.push('the examiners will see you again next year');
   return why;
@@ -199,12 +200,12 @@ export function guildNext(c) {
   const r = c.guild.rank + 1; if (r >= GUILD_RANKS.length) return null;
   const why = [], needR = Math.max(0, GATE_RANKS[r].realm - 1);
   if (c.guild.merit < MERIT[r]) why.push(`${MERIT[r]} merit (you have ${c.guild.merit})`);
-  const ranker = !onBodyPath(c) && c.qi.realm === 0 && r <= 3 && (c.stats.battle || 0) >= 40 + r * 12;
+  const ranker = !onBodyPath(c) && c.qi.realm === 0 && r <= 3 && eff(c, 'battle') >= 40 + r * 12;
   if (effRealm(c) < needR && !ranker) why.push(c.qi.realm === 0 && !onBodyPath(c) && r <= 3 ? `Battle Knowledge ${40 + r * 12} (mortal Rankers) or reach ${realmN(needR)}` : `reach ${realmN(needR)}`);
   return { r, name: GUILD_RANKS[r], why, ok: !why.length };
 }
 export function guildPromote(c) { const n = guildNext(c); if (!n?.ok) return null; c.guild.rank = n.r; ui.fx('milestone'); return { text: `The Hunter Guild promoted me to ${n.name}-rank.`, cls: 'big', big: true }; }
-export const guildSalary = c => Math.round([1, 2, 4, 8, 15, 30, 60, 120][c.guild.rank] * 1000 * econ(c));
+export const guildSalary = c => Math.round([1, 2, 4, 8, 15, 30, 60, 120][c.guild.rank] * 500 * wage(c));
 
 // ---------------- Yearly upkeep: stipends, ousting, framing, wars, relations drift
 export async function factionsYear(c) {
@@ -216,7 +217,7 @@ export async function factionsYear(c) {
   // relations drift a little each year
   for (const s of others(c)) if (chance(0.12)) shiftRel(c, s.id, pick([-1, 1]));
   const R = SECT_RANKS[c.sectRank];
-  if (R.stipend) { const m = Math.round(R.stipend * econ(c)); money(c, m); if (c.sectRank >= 2) addItem(c, 'qi_pill'); ui.log(`${R.name} stipend from the ${sectLabel(c)}: ${fmtMoney(c, m)}${c.sectRank >= 2 ? ' and a Qi Gathering Pill' : ''}.`, 'qi'); }
+  if (R.stipend) { const m = Math.round(R.stipend * wage(c)); money(c, m); if (c.sectRank >= 2) addItem(c, 'qi_pill'); ui.log(`${R.name} stipend from the ${sectLabel(c)}: ${fmtMoney(c, m)}${c.sectRank >= 2 ? ' and a Qi Gathering Pill' : ''}.`, 'qi'); }
   if (isOwn(c) || c.sect === 'guest') return;
   // ousting: deep in debt to the sect, or years of doing nothing as an outer disciple
   const idle = G.world.year - (c.flags.sectActive || c.flags.sectJoined || G.world.year);
@@ -224,8 +225,8 @@ export async function factionsYear(c) {
   // framing by a rival faction
   if (chance(0.03 + (c.sectRank >= 2 ? 0.02 : 0))) {
     const v = await ui.choice({ title: 'Framed!', icon: 'skull', text: `Stolen pills were found in your quarters. Someone in the ${sectLabel(c)} wants you gone.`,
-      options: [{ label: `Argue your innocence (Charisma ${c.stats.charisma}, Smarts ${c.stats.smarts})`, value: 'argue' }, { label: 'Accept the punishment quietly (-60 contribution)', value: 'accept' }, { label: 'Leave the sect', value: 'leave' }] });
-    if (v === 'argue') { if (chance(clamp((c.stats.charisma + c.stats.smarts) / 220, 0.15, 0.85))) { c.contrib += 20; ui.log('I exposed the real thief before the elders. My standing rose.', 'good'); } else oust(c, 'the elders believed the lie'); }
+      options: [{ label: `Argue your innocence (Charisma ${eff(c, 'charisma')}, Smarts ${eff(c, 'smarts')})`, value: 'argue' }, { label: 'Accept the punishment quietly (-60 contribution)', value: 'accept' }, { label: 'Leave the sect', value: 'leave' }] });
+    if (v === 'argue') { if (chance(clamp((eff(c, 'charisma') + eff(c, 'smarts')) / 220, 0.15, 0.85))) { c.contrib += 20; ui.log('I exposed the real thief before the elders. My standing rose.', 'good'); } else oust(c, 'the elders believed the lie'); }
     else if (v === 'leave') oust(c, 'I walked away from the politics', true);
     else { c.contrib -= 60; ui.log('I swallowed the insult and the punishment.', 'bad'); }
   }
@@ -289,7 +290,7 @@ export function buildHall(c, id) {
 }
 export function recruitDrive(c) {
   const o = c.ownSect; const cost = Math.round(3000 * econ(c)); if (c.money < cost) return null; money(c, -cost);
-  const n = Math.max(1, Math.round(ri(2, 6) * (1 + c.stats.charisma / 100) + c.qi.realm));
+  const n = Math.max(1, Math.round(ri(2, 6) * (1 + eff(c, 'charisma') / 100) + c.qi.realm));
   o.disciples += n; return { text: `A recruitment drive brought ${n} new disciples to the ${o.name}.`, cls: 'good' };
 }
 export function ownSectYear(c) {

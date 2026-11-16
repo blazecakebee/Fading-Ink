@@ -16,6 +16,7 @@ import { heightNow, fmtHeight, muscleLabel, ensureBody, allCaps } from '../syste
 import { CAPACITIES } from '../data/body.js';
 import { bodySection } from './itemsPanel.js';
 import { outfitFor } from '../data/clothing.js';
+import { eff } from '../systems/body.js';
 import { country, fullName, lifeStage, lifespan, fmtMoney, netWorth, wealthLabel, statCap, softCap, discount, CAPPED } from '../systems/life.js';
 
 const pct = m => `${m >= 1 ? '+' : ''}${Math.round((m - 1) * 100)}%`;
@@ -28,7 +29,7 @@ export function statusTab() {
   drawFullBody(cv, c.genes, { age: c.age, gender: c.gender, realm: c.qi.realm, hair: c.face ? { ...(c.hair || {}), ...c.face } : c.hair, outfit: outfitFor(c), gear: c.gear || {}, body: c.body, heightCm: heightNow(c), elemColor: c.qi.realm >= 3 ? ELEMENTS.find(e => e.id === c.qi.elem)?.color : null });
   const pPow = power(c);
   const maxHp = Math.round((40 + c.stats.health * 0.5 + c.stats.strength * 0.3) * (1 + (pPow - 1) * 0.5) + gs.hp);
-  const bk = c.stats.battle || 0;
+  const bk = eff(c, 'battle');
   const qiTotal = traitMult(c, 'qi') * bondBonus(c, 'qi') * condQiMult(c) * (1 + gs.qi) * (c.ownSect ? 1.1 : 1) * M.qi;
   const bonuses = [
     ['Qi gain', pct(qiTotal), `traits ${pct(traitMult(c, 'qi'))} · bonds ${pct(bondBonus(c, 'qi'))} · method ${pct(M.qi)} · gear ${add(gs.qi)}${c.ownSect ? ' · own sect +10%' : ''}${condQiMult(c) !== 1 ? ` · conditions ${pct(condQiMult(c))}` : ''}`],
@@ -61,9 +62,9 @@ export function statusTab() {
       h('div', { class: 'box' }, h('h3', {}, 'Core'), h('table', { class: 'kv' },
         row('Health', c.stats.health), row(`Happiness ${moodFace(c.stats.happiness)}`, c.stats.happiness), row('Stress', c.stats.stress))),
       h('div', { class: 'box' }, h('h3', {}, `Stats (cap ${statCap(c)}, soft ${softCap(c)})`), h('table', { class: 'kv' },
-        CAPPED.map(k => row(k === 'battle' ? 'Battle Knowledge' : k[0].toUpperCase() + k.slice(1), `${c.stats[k] ?? 0}`, (c.stats[k] ?? 0) >= softCap(c) ? 'legend' : '')))),
+        CAPPED.map(k => row(k === 'battle' ? 'Battle Knowledge' : k[0].toUpperCase() + k.slice(1), eff(c, k) < (c.stats[k] ?? 0) ? `${eff(c, k)} (trained ${c.stats[k]}) — injured` : `${c.stats[k] ?? 0}`, (c.stats[k] ?? 0) >= softCap(c) ? 'legend' : '')))),
       h('div', { class: 'box' }, h('h3', {}, 'Combat'), h('table', { class: 'kv' },
-        row('Max HP', maxHp), row('Damage', pct((1 + gs.dmg) * (1 + bk / 250))), row('Hit chance', add((c.stats.agility + gs.agi - 50) / 400 + bk / 400)),
+        row('Max HP', maxHp), row('Damage', pct((1 + gs.dmg) * (1 + bk / 250))), row('Hit chance', add((eff(c, 'agility') + gs.agi - 50) / 400 + bk / 400)),
         row('Crit chance', `${(8 + (c.stats.luck + gs.luck) / 10 + bk / 20).toFixed(1)}%`), row('Power', `×${pPow.toFixed(2)}`),
         row('Injuries taken', pct(bleedMult(c))), row('Record', `${c.wins} wins · ${c.gatesCleared} Gates`)))),
     h('div', { class: 'box', style: { marginTop: '14px' } }, h('h3', {}, 'All bonuses'), h('table', { class: 'kv' }, bonuses.map(([k, v, why]) => h('tr', {}, h('td', {}, k), h('td', { class: v.startsWith('-') ? 'bad' : v === '+0%' || v === '0%' ? '' : 'good' }, v), h('td', { class: 'muted small' }, why))))),

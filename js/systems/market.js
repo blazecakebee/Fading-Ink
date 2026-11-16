@@ -15,6 +15,8 @@ export const STOCKS = [
   { id: 'SHLD', name: 'Bulwark Insurance', sector: 'insurance', price: 55, vol: 0.12, drift: 0.04, desc: 'Pays out when disaster strikes — and suffers for it.' },
   { id: 'MOON', name: 'Moonpetal Media', sector: 'media', price: 12, vol: 0.38, drift: 0.05, desc: 'Celebrity, streaming, hype. Wild swings.' },
 ];
+// every trade costs a broker fee, so flipping stocks every year doesn't pay
+export const FEE = 0.02;
 export const STOCK = Object.fromEntries(STOCKS.map(s => [s.id, s]));
 // how each world condition hits each sector
 const NEWS = {
@@ -34,7 +36,7 @@ export function marketYear() {
   const m = market(); if (m.year === G.world.year) return; m.year = G.world.year;
   const n = G.world.news?.year === G.world.year ? NEWS[G.world.news.id] || {} : {};
   for (const s of STOCKS) {
-    const r = clamp(s.drift + gauss() * s.vol + (n.all || 0) + (n[s.sector] || 0), -0.6, 1.2);
+    const r = clamp(s.drift * 0.6 + gauss() * s.vol * 0.75 + ((n.all || 0) + (n[s.sector] || 0)) * 0.6, -0.5, 0.6);
     m.prices[s.id] = Math.max(1, Math.round(m.prices[s.id] * (1 + r) * 100) / 100);
     m.hist[s.id].push(m.prices[s.id]); m.hist[s.id] = m.hist[s.id].slice(-40);
   }
@@ -44,15 +46,15 @@ export const portfolioValue = c => holdings(c).reduce((t, [id, n]) => t + n * (m
 export function syncStocks(c) { c.stocks = Math.round(portfolioValue(c)); }
 export function buy(c, id, cash) {
   cash = Math.min(cash, c.money); if (cash <= 0) return null; // no investing with money you don't have
-  const p = market().prices[id]; const n = Math.floor(cash / p * 1000) / 1000; if (n <= 0) return null;
-  money(c, -n * p); (c.portfolio ||= {})[id] = (c.portfolio[id] || 0) + n; syncStocks(c);
-  return `I bought ${n.toLocaleString()} shares of ${STOCK[id].name} for ${fmtMoney(c, n * p)}.`;
+  const p = market().prices[id]; const n = Math.floor(cash / (p * (1 + FEE)) * 1000) / 1000; if (n <= 0) return null;
+  money(c, -n * p * (1 + FEE)); (c.portfolio ||= {})[id] = (c.portfolio[id] || 0) + n; syncStocks(c);
+  return `I bought ${n.toLocaleString()} shares of ${STOCK[id].name} for ${fmtMoney(c, n * p)} (+${fmtMoney(c, n * p * FEE)} broker fee).`;
 }
 export function sell(c, id, frac) {
   const have = c.portfolio?.[id] || 0; if (have <= 0) return null;
   const n = frac >= 1 ? have : Math.floor(have * frac * 1000) / 1000; const v = n * market().prices[id];
-  c.portfolio[id] = have - n; if (c.portfolio[id] < 1e-6) delete c.portfolio[id]; money(c, v); syncStocks(c);
-  return `I sold ${n.toLocaleString()} shares of ${STOCK[id].name} for ${fmtMoney(c, v)}.`;
+  c.portfolio[id] = have - n; if (c.portfolio[id] < 1e-6) delete c.portfolio[id]; money(c, v * (1 - FEE)); syncStocks(c);
+  return `I sold ${n.toLocaleString()} shares of ${STOCK[id].name} for ${fmtMoney(c, v * (1 - FEE))} (after a ${fmtMoney(c, v * FEE)} broker fee).`;
 }
 // yearly: prices move (once per world year), then your net worth follows
 export function portfolioYear(c) {

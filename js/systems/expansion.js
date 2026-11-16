@@ -3,7 +3,7 @@
 import { G } from '../core/state.js';
 import { ui } from '../core/bus.js';
 import { ri, pick, chance, clamp } from '../core/rng.js';
-import { HOOKS, stat, money, addItem, country, fmtMoney, fullName } from './life.js';
+import { HOOKS, stat, money, addItem, country, fmtMoney, fullName, wage } from './life.js';
 import { ACTIVITIES, SOCIAL } from '../data/activities.js';
 import { EVENTS } from '../data/events.js';
 import { TRAITS, TRAIT_BY_ID } from '../data/traits.js';
@@ -19,7 +19,7 @@ import { newsYear, ensureMatchingGate, spawnGate, birthAnomaly, BIRTH_EVENTS, ne
 import { FAMILY_SOCIAL, disputeYear, trainedHeir, MOVE_IN, birthYear } from './family.js';
 import { haveChild } from '../data/activities.js';
 import { MORE_NAMES } from '../data/names2.js';
-import { MARTIAL, SWITCH_ART, PRIVATE, MIGRATE, schoolYear, CHILDHOOD, cloudBonus } from './schooling.js';
+import { MARTIAL, SWITCH_ART, PRIVATE, MIGRATE, schoolYear, CHILDHOOD, cloudBonus, DOCTOR } from './schooling.js';
 import { portfolioYear, migrateStocks } from './market.js';
 import { ownSectYear } from './factions.js';
 import { META } from '../core/state.js';
@@ -35,6 +35,7 @@ SOCIAL.push(...FAMILY_SOCIAL, MOVE_IN);
 for (const cty of COUNTRIES) { const x = MORE_NAMES[cty.id]; if (x && !cty._more) { cty._more = 1; cty.m = [...new Set([...cty.m, ...x.m.split(' ')])]; cty.f = [...new Set([...cty.f, ...x.f.split(' ')])]; } }
 // ---- martial arts schools replace the old all-you-can-eat class; private school, migration
 { const i = ACTIVITIES.findIndex(a => a.id === 'martial'); if (i >= 0) ACTIVITIES[i] = MARTIAL; else ACTIVITIES.push(MARTIAL); }
+{ const i = ACTIVITIES.findIndex(a => a.id === 'doctor'); if (i >= 0) ACTIVITIES[i] = DOCTOR; else ACTIVITIES.push(DOCTOR); }
 ACTIVITIES.push(SWITCH_ART, PRIVATE, MIGRATE, REJECT, ...BODY_ACTS);
 // born without Qi at all
 for (const t of [{ id: 'heaven_severed', tier: 'legendary', name: 'Heaven-Severed', desc: 'Born with no Qi at all. You walk the Severed Path from birth: +12 Strength, +10 Agility, +10 Health.', mods: { strength: 12, agility: 10, health: 10 } }]) if (!TRAIT_BY_ID[t.id]) { TRAITS.push(t); TRAIT_BY_ID[t.id] = t; }
@@ -50,7 +51,7 @@ ACTIVITIES.push(
       const e = pick(ENEMIES.filter(x => x.kind === 'human' && x.realm <= c.qi.realm + 1 && x.id !== 'tribulation' && x.id !== 'bully'));
       const r = await ui.fight({ ...e, realm: Math.max(e.realm, Math.min(c.qi.realm, 10)), name: `${e.name} (target)` });
       if (r !== 'win') return { text: 'The contract went bad. I came back empty-handed and bruised.', cls: 'bad' };
-      c.wins++; const m = Math.round(ri(800, 2500) * (1 + c.qi.realm) * econ(c)); money(c, m);
+      c.wins++; const m = Math.round(ri(400, 1200) * (1 + c.qi.realm) * wage(c)); money(c, m);
       return { text: `Mercenary contract fulfilled. Paid ${fmtMoney(c, m)}, no questions asked.`, cls: 'good' }; } },
   { id: 'refine_essence', cat: 'cultivation', name: 'Refine Bloodline Essence', icon: 'flask', minAge: 14, need: c => c.inv.bloodline_essence > 0, run: c => {
       addItem(c, 'bloodline_essence', -1); ensureDna(c).points++; return { text: 'I refined the Bloodline Essence. Something dormant in my blood opened its eyes (+1 Awakening point).', cls: 'qi', big: true }; } },

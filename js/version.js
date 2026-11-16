@@ -1,7 +1,20 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.6.9';
+export const VERSION = '0.7.3';
 export const CHANGELOG = [
+  { v: '0.7.3', date: '2026-11-15', title: 'Harder to get rich', notes: [
+    'Wages now follow each country\'s real economy: a lawyer earns far more in the US or UK than in Egypt or Nigeria (always shown in your local currency). All salaries were lowered, and raises are now 2% a year (max +60%).',
+    'Stock market: smaller average returns and calmer swings, world news moves prices less, and every buy and sell costs a 2% broker fee.',
+    'Lower payouts across the board: Gate gold, sect stipends and missions, Hunter Guild retainers, mercenary contracts, own-sect tithes, odd jobs, crime, bonuses and promotions.',
+  ] },
+  { v: '0.7.2', date: '2026-11-15', title: 'Doctors fit prosthetics', notes: ['Visiting the doctor with a missing limb now offers prosthetics: cheap basic ones (peg leg, hook hand, glass eye…) or expensive bionic ones, priced in your local currency. They restore only part of a limb\'s function (40–90%) — never as good as the real thing — and you can upgrade later.'] },
+  { v: '0.7.1', date: '2026-11-15', title: 'Your body runs your stats', notes: [
+    'Injuries now hold your stats back. Your trained stats stay, but what you can actually use depends on your body: Agility needs Moving (legs), Sight and Consciousness; Strength needs Manipulation (arms & hands), Moving, Blood pumping and Breathing; Battle Knowledge needs hands, legs, eyes and a clear head; Smarts needs Consciousness and Sight; Charisma needs Talking.',
+    'Lose a leg and your Agility drops with it — the stats panel shows usable / trained (e.g. 82 /126) and exactly which body system is holding you back. Heal or fit a prosthetic to get it back.',
+    'Other systems matter too: Blood filtration & Digestion slow your yearly healing, Talking affects how fast people warm to you, Consciousness & Sight affect studying, your body affects how much you earn, and Qi flow (the Dantian) affects Qi gains.',
+    'Fights, missions, job requirements, exams and checks all use your usable stats.',
+  ] },
+  { v: '0.7.0', date: '2026-11-15', title: 'Age-up check & heirloom fix', notes: ['Pressing AGE UP while you still have actions or social actions left now asks you to confirm (with a "stop asking me" option; you can also switch it in Settings).', 'Fixed heirlooms showing as "[object Object]" on the Character page and in your Inventory — they now show their names and bonuses.'] },
   { v: '0.6.9', date: '2026-11-15', title: 'Gear sprites', notes: ['Every weapon, armour and charm (28 in all) now has its own hand-made pixel sprite in the Armory, your Inventory and your equipped gear.'] },
   { v: '0.6.8', date: '2026-11-15', title: 'One path per life', notes: ['The Severed Path must now be learned from someone first: a Qi-less fighter in a back-alley pit, a forbidden scroll in a library or old alley, an Iron Fist Syndicate veteran, or a martial arts master once you hold a high belt.', 'You can\'t switch paths mid-life: once you begin cultivating (reach Qi Refining) the Severed Path is hidden for good, and the Severed can never cultivate. The Cultivation tab is hidden for the Severed.', 'Fixed the body list on the Health page squashing injuries so you couldn\'t read them.', 'Fixed a rare loop with the Exotic Merchant.'] },
   { v: '0.6.7', date: '2026-11-15', title: 'Self-healing loader', notes: ['If your browser keeps a mix of old and new game files after an update (GitHub Pages caches files for ~10 minutes), the game now notices it can\'t start, re-downloads everything fresh and reloads by itself.', 'If something still stops the game from starting, a box now shows the exact error and a "Clear cache & retry" button instead of a blank screen.'] },

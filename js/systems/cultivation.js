@@ -1,3 +1,4 @@
+import { qiFlowMult } from './body.js';
 // Qi cultivation: gathering Qi, opening meridians, breakthroughs and Heavenly Tribulations.
 import { onBodyPath, bodyTier } from './path.js';
 import { ui } from '../core/bus.js';
@@ -23,7 +24,7 @@ export function qiGain(c, base) {
   const stress = c.stats.stress > 60 ? 0.6 : 1;
   const sect = c.ownSect ? 1.1 : 1;
   const M = method(c); const meth = M.qi * (M.dual && bondBonus(c, 'qi') > 1 ? 1 + M.dual : 1);
-  return Math.max(1, Math.round(base * aff * merid * manual * traitMult(c, 'qi') * stress * bondBonus(c, 'qi') * condQiMult(c) * (1 + gearStats(c).qi) * sect * meth * (perkC('c3') ? 1.15 : 1)));
+  return Math.max(1, Math.round(base * qiFlowMult(c) * aff * merid * manual * traitMult(c, 'qi') * stress * bondBonus(c, 'qi') * condQiMult(c) * (1 + gearStats(c).qi) * sect * meth * (perkC('c3') ? 1.15 : 1)));
 }
 
 // Meditate: main Qi source. Returns text for the chronicle.
