@@ -70,3 +70,32 @@ export const MIGRATE = { id: 'migrate', cat: 'work', name: 'Move to another coun
   ui.cinematic?.({ motif: 'mountain', color: '#7fd1ff', lines: [`You leave ${was} behind.`, `${c.city} smells different. Sounds different.`], title: `A new life in ${X.name}`, sub: 'Emigrated', sound: 'milestone' });
   return { text: `I moved from ${was} to ${c.city}, ${X.name}. I sold my home and left my old job behind.`, cls: 'big', big: true };
 } };
+
+// ---- childhood activities with real purpose (v0.6.4): each one grows something different
+import { makePerson, gainClose } from './people.js';
+import { addItem } from './life.js';
+const parent = c => c.people.find(p => p.role === 'Mother' && p.alive) || c.people.find(p => p.role === 'Father' && p.alive);
+export const CHILDHOOD = [
+  { id: 'play_toys', cat: 'childhood', name: 'Play pretend', icon: 'play', minAge: 1, maxAge: 9, run: c => {
+      const [t, k] = pick([['I built a fortress out of blocks and planned every tower.', 'smarts'], ['My toy soldiers fought a great war. I was the general.', 'battle'], ['I hosted a tea party for my plushies and gave a speech.', 'charisma'], ['I drew a whole city on the floor in chalk.', 'smarts']]);
+      stat(c, 'happiness', ri(3, 6)); stat(c, k, ri(1, 2));
+      if (chance(0.04)) { money(c, Math.round(ri(5, 30) * country(c).econ)); return { text: `${t} Under the sofa I found some coins!`, cls: 'good' }; }
+      return `${t} (${k === 'battle' ? 'Battle Knowledge' : k[0].toUpperCase() + k.slice(1)} up)`; } },
+  { id: 'snowball', cat: 'childhood', name: 'Play outside with the other kids', icon: 'snowball', minAge: 4, maxAge: 13, run: c => {
+      stat(c, 'agility', ri(1, 3)); stat(c, 'strength', 1); stat(c, 'happiness', 4);
+      const game = pick(['a snowball war', 'tag across the courtyard', 'football in the street', 'hide-and-seek in the market']);
+      const pals = c.people.filter(p => p.alive && ['Friend', 'Classmate'].includes(p.role) && Math.abs(p.age - c.age) <= 3);
+      if (pals.length && chance(0.6)) { const p = pick(pals); gainClose(c, p, ri(4, 8)); return `I played ${game} with ${p.first}. We're getting closer.`; }
+      if (chance(0.35)) { const p = makePerson(c, { role: 'Friend', age: c.age + ri(-1, 1), close: ri(35, 50) }); c.people.push(p); return { text: `I played ${game} and made a new friend: ${p.first}!`, cls: 'good' }; }
+      return `I played ${game} until the streetlights came on.`; } },
+  { id: 'tantrum', cat: 'childhood', name: 'Help around the house', icon: 'tea', minAge: 4, maxAge: 15, run: c => {
+      const p = parent(c); const [t, k] = pick([['I helped cook dinner.', 'smarts'], ['I carried the groceries home.', 'strength'], ['I fixed the wobbly table with Dad\'s tools.', 'smarts'], ['I swept the whole shop front.', 'agility']]);
+      stat(c, k, 1); stat(c, 'stress', -2);
+      if (p) { gainClose(c, p, ri(3, 6)); if (chance(0.4)) { const m = Math.round(ri(2, 15) * country(c).econ); money(c, m); return `${t} ${p.first} slipped me ${fmtMoney(c, m)} as pocket money.`; } return `${t} ${p.first} looked proud of me.`; }
+      return `${t} Nobody saw, but I did it anyway.`; } },
+  { id: 'picture_books', cat: 'childhood', name: 'Read picture books', icon: 'study', minAge: 3, maxAge: 9, run: c => {
+      const g = ri(1, 3); stat(c, 'smarts', g); c.edu.grades = clamp(c.edu.grades + 1); (c.lastTrained ||= {}).smarts = c.age;
+      return pick(['I read about dragons that live in the clouds.', 'I learned the names of every planet.', 'I read a story about a girl who could talk to spirits.', 'I sounded out a whole page by myself!']) + ` (Smarts +${g})`; } },
+];
+// Watching the clouds slowly attunes a child to Qi (+1 affinity, up to +6), and may reveal it outright.
+export function cloudBonus(c) { c.flags.cloudAff ||= 0; if (c.flags.cloudAff < 6 && chance(0.5)) { c.flags.cloudAff++; c.qi.affinity = clamp(c.qi.affinity + 1); return ' The wind felt alive, somehow. (Qi affinity +1)'; } return ''; }

@@ -47,7 +47,7 @@ export const ACTIVITIES = [
   { id: 'tantrum', cat: 'childhood', name: 'Throw a tantrum', icon: 'brokenheart', minAge: 2, maxAge: 7, run: c => { const p = c.people.find(p => p.role === 'Mother' && p.alive) || c.people.find(p => p.role === 'Father' && p.alive); if (p) p.close = clamp(p.close - 5); stat(c, 'happiness', 2); return 'I screamed until I got my way. Mostly.'; } },
   { id: 'cloud_watch', cat: 'childhood', name: 'Watch the clouds', icon: 'sun', minAge: 3, maxAge: 12, run: c => { stat(c, 'stress', -5);
       if (!c.qi.known && chance(has(c, 'qi_sensitive') ? 0.6 : 0.04)) { c.qi.known = true; return { text: 'The air shimmered. For a moment I could SEE the wind breathing. Something called Qi is real.', cls: 'qi', big: true }; }
-      return 'One cloud looked like a dragon.'; } },
+      stat(c, 'smarts', 1); return 'One cloud looked like a dragon.' + (c.age < 13 ? (globalThis.__cloudBonus?.(c) || '') : ''); } },
   { id: 'explore_alleys', cat: 'childhood', name: 'Explore old alleys', icon: 'lantern', minAge: 6, maxAge: 15, run: c => {
       if (!c.qi.manuals.length && chance(c.qi.known ? 0.35 : 0.08)) { learnManual(c, 'breathing'); return { text: 'Behind a collapsed tea house, a mute old woman pressed a yellowed scroll into my hands, then vanished.', cls: 'qi', big: true }; }
       if (chance(0.15)) { const g = ri(5, 40); money(c, g); return `I found ${fmtMoney(c, g)} in a gutter.`; }
