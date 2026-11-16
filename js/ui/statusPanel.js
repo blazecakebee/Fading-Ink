@@ -4,7 +4,7 @@ import { h, icon } from './dom.js';
 import { drawFullBody } from './portrait.js';
 import { traitChip, temperChip, render } from './render.js';
 import { TEMPER } from '../data/temper.js';
-import { SEXUALITIES as SEX } from '../systems/identity.js';
+import { SEXUALITIES as SEX } from '../systems/selfhood.js';
 import { qiOf, formName } from '../systems/qitype.js';
 import { qiBadge } from './qiBadge.js';
 import { REALMS, ELEMENTS } from '../data/realms.js';

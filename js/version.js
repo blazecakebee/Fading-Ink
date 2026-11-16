@@ -1,7 +1,11 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.8.8';
+export const VERSION = '0.8.9';
 export const CHANGELOG = [
+  { v: '0.8.9', date: '2026-11-16', title: 'Start-up fix', notes: [
+    'Fixed: the game could fail to start ("could not start… error") for players using an ad or tracker blocker. A new file\'s name looked like a tracking script and was being blocked. It has been renamed.',
+    'If the game ever fails to start, the error box now names the file that failed and waits longer on slow connections before giving up.',
+  ] },
   { v: '0.8.8', date: '2026-11-16', title: 'Bodies, bloodlines & darker lives', notes: [
     'Bloodline: the Awakening tree now sits beside a glowing DNA double helix, one gold rung per awakened gene. Slots go up from 7 to 10. New genes: four 5th-tier transcendent genes for the realms beyond Immortal Ascension, plus three new cross-branch genes.',
     'Accessories: new Necklace and Ring slots with 8 new pieces (Storage Ring, Sword-Intent Ring, Dragon-Tooth Necklace, Prayer Beads…). Each has its own sprite and shows on your character. Find them in Gates or buy the simpler ones.',

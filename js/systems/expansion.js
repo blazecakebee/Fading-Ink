@@ -36,7 +36,7 @@ import { legacyBirth, legacyYear } from './legacyExtra.js';
 import { renownYear, otherworldYear, inOtherworld } from './renown.js';
 import { PRISON_ACTS, PRISON_CAT, lawYear } from './law.js';
 import { DARK_EVENTS, REHAB, addictionYear } from '../data/darkEvents.js';
-import { IDENTITY_ACTS, attractedTo, sexualityOf } from './identity.js';
+import { IDENTITY_ACTS, attractedTo, sexualityOf } from './selfhood.js';
 import { appearanceYear } from './appearance.js';
 import { CATEGORIES } from '../data/activities.js';
 import { onBodyPath as onBodyPathQ } from './path.js';

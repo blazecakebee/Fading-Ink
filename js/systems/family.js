@@ -58,7 +58,7 @@ export const blessName = REALMS[BLESS_REALM].name;
 
 // ---- fertility, pregnancy and baby names (v0.6.3)
 import { COUNTRIES } from '../data/countries.js';
-import * as ID from './identity.js';
+import * as ID from './selfhood.js';
 import { G } from '../core/state.js';
 const LIFE_CUM = [0, 2, 7, 19, 44, 79, 124, 179, 244, 319, 404, 504, 654, 774, 924, 1124, 1374];
 // Women can have children until ~45, men until ~75; cultivation stretches both along with the lifespan.

@@ -10,7 +10,7 @@ import { gainClose, relLabel } from '../systems/people.js';
 import { stat } from '../systems/life.js';
 
 import { PERSONAS, LIKES, ensurePersona, enjoysList, hatesList } from '../data/personas.js';
-import { SEXUALITIES, sexualityOf } from '../systems/identity.js';
+import { SEXUALITIES, sexualityOf } from '../systems/selfhood.js';
 export { PERSONAS, ensurePersona };
 
 // Each scene: a prompt and four answers tagged with a style. Answers are shuffled into A–D.
