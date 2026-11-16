@@ -95,13 +95,14 @@ export function rollTier(c, id, score) {
   return { tier: 'solid', s };
 }
 const MULT = { peak: 2.5, sloppy: 0.45, mishap: 0.2 };
+export const TRAIN_BUFF = 1.5; // v0.9.14 every minigame session gives 50% more than before (they take longer than a click)
 const LBL = { grades: 'Grades', perf: 'Job performance', strength: 'Strength', agility: 'Agility', battle: 'Battle', smarts: 'Smarts', charisma: 'Charisma', qi: 'Qi' };
 
 // Called after the activity ran: scales what it gave you by tier, fatigue and accuracy, and applies mishaps.
 export function applyPractice(c, id, snap, roll) {
   const P = PRACTICE[id], { tier, s } = roll, quick = s == null;
-  const fat = fatigueMult(c, id), base = tier === 'solid' ? (quick ? 0.9 : 0.75 + s * 0.5) : MULT[tier];
-  const mult = base * fat;
+  const fat = fatigueMult(c, id), base = tier === 'solid' ? (quick ? 0.9 : 0.8 + s * 0.5) : MULT[tier];
+  const mult = base * fat * TRAIN_BUFF;
   const deltas = [];
   for (const k of TRACK) { const d = c.stats[k] - snap[k]; if (d > 0) { const extra = Math.round(d * (mult - 1)); if (extra) { stat(c, k, extra); deltas.push([k, extra]); } } }
   if (snap.grades != null && c.edu?.grades > snap.grades) { const d = c.edu.grades - snap.grades, extra = Math.round(d * (mult - 1)); c.edu.grades = clamp(c.edu.grades + extra, 0, 100); if (extra) deltas.push(['grades', extra]); }

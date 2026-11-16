@@ -1,7 +1,10 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.13';
+export const VERSION = '0.9.14';
 export const CHANGELOG = [
+  { v: '0.9.14', date: '2026-11-16', title: 'Worth the effort', notes: [
+    'Training, studying, meditating, opening meridians, working harder and hiking now give 50% more than before, since every session is a minigame now. Solid sessions also give a little more at average play.',
+  ] },
   { v: '0.9.13', date: '2026-11-16', title: 'Paths & Banners', notes: [
     'Your cultivation method now changes the meditation minigame. Each of the 13 methods has its own: follow the circling breath (Basic), keep a slow rhythm from memory (Turtle Breath), a Five Elements quiz, wipe clouds off the moon (Moonlit), stoke the fire as fast as you can (Heart-Fire), dodge lightning between columns (Thunder), tap lotus petals only once fully open (Lotus), one clean sword cut along a line (Sword Intent), catch falling stars in a bowl (Starfall), hold Yin, Yang or both as they glow (Dual), hold perfectly still through distractions (Void), drag vengeful souls into a cauldron (Myriad Souls), and push-your-luck blood drawing (Blood Sea).',
     'Every minigame now has its own mechanic. Lock picking is now drag-the-pin-to-the-line, and basic meditation is now follow-the-orb, so no two games play the same.',
