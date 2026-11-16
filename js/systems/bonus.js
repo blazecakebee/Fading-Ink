@@ -5,6 +5,7 @@ import { GENE } from '../data/genes.js';
 import { G } from '../core/state.js';
 import { outfitStyle } from '../data/clothing.js';
 import { TEMPER } from '../data/temper.js';
+import { qiPassives } from './qitype.js';
 
 export function attuned(c) {
   const list = (c.heirlooms || []).filter(x => x && typeof x === 'object' && HEIRLOOMS[x.id]);
@@ -16,6 +17,7 @@ export function sources(c) {
   const d = c.dna; if (d) for (const id of [...(d.base || []), ...(d.awakened || [])]) { const g = GENE(id); if (g) out.push(g); }
   for (const d of c.divine || []) if (d.mods) out.push(d.mods); // divine blessings & god-shards
   for (const id of c.temper || []) if (TEMPER[id]) out.push(TEMPER[id]); // your personality
+  out.push(...qiPassives(c)); // your Qi type
   if (c.flags?.stormBorn) out.push({ breakthrough: 0.03 });
   const st = outfitStyle(c); if (st) out.push({ social: 1 + Math.min(15, st) / 100 });
   const lib = c.ownSect?.halls?.library; if (lib) out.push({ qi: 1 + lib * 0.04 });

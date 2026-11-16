@@ -4,6 +4,8 @@ import { h, icon } from './dom.js';
 import { drawFullBody } from './portrait.js';
 import { traitChip, temperChip, render } from './render.js';
 import { TEMPER } from '../data/temper.js';
+import { qiOf, formName } from '../systems/qitype.js';
+import { qiBadge } from './qiBadge.js';
 import { REALMS, ELEMENTS } from '../data/realms.js';
 import { ITEMS, SLOTS } from '../data/items.js';
 import { COND_BY_ID } from '../data/conditions.js';
@@ -26,7 +28,7 @@ import { country, fullName, lifeStage, lifespan, fmtMoney, netWorth, wealthLabel
 const pct = m => `${m >= 1 ? '+' : ''}${Math.round((m - 1) * 100)}%`;
 const add = v => `${v >= 0 ? '+' : ''}${Math.round(v * 100)}%`;
 // every row gets an icon, picked from its label
-const ROW_ICON = { age: 'clock', gender: 'character', height: 'gym', build: 'fist', home: 'world', 'born into': 'baby', wealth: 'market', generation: 'legacy', sect: 'crown', job: 'career', cultivation: 'meditate', qi: 'cultivation',
+const ROW_ICON = { age: 'clock', gender: 'character', height: 'gym', build: 'fist', home: 'world', 'born into': 'baby', wealth: 'market', generation: 'legacy', sect: 'crown', job: 'career', cultivation: 'meditate', qi: 'cultivation', 'qi type': 'star',
   health: 'health', happiness: 'heart', stress: 'brokenheart', strength: 'fist', 'battle knowledge': 'combat', agility: 'kick', smarts: 'study', charisma: 'people', luck: 'dice', looks: 'salon',
   'max hp': 'health', damage: 'broadsword', 'hit chance': 'eye', 'crit chance': 'star', power: 'lightning', 'injuries taken': 'skull', record: 'trophy',
   'qi gain': 'cultivation', 'training gains': 'gym', 'study gains': 'study', salary: 'career', 'relationship growth': 'heart', 'merchant discount': 'shop', 'crafting success': 'anvil', craftsmanship: 'hammer',
@@ -68,7 +70,8 @@ export function statusTab() {
           row('Home', `${c.city}, ${cty.name}`), row('Born into', WEALTH.find(w => w.id === c.wealth).name), row('Wealth', `${wealthLabel(c)} · net worth ${fmtMoney(c, netWorth(c))}`),
           row('Generation', `${c.generation} · Life #${META.lives}`), row('Sect', sectName(c) || '—'), row('Job', c.job ? c.job.id.replace(/_/g, ' ') : '—'),
           row('Cultivation', c.qi.known ? `${realmName(c)} · ${ELEMENTS.find(e => e.id === c.qi.elem)?.name} affinity ${c.qi.affinity} · ${c.qi.meridians}/12 meridians · ${M.name}` : 'Unknown'),
-          row('Qi', c.qi.known ? `${c.qi.qi}/${qiCap(c)}` : '—')))),
+          row('Qi', c.qi.known ? `${c.qi.qi}/${qiCap(c)}` : '—'),
+          row('Qi type', (() => { const q = qiOf(c); if (!q) return '—'; return h('span', { class: 'row', style: { gap: '6px' } }, qiBadge(q.primary, 22, q.fused ? q.secondary : null), q.fused ? q.fusedName : formName(q.primary), q.secondary && !q.fused ? ` + ${formName(q.secondary)}` : ''); })())))),
     h('div', { class: 'grid3', style: { marginTop: '14px' } },
       h('div', { class: 'box' }, h('h3', {}, 'Core'), h('table', { class: 'kv' },
         row('Health', c.stats.health), row(`Happiness ${moodFace(c.stats.happiness)}`, c.stats.happiness), row('Stress', c.stats.stress))),

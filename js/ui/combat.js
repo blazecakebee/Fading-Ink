@@ -23,6 +23,9 @@ import { GROUPS } from '../data/body.js';
 import { hitBody, combatMods } from '../systems/body.js';
 import { die, statCap } from '../systems/life.js';
 import { myHidden } from '../systems/trainers.js';
+import { combatFx, qiColors, qiOf, qiSfx } from '../systems/qitype.js';
+import { QI } from '../data/qitypes.js';
+import { qiBurst, qiBadge } from './qiBadge.js';
 import { PLAYER_HP, ENEMY_HP, ENEMY_DMG, GEAR_DMG, SEVERED_EDGE, realmScale, enemyScale, enemyPct, playerPct, qiStat, enemyQiStat } from '../systems/combatcore.js';
 
 const bkLabel = v => v >= 80 ? 'Master' : v >= 60 ? 'Veteran' : v >= 40 ? 'Seasoned' : v >= 20 ? 'Trained' : 'Novice';
@@ -37,6 +40,8 @@ export function fight(enemyDef, opts = {}) {
       name: 'You', maxHp: Math.round(((40 + c.stats.health * 0.5 + eff(c, 'strength') * 0.3) * (1 + (pPow - 1) * 0.5) + gs.hp) * PLAYER_HP), gear: { ...gs, dmg: (gs.dmg || 0) * GEAR_DMG },
       mods: combatMods(c), str: pct('strength'), agi: pct('agility') + gs.agi, bk: pct('battle'), pow: pPow, stam: 100, qi: c.qi.qi, maxQi: Math.max(1, c.qi.qi), mom: 0, guard: false, armor: 0, evade: false, burn: 0,
     };
+    const QF = combatFx(c), qCol = qiColors(c), qSnd = qiOf(c) ? QI[c.qiType.primary.type].snd : 'pure'; // your Qi type's riders, colours and sound
+    if (QF.hp) me.maxHp = Math.round(me.maxHp * (1 + QF.hp));
     me.hp = me.maxHp;
     const ePow = REALMS[enemyDef.realm || 0].power * (enemyDef.kind === 'spirit' ? traitMult(c, 'spiritBane') ** -1 : 1);
     const sc = enemyDef.sparring || opts.tribulation ? 1 : enemyScale(enemyDef.id, enemyDef.realm);
@@ -60,7 +65,8 @@ export function fight(enemyDef, opts = {}) {
       const hp = h('i'); const mom = h('div', { class: 'mom off' }, isMe ? '«««««' : '»»»»»');
       ui[isMe ? 'meHp' : 'enHp'] = hp; ui[isMe ? 'meMom' : 'enMom'] = mom;
       const hpTxt = h('div', { class: 'flvl' }); ui[isMe ? 'meHpTxt' : 'enHpTxt'] = hpTxt;
-      const info = h('div', { class: 'info' }, h('div', { class: 'fname' }, isMe ? 'You' : who.name),
+      const qb = isMe && qiOf(c) ? qiBadge(c.qiType.primary, 20, c.qiType.fused ? c.qiType.secondary : null) : null; if (qb) qb.style.marginLeft = '6px';
+      const info = h('div', { class: 'info' }, h('div', { class: 'fname' }, isMe ? 'You' : who.name, qb),
         h('div', { class: 'flvl' }, `${isMe ? (onBodyPath(c) ? bodyTier(c).name : realmLabel(c.qi.realm) + (c.qi.realm ? ' ' + c.qi.stage : '')) : realmLabel(who.realm || 0)} · Power ${Math.round(who.pow * 10) / 10}${isMe ? ` · ${bkLabel(me.bk)}` : ''}`),
         h('div', { class: 'hpbar' }, hp), hpTxt, mom);
       const pf = h('div', { class: 'fportrait' }, isMe ? mePortrait : ePortrait); ui[isMe ? 'mePf' : 'enPf'] = pf;
@@ -114,14 +120,21 @@ export function fight(enemyDef, opts = {}) {
       let dmg = ri(...mv.dmg) * (0.6 + statV / 100) * (mv.stat === 'qi' || mv.body ? att.pow : Math.sqrt(att.pow)) * (1 + att.mom * 0.1) * (1 + (att.gear?.dmg || 0)) * (1 + (att.bk || 0) / 250) * (!attIsMe || !en.weak ? 1 : 1.5) * (attIsMe ? (mv.stat === 'qi' ? me.mods.qi : me.mods.dmg) : (en.crippled.arms ? 0.65 : 1));
       dmg *= attIsMe ? P.me : P.them * en.dmgK;
       if (attIsMe && onBodyPath(c) && ((enemyDef.realm || 0) > 0 || enemyDef.kind === 'spirit')) dmg *= SEVERED_EDGE; // Qi users can't sense the Severed coming
-      if (def.guard && !mv.pierce) { dmg *= 0.5; def.guard = false; } if (def.armor && !mv.pierce) { dmg *= 0.5; def.armor--; }
-      const crit = chance(0.08 + (attIsMe ? (c.stats.luck + gs.luck) / 1000 + me.bk / 2000 : 0)); if (crit) dmg *= 1.7;
+      const qiMove = attIsMe && mv.stat === 'qi';
+      if (qiMove) { dmg *= 1 + (QF.dmg || 0); if (QF.holy && (enemyDef.kind === 'spirit' || /demon|ghost|blood|corrupt/.test(enemyDef.id || ''))) dmg *= 1 + QF.holy; }
+      const pierce = mv.pierce || (qiMove && chance(QF.pierce || 0));
+      if (def.guard && !pierce) { dmg *= 0.5; def.guard = false; } if (def.armor && !pierce) { dmg *= 0.5; def.armor--; }
+      const crit = chance(0.08 + (attIsMe ? (c.stats.luck + gs.luck) / 1000 + me.bk / 2000 + (qiMove ? QF.crit || 0 : 0) : 0)); if (crit) dmg *= 1.7;
       if (enemyDef.sparring && attIsMe === false) dmg *= 0.7;
       dmg = Math.max(1, Math.round(dmg)); def.hp -= dmg; att.mom = Math.min(3, att.mom + (mv.mom || 1)); def.mom = 0;
       if (mv.drain) att.hp = Math.min(att.maxHp, att.hp + dmg * mv.drain);
       if (mv.burn) def.burn = 2; if (mv.evade) att.evade = true; if (mv.stun && chance(mv.stun)) def.stun = 1;
+      if (qiMove) { // Qi-type riders + colour and sound
+        if (QF.burn && chance(QF.burn)) def.burn = 2; if (QF.stun && chance(QF.stun)) def.stun = 1; if (QF.evade && chance(QF.evade)) att.evade = true;
+        if (QF.heal || QF.drain) att.hp = Math.min(att.maxHp, att.hp + att.maxHp * ((QF.heal || 0) + (QF.drain || 0)) * 0.2); // a share of YOUR max HP, so it doesn't snowball at high realms
+        qiBurst(ui.enPf, qCol, crit); qiSfx(qSnd); }
       fx(crit ? 'crit' : 'hit'); shake(defPf);
-      const r = defPf.getBoundingClientRect(); floatText((crit ? 'CRIT ' : '-') + dmg, r.left + r.width / 2 - 20, r.top + 10, crit ? '#ffd84a' : '#ff6b6b');
+      const r = defPf.getBoundingClientRect(); floatText((crit ? 'CRIT ' : '-') + dmg, r.left + r.width / 2 - 20, r.top + 10, crit ? '#ffd84a' : qiMove ? qCol[0] : '#ff6b6b');
       let extra = '';
       if (attIsMe) { // targeted zone damage on the enemy
         en.zones[target] -= dmg;
@@ -173,7 +186,7 @@ export function fight(enemyDef, opts = {}) {
         log.textContent = 'You tried to flee but were cut off!'; await enemyTurn(); busy = false; return draw();
       }
       // initiative: faster fighter acts first; momentum shown with chevrons
-      const meFirst = me.agi + ri(0, 30) + (traitMult(c, 'initiative') > 1 ? 15 : 0) >= en.agi + ri(0, 30);
+      const meFirst = me.agi + ri(0, 30) + (traitMult(c, 'initiative') > 1 ? 15 : 0) + (QF.init || 0) >= en.agi + ri(0, 30);
       const lines = [];
       if (meFirst) { lines.push(attack(me, en, k, true)); draw(); if (en.hp > 0) { await wait(380); lines.push(await enemyTurn(true)); } }
       else { lines.push(await enemyTurn(true)); draw(); if (me.hp > 0) { await wait(380); lines.push(attack(me, en, k, true)); } }

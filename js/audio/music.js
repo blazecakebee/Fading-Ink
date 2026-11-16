@@ -43,6 +43,8 @@ const walk = (scale, root, range = 7) => { melodyPos = Math.max(0, Math.min(rang
 
 // Each station: bpm, steps per bar (16ths), progression [root midi, quality], and play(step, t, s) where s = seconds per step.
 export const STATIONS = {
+  // v0.8.5 the game's first real soundtrack (an audio file, not generated)
+  forgive: { name: 'Forgive (OST)', mood: 'The Fading Ink theme', file: 'assets/music/forgive.mp3', ost: true },
   frontier: { name: 'Frontier Dusk', mood: 'Lonely acoustic plucks under a wide sky', bpm: 76, prog: [[50, 'maj'], [55, 'maj'], [57, 'sus'], [50, 'maj']],
     play(st, t, s, ch) { const i = st % 16; const notes = chordNotes(ch[0], ch[1]);
       if ([0, 3, 6, 8, 11, 14].includes(i)) v(N(notes[(i / 3 | 0) % notes.length] + 12), t, s * 6, { type: 'triangle', gain: 0.07, cut: 2200, cutEnd: 600, verb: 1 });
@@ -124,10 +126,11 @@ let rotateTimer = null;
 const ROTATION = () => Object.entries(STATIONS).filter(([k, x]) => !x.shuffle && !x.menuOnly && k !== 'battle').map(([k]) => k);
 export function playStation(id) {
   clearTimeout(rotateTimer);
-  if (id === 'shuffle') { const pool = ROTATION().filter(k => k !== lastRot); const k = pool[Math.floor(Math.random() * pool.length)]; lastRot = k; playStation(k); current = 'shuffle'; rotateTimer = setTimeout(() => { if (current === 'shuffle') playStation('shuffle'); }, 150000); return; }
+  if (id === 'shuffle') { const pool = ROTATION().filter(k => k !== lastRot); const k = pool[Math.floor(Math.random() * pool.length)]; lastRot = k; playStation(k); current = 'shuffle'; if (!STATIONS[k].file) rotateTimer = setTimeout(() => { if (current === 'shuffle') playStation('shuffle'); }, 150000); return; } // recorded tracks play to the end
   stopMusic(); if (!id || id === 'off') return;
   if (id === 'files') return playFiles();
   const S = STATIONS[id]; if (!S) return;
+  if (S.file) return playOst(id, S);
   const ctx = audio(); fx(); current = id; step = 0; melodyPos = 5; nextTime = ctx.currentTime + 0.1;
   if (S.hiss) startHiss();
   const steps = S.steps || 16;
@@ -139,6 +142,13 @@ export function playStation(id) {
       nextTime += s; step++;
     }
   }, 30);
+}
+// a recorded track: streams through the music bus (so the volume slider works); in shuffle it moves on when it ends
+function playOst(id, S) {
+  const ctx = audio(); current = id;
+  if (!fileNode) { fileNode = ctx.createMediaElementSource(fileAudio); fileNode.connect(bus.music); }
+  fileAudio.src = S.file; fileAudio.currentTime = 0; fileAudio.play().catch(() => {});
+  fileAudio.onended = () => { if (current === id) playStation(id); else if (current === 'shuffle') playStation('shuffle'); };
 }
 export function stopMusic() { clearTimeout(rotateTimer); clearInterval(timer); timer = null; current = null; stopHiss(); fileAudio.pause(); }
 let lastRot = null;

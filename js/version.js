@@ -1,7 +1,15 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.8.4';
+export const VERSION = '0.8.5';
 export const CHANGELOG = [
+  { v: '0.8.5', date: '2026-11-16', title: 'Qi Types & the first OST', notes: [
+    'New OST: "Forgive", the game\'s first real soundtrack. It plays on the title screen, is in the music rotation, and can be picked in Settings.',
+    'Qi Types: when you reach Qi Refining, your Qi awakens as one of 21 types, from Common to Mythic. What you get depends on how you lived: forging and alchemy lean Fire or Magma; herbs and medicine Wood or Poison; killing and forbidden arts Demonic; study and an honest heart Righteous; a storm at your birth Lightning; grief or a brush with death Ghost; and your birth element tips the scale.',
+    'Each Qi type has 3 permutations (63 in all), refined at Foundation Establishment, Nascent Soul and Void Refinement. Refining succeeds sometimes, fails sometimes, and can give you Qi Deviation.',
+    'At Void Refinement you can seek a second Qi. That\'s the only way to get the conceptual Qi: Sword Intent, Starlight, Space, Time and, from Dao Seeking, Chaos. At Body Integration you can try to fuse two compatible Qi (e.g. Fire + Wind = Blazing Tempest). Opposites (Fire/Water, Yin/Yang, Righteous/Demonic, the Wu Xing overcoming cycle…) can never be fused unless one of them is Chaos. A failed fusion tears your meridians and locks you out for 3 years.',
+    'Your Qi changes every Qi technique you use: its colour (damage numbers, sparks, glow), its sound (crackling fire, rushing water, ringing metal, thunderclaps, ghostly whispers…) and small effects like burn, stun, pierce, healing, evasion and initiative. Every type and permutation has its own badge.',
+    'Balance: tested in the combat simulator. A fully refined Mythic Qi, or a fused pair, gives an average fighter about 10–20% more wins at the top realms. Unfused second Qi only give half their passive bonuses and nothing in combat.',
+  ] },
   { v: '0.8.4', date: '2026-11-15', title: 'Who you are', notes: [
     'Personality: you\'re born with 1–2 of 40 personality traits (up to 4 at once). There are 20 virtues, like Kind, Loyal, Disciplined and Wise, and 20 trade-offs, like Psychopath, Eccentric, Naive, Egregiously Arrogant, Ruthless and Melancholic. Each has real effects on training, study, salary, relationships, stress, combat power, breakthroughs and more.',
     'New personality traits develop from how you live: hours in the gym, years of meditation, gifts, crimes, grief, sacrifice… Opposites can\'t coexist, and the oldest trait fades when you gain a 5th. Loyal people\'s bonds barely fade; Fickle people\'s fade fast. Psychopaths feel no grief; Cold people feel half.',

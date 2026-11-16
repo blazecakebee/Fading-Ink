@@ -82,7 +82,7 @@ export function showMenu(onPlay) {
       h('div', { class: 'menu-foot muted small' }, `v${VERSION} · Legacy ${META.legacy} · ${META.lives} lives lived`)));
   document.body.append(root);
   // menu theme (browsers only allow sound after the first click/tap)
-  const startMenuMusic = () => { if (document.getElementById('menu') && S().musicOn) playStation('menu'); };
+  const startMenuMusic = () => { if (document.getElementById('menu') && S().musicOn) playStation('forgive'); };
   startMenuMusic(); addEventListener('pointerdown', startMenuMusic, { once: true });
 }
 function leave(then) {

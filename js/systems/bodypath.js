@@ -11,7 +11,7 @@ import { traitMult } from './traits.js';
 
 const T = c => c.bodyPath.tier || 0;
 export function startPath(c, why) {
-  c.path = 'body'; c.bodyPath = { v2: true, tier: 0, prog: why === 'born' ? 30 : 0, wins: c.wins, gates: c.gatesCleared, since: c.age };
+  c.path = 'body'; c.qiType = null; c.bodyPath = { v2: true, tier: 0, prog: why === 'born' ? 30 : 0, wins: c.wins, gates: c.gatesCleared, since: c.age };
   c.conditions = (c.conditions || []).filter(x => !['qi_deviation', 'corruption', 'meridian_block'].includes(x.id));
   Object.assign(c.qi, { known: false, realm: 0, stage: 1, qi: 0, manuals: [], techs: [], methods: ['basic'], meridians: 0 });
 }
