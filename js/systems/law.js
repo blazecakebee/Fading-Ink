@@ -11,7 +11,7 @@ import { eff } from './body.js';
 import { traitMult, earnTrait } from './traits.js';
 
 // how good the police are: rich, high-tech countries catch you far more often
-export const policeFactor = c => ({ developed: 1.45, emerging: 1.0, developing: 0.65 }[country(c).tier] || 1);
+export const policeFactor = c => ({ developed: 1.45, emerging: 1.0, developing: 0.65, least: 0.45 }[country(c).tier] || 1);
 export const heatLabel = h => h >= 75 ? 'Most wanted' : h >= 45 ? 'Under federal investigation' : h >= 20 ? 'Police are asking questions' : h > 0 ? 'A few rumours' : 'Clean';
 export const caughtChance = (c, risk) => clamp(risk * 1.5 * traitMult(c, 'crime') * (1 - eff(c, 'agility') / 300) * policeFactor(c) * (1 + (c.heat || 0) / 120), 0.02, 0.95);
 export function addHeat(c, n) { c.heat = clamp((c.heat || 0) + n); }

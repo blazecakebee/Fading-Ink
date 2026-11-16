@@ -11,6 +11,17 @@ export const THEMES = [
   ['sakura', 'Sakura', ['#3a1a28', '#ffc0d4', '#ff8ab0']], ['terminal', 'Terminal', ['#041204', '#3fff7a', '#0a3a14']],
   ['clean', 'Clean Life', ['#ffffff', '#1f9a5a', '#0f6fb0']], ['void', 'Void', ['#12061e', '#c08aff', '#5a1ad0']],
   ['ocean', 'Ocean', ['#0a2a40', '#6ae0ff', '#2ab0e0']], ['autumn', 'Autumn Ink', ['#2e1608', '#ff8a3a', '#a0400f']],
+  // v0.9.16
+  ['obsidian', 'Obsidian Gold', ['#0c0c0e', '#e8c46a', '#8a6a2a']],
+  ['blossom', 'Plum Blossom', ['#2a1424', '#ffb3d9', '#c7569a']],
+  ['desert', 'Desert Mirage', ['#3a2a18', '#ffd9a0', '#d08a3a']],
+  ['arctic', 'Arctic Light', ['#eaf4fb', '#2a6aa8', '#7ac0e8']],
+  ['emerald', 'Emerald Court', ['#06231c', '#4fe0a0', '#e8c46a']],
+  ['bloodmoon', 'Blood Moon', ['#140406', '#ff3a3a', '#7a0a14']],
+  ['ink', 'Ink Wash', ['#f2efe6', '#1a1a1a', '#8a8a80']],
+  ['cyber', 'Synthwave', ['#1a0a2e', '#ff7ad9', '#7afcff']],
+  ['forest', 'Deep Forest', ['#10200f', '#b6e07a', '#6a8a3a']],
+  ['storm', 'Thunderstorm', ['#151a26', '#c8b8ff', '#ffe066']],
 ];
 
 export const DEFAULTS = {

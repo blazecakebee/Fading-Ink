@@ -1,7 +1,13 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.15';
+export const VERSION = '0.9.16';
 export const CHANGELOG = [
+  { v: '0.9.16', date: '2026-11-16', title: 'A Wider World', notes: [
+    '18 new countries, each with its own flag, cities on the World map, currency, names, weather and Qi density: Vietnam, the Philippines, Indonesia, Thailand, Pakistan, Bangladesh, Ethiopia, Kenya, DR Congo, Haiti, Nepal, Mali, Germany, Canada, Turkey, South Africa, Argentina and Colombia (30 in total).',
+    'New "Least developed" tier (Bangladesh, Ethiopia, DR Congo, Haiti, Nepal, Mali): very few schools and universities, frequent hunger, weak policing — and Legacy ×1.8 for a life lived there.',
+    'Poorer countries pay more Legacy: Developing ×1.5 (was 1.35), Emerging ×1.2 (was 1.15), Developed stays ×1.',
+    '10 new UI themes: Obsidian Gold, Plum Blossom, Desert Mirage, Arctic Light, Emerald Court, Blood Moon, Ink Wash, Synthwave, Deep Forest and Thunderstorm (Settings).',
+  ] },
   { v: '0.9.15', date: '2026-11-16', title: 'People Are People', notes: [
     'The people in your life now react to what you do. New jobs, breakthroughs, prison, crime, killing, injuries, weddings, babies, fame, debt, addiction and more get comments in their own voice: proud, worried, disapproving or jealous, depending on their personality and how close you are. What they think changes how close you stay.',
     'People come to you with requests: friends invite you out, family asks for loans (lend it, give it, or refuse — and loans may or may not come back), parents ask you to visit, partners want date nights, people need help moving or advice, your kids ask for things. Your choices matter to them.',

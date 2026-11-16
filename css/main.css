@@ -433,7 +433,7 @@ td.legend { color: var(--legend); font-weight: 800; }
 .map-head { display: flex; align-items: center; gap: 4px; padding: 10px 14px; }
 .mini-seg { margin-left: auto; width: 180px; } .mini-seg button { padding: 5px 6px; font-size: .85rem; }
 .map-frame { display: block; width: 100%; height: clamp(240px, 38vh, 460px); border: 0; filter: saturate(.85); }
-body:not([data-theme='clean']):not([data-theme='parchment']):not([data-theme='pastel']) .map-frame { filter: invert(.92) hue-rotate(180deg) saturate(.7) brightness(.95); }
+body:not([data-theme='clean']):not([data-theme='parchment']):not([data-theme='pastel']):not([data-theme='arctic']):not([data-theme='ink']) .map-frame { filter: invert(.92) hue-rotate(180deg) saturate(.7) brightness(.95); }
 .map-credit { padding: 6px 14px; } .map-credit a { color: var(--accent2); }
 
 /* ---- body diagram */
