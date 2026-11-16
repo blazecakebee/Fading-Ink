@@ -42,7 +42,7 @@ export function renderSettings() {
         slider('Portrait size', 'portraitSize', 48, 128, 8, v => v + 'px')),
       card('Layout', '🧩',
         toggle('Show icons', 'showIcons'), toggle('Icons-only navigation', 'iconsOnly'), toggle('Compact mode', 'compact'),
-        toggle('Right stats panel', 'showRight'), toggle('Chronicle in sidebar', 'showChronicle'), toggle('Activity categories start open', 'autoOpenCats')),
+        toggle('Right stats panel', 'showRight'), toggle('Activity categories start open', 'autoOpenCats')),
       card('Gameplay', '🎲',
         toggle('Show stat numbers', 'showNumbers'), toggle('Show world news', 'showWorldNews'), toggle('Show hints', 'hints'),
         toggle('Confirm age-up', 'confirmAgeUp', null, 'when you still have actions left')),

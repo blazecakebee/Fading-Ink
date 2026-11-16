@@ -1,7 +1,12 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.2';
+export const VERSION = '0.9.3';
 export const CHANGELOG = [
+  { v: '0.9.3', date: '2026-11-16', title: 'Tidy traits', notes: [
+    'Traits and Personality are separate panels again on the Life tab.',
+    'The story no longer jumps to the top and sweeps back down when you open an action category. It keeps your place, and only moves to the end when something new happens.',
+    'Removed the small Chronicle box in the right column. The story stage covers it, and the full Chronicle tab is still in the menu.',
+  ] },
   { v: '0.9.2', date: '2026-11-16', title: 'Story first', notes: [
     'The Life tab is now a story stage: your last years scroll like a chronicle, with "Age N" dividers. Big moments stand out with a coloured edge, quiet ones fade back, and the current year glows.',
     'No more walls of buttons: actions live in a compact dock of categories under the story. Tap one to open just those actions, tap again to close. Pins (up to 4), Repeat routine and the batch slider sit right above it.',

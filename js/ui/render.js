@@ -176,13 +176,9 @@ function rightCol() {
         ['combat', 'Power', power(c).toFixed(1)], ['trophy', 'Fights won', c.wins], ['gates', 'Gates', c.gatesCleared],
         ['market', 'Gold', fmtMoney(c, c.money)], ['bell', 'Fame', (c.fame || 0).toLocaleString()]].map(([ic, k, v]) => h('div', {}, icon(ic, 'sm'), k, h('b', {}, v))))),
     (c.conditions || []).length ? h('div', { class: 'box' }, h('h3', {}, 'Conditions'), c.conditions.map(x => h('span', { class: 'chip', style: { '--tc': 'var(--bad)', cursor: 'pointer' }, onclick: () => { G.ui.tab = 'health'; render(); } }, COND_BY_ID[x.id].name))) : null,
-    h('div', { class: 'box' }, h('h3', {}, 'Traits'), c.traits.length || (c.temper || []).length ? [...c.traits.map(traitChip), ...(c.temper || []).map(temperChip)] : h('span', { class: 'muted' }, 'None yet.')),
+    h('div', { class: 'box' }, h('h3', {}, 'Traits'), c.traits.length ? c.traits.map(traitChip) : h('span', { class: 'muted' }, 'None yet.')),
+    h('div', { class: 'box' }, h('h3', {}, 'Personality'), (c.temper || []).length ? (c.temper || []).map(temperChip) : h('span', { class: 'muted' }, 'Not yet formed.')),
   ];
-  if (META.settings.showChronicle !== false) {
-    const lines = c.log.slice(-6).reverse().flatMap(y => [h('div', { class: 'yr' }, `Age ${y.age}`), ...y.lines.map(l => h('div', { class: l.c }, l.t))]);
-    const dd = h('details', { class: 'box chron', open: G.ui.chronOpen ?? true }, h('summary', {}, h('h3', {}, 'Chronicle')), h('div', { class: 'chronicle feed' }, lines)); dd.addEventListener('toggle', () => { G.ui.chronOpen = dd.open; });
-    out.push(dd);
-  }
   $('#right').replaceChildren(...out.filter(Boolean));
 }
 const EARN_HINTS = {
@@ -257,7 +253,10 @@ export const TABS = {
         ...(y.lines.length ? y.lines : [{ t: now ? (c.age === 0 ? 'A new story begins in faded ink.' : 'The year is still unwritten.') : 'A quiet year.', c: 'ambient' }]).map((l, li) =>
           h('p', { class: 'st-line ' + (l.c || '') + (KEY.some(k => (l.c || '').includes(k)) ? ' key' : '') + (now && li >= fresh ? ' fresh' : '') }, l.t))); });
     const stage = h('div', { class: 'story-stage' }, ...years);
-    requestAnimationFrame(() => { stage.scrollTop = stage.scrollHeight; });
+    // Keep the reader's place on re-renders (dock chips etc.); only jump to the end when new lines arrive. Instant, no smooth sweep.
+    const sig = c.log.length + ':' + cur.lines.length, prev = G.ui.stage || {};
+    stage.addEventListener('scroll', () => { G.ui.stage = { sig, top: stage.scrollTop, atEnd: stage.scrollTop + stage.clientHeight >= stage.scrollHeight - 30 }; }, { passive: true });
+    requestAnimationFrame(() => { stage.scrollTop = (prev.sig === sig && !prev.atEnd) ? prev.top : stage.scrollHeight; G.ui.stage = { sig, top: stage.scrollTop, atEnd: prev.sig === sig ? prev.atEnd !== false : true }; });
     if (!c.alive) return [stage, h('div', { class: 'row', style: { marginTop: '16px' } }, h('button', { class: 'btn', onclick: () => import('./legacyPanel.js').then(m => m.deathScreen()) }, 'Continue your legacy'))];
     const cats = CATEGORIES.map(cat => { if (cat.id === 'cultivation' && (!c.qi.known || onBodyPath(c))) return null;
       const acts = ACTIVITIES.filter(a => a.cat === cat.id && c.age >= (a.minAge ?? 0) && c.age <= (a.maxAge ?? 999) && (!a.need || a.need(c)));
