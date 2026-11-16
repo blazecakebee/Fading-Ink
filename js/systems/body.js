@@ -27,6 +27,8 @@ export function ensureBody(c) {
   return c.body;
 }
 export const maxHp = (c, p) => Math.round(PART_BY_ID[p].hp * (1 + (c.qi?.realm || 0) * 0.3));
+// the prosthetic covering a part: its own, or the one replacing the limb it hangs from (a bionic leg includes the foot)
+export function prostheticOf(c, id) { let p = PART_BY_ID[id]; while (p) { const pr = c.body.parts[p.id]?.prosthetic; if (pr) return pr; p = PART_BY_ID[p.parent]; } return null; }
 export function isMissing(c, id) { let p = PART_BY_ID[id]; while (p) { if (c.body.parts[p.id].missing) return true; p = PART_BY_ID[p.parent]; } return false; }
 const kindOf = id => id.startsWith('arm') ? 'arm' : id.startsWith('leg') ? 'leg' : id.startsWith('hand') ? 'hand' : id.startsWith('foot') ? 'foot' : id.startsWith('eye') ? 'eye' : null;
 

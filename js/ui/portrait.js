@@ -283,7 +283,7 @@ export function buildFullBody(genes, opts = {}) {
   const { age = 20, gender = 'F', realm = 0, elemColor = null, gear = {}, robeColor = null, body = null, heightCm = 170, outfit = {} } = opts;
   const gone = id => body?.parts?.[id]?.missing || (id.startsWith('hand') && body?.parts?.['arm' + id.slice(4)]?.missing) || (id.startsWith('foot') && body?.parts?.['leg' + id.slice(4)]?.missing);
   const prost = id => body?.parts?.[id]?.prosthetic || (id.startsWith('hand') && body?.parts?.['arm' + id.slice(4)]?.prosthetic) || (id.startsWith('foot') && body?.parts?.['leg' + id.slice(4)]?.prosthetic);
-  const muscle = body?.muscle || 0; const METAL = '#8a929e';
+  const muscle = body?.muscle || 0; const METAL = '#5fa8e8'; // prosthetics: artificial blue
   const R = seeded(genes.seed + 7);
   const head = buildPortrait(genes, { ...opts, headOnly: true, raw: true });
   const W = 32, H = 64; const g = Array.from({ length: H }, (_, y) => y < 32 ? head.g[y].slice() : Array(W).fill(null));

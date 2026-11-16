@@ -574,3 +574,6 @@ body:not([data-theme='clean']):not([data-theme='parchment']):not([data-theme='pa
 .arena-choice { position: absolute; display: flex; flex-direction: column; gap: 10px; background: #0b0910ee; border: 1px solid #ffffff22; border-radius: 14px; padding: 18px; min-width: 300px; }
 .arena-choice .t { text-align: center; color: #fff; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 22px; }
 .arena-choice .btn small { display: block; font-size: 11px; opacity: .8; font-weight: 400; }
+/* artificial (prosthetic) parts */
+.bpart.artificial { stroke: #bfe4ff; stroke-width: 1.2; filter: drop-shadow(0 0 3px #5fb4ff); }
+.blist-inj.artificial { background: linear-gradient(90deg, #1f5a8a88, transparent); color: #d6ecff; }
