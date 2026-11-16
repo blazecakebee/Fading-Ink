@@ -31,7 +31,7 @@ export async function standoff(c, years, what) {
     years = Math.round((years || 1) * 1.8);
   }
   if (c.age < 18 || !years) { stat(c, 'happiness', -8); addHeat(c, 5); return { text: `${what}… and got caught. ${c.age < 18 ? 'My parents were called.' : 'I paid a fine.'}`, cls: 'bad' }; }
-  c.prison = years + ri(0, years); c.flags.prisonEver = true; c.immortalPrison = false; c.heat = Math.round((c.heat || 0) * 0.5);
+  c.prison = years + ri(0, years); c.flags.prisonEver = true; c.immortalPrison = false; c.heat = Math.round((c.heat || 0) * 0.5); import('./license.js').then(m => m.suspendLicense(c, c.prison + 1, 'while I serve my sentence'));
   return { text: `${what}… and got caught. Sentenced to ${c.prison} years in prison.`, cls: 'bad', big: true };
 }
 

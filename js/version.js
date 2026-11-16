@@ -1,7 +1,13 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.6';
+export const VERSION = '0.9.7';
 export const CHANGELOG = [
+  { v: '0.9.7', date: '2026-11-16', title: 'Licensed & Interviewed', notes: [
+    'DRIVER\'S LICENSES (Assets tab): pass a 3-question theory test (age 15+, 2 right) for a learner\'s permit, take up to 4 driving lessons, then the driving test (age 16+). The test opens with a road situation — the wrong call is an instant fail — then the examiner judges you on Agility, Smarts and lessons.',
+    'You now need a license to buy a car. Drunk-driving crashes suspend it for 3 years, and prison suspends it for your sentence.',
+    'New jobs that need a license: Delivery Driver and Taxi Driver.',
+    'Job interviews now ask two questions, with plausible-sounding wrong answers mixed in. Pick a wrong one and you\'re rejected on the spot, with the reason. Two good answers still depend on your Smarts or Charisma, plus a little goodwill.',
+  ] },
   { v: '0.9.6', date: '2026-11-16', title: 'Crafters & Legends', notes: [
     'FIXED: Gates and Rifts could freeze between fights (no next popup, so you had to start over). The game sometimes failed to pick the next monster; it now always does. The same hidden bug is fixed for otherworld fights and prison breaks.',
     'FIXED: if a monster killed you while you tried to flee, the fight kept going at 0 HP.',

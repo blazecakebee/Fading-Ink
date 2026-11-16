@@ -6,6 +6,7 @@ import { stat, money, fmtMoney, wage, addItem, die } from '../systems/life.js';
 import { eff } from '../systems/body.js';
 import { ENEMIES } from './combat.js';
 import { effRealm } from '../systems/path.js';
+import { suspendLicense } from '../systems/license.js';
 
 const adult = c => c.age >= 18, teen = c => c.age >= 13 && c.age < 20;
 const friendOf = c => pick(c.people.filter(p => p.alive && !p.coop && ['Friend', 'Coworker', 'Classmate', 'Acquaintance'].includes(p.role))) || null;
@@ -38,7 +39,7 @@ export const DARK_EVENTS = [
   E('car_crash', 0.45, c => c.age >= 16 && c.assets.some(a => a.type === 'car'), c => {
     const hurt = ri(10, 35); stat(c, 'health', -hurt); stat(c, 'stress', 8);
     if (chance(0.04) && effRealm(c) < 2) return die(c, 'a head-on collision on a wet road');
-    ui.log(`I crashed my car${chance(0.3) ? ' — I wasn\'t sober' : ''}. -${hurt} Health.`, 'bad'); }),
+    const drunk = chance(0.3); ui.log(`I crashed my car${drunk ? ' — I wasn\'t sober' : ''}. -${hurt} Health.`, 'bad'); if (drunk) suspendLicense(c, 3, 'drunk driving'); }),
   E('stalker', 0.3, c => adult(c) && (c.stats.looks >= 70 || (c.fame || 0) >= 5000), async c => {
     const v = await ui.choice({ title: 'Someone is watching', icon: 'eye', text: 'The same face in the crowd, three days running. Letters under the door that know where you\'ve been.', options: [{ label: 'Go to the police', value: 'police' }, { label: 'Confront them', value: 'confront' }, { label: 'Move house', value: 'move' }] });
     stat(c, 'stress', 12);

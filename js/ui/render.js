@@ -10,6 +10,7 @@ import { inventoryTab, craftingTab, healthTab } from './itemsPanel.js';
 import { statusTab } from './statusPanel.js';
 import { moodFace, TRAINABLE, decayRate } from '../systems/health.js';
 import { COND_BY_ID, condTip } from '../data/conditions.js';
+import * as LIC from '../systems/license.js';
 import { ITEMS } from '../data/items.js';
 import { METHODS } from '../data/realms.js';
 import { wage, rollQuality, tiered, QUALITY } from '../systems/life.js';
@@ -244,6 +245,20 @@ function quickBar(c) {
         h('input', { type: 'range', class: 'range', style: { '--p': `${c.actions > 1 ? (n - 1) / (c.actions - 1) * 100 : 100}%` }, min: 1, max: Math.max(1, c.actions), value: n, disabled: c.actions <= 1, oninput: e => { G.ui.batch.n = +e.target.value; e.target.style.setProperty('--p', `${(e.target.value - 1) / Math.max(1, c.actions - 1) * 100}%`); e.target.nextSibling.textContent = `×${e.target.value}`; } }), h('b', { class: 'batch-n' }, `×${n}`),
         h('button', { class: 'btn mini', disabled: c.actions <= 0, onclick: e => { const a = rep.find(x => x.id === G.ui.batch.id); runMany(Array(Math.min(G.ui.batch.n || 1, c.actions)).fill(a), e.currentTarget); } }, 'Do it')) : null));
 }
+// v0.9.7 driver's license panel (Assets tab)
+function licenseBox(c) {
+  const st = LIC.licenseState(c), F = LIC.fees(c), L = c.license || {}, busy = !c.alive || c.prison || c.actions <= 0;
+  const act = (id, label, fn, dis) => h('button', { class: 'btn' + (id === 'lesson' ? ' ghost' : ''), disabled: busy || dis, onclick: e => runActivity({ id: 'lic_' + id, cat: 'work', run: fn }, e.currentTarget) }, label);
+  const status = { none: 'No license', permit: `Learner's permit · ${L.lessons || 0}/4 lessons${L.fails ? ` · ${L.fails} failed test${L.fails > 1 ? 's' : ''}` : ''}`, full: `Full license since ${L.year}`, suspended: `Suspended until ${L.suspended}` }[st];
+  return h('div', { class: 'box lic-box', style: { marginTop: '12px' } }, h('h3', {}, icon('car', 'sm'), " Driver's license"),
+    h('div', { class: 'small lic-' + st }, status),
+    st === 'none' ? [h('div', { class: 'muted small' }, `Needed to buy a car or work as a driver. Step 1: the theory test (age ${LIC.LICENSE_AGE.theory}+), three road-rules questions; get 2 right for a learner's permit.`),
+      h('div', { class: 'row', style: { marginTop: '8px' } }, act('theory', `Take the theory test · ${fmtMoney(c, F.theory)} (⚡1)`, cc => LIC.theoryTest(cc), c.age < LIC.LICENSE_AGE.theory || c.money < F.theory))] : null,
+    st === 'permit' ? [h('div', { class: 'muted small' }, `Lessons raise your pass chance. The test has one road situation — the wrong call is an instant fail — then the examiner judges your driving (${Math.round(LIC.testChance(c) * 100)}% now, from Agility, Smarts and lessons).`),
+      h('div', { class: 'row', style: { marginTop: '8px', gap: '6px' } }, act('lesson', `Driving lesson · ${fmtMoney(c, F.lesson)} (⚡1)`, cc => LIC.lesson(cc), c.money < F.lesson || (L.lessons || 0) >= 4),
+        act('test', `Take the driving test · ${fmtMoney(c, F.test)} (⚡1)`, cc => LIC.practicalTest(cc), c.age < LIC.LICENSE_AGE.test || c.money < F.test))] : null,
+    st === 'full' ? h('div', { class: 'muted small' }, 'You can buy cars and take driving jobs. Drunk driving or prison will get it suspended.') : null);
+}
 export const TABS = {
   // v0.9.2 Story stage: the last years scroll like a chronicle; actions live in a compact dock below
   life() {
@@ -411,7 +426,7 @@ export const TABS = {
       J.listed(c).length ? null : h('p', { class: 'muted' }, 'Nobody is hiring right now. Try again next year, or get a job agent.'),
       h('div', { class: 'grid2' }, J.listed(c).map(j => { const ok = J.eligible(c, j), lead = J.jobBoard(c).leads.includes(j.id);
         return h('div', { class: 'card' + (ok ? '' : ' locked') }, h('h4', {}, j.name, j.part ? h('span', { class: 'muted' }, ' (part-time)') : '', lead ? h('span', { class: 'grade', style: { background: '#7fd1ff' } }, 'Agent lead') : ''),
-        h('div', { class: 'muted' }, `${fmtMoney(c, j.pay * wage(c) * (j.part ? 0.5 : 1))}/yr · age ${j.minAge}+ · ${EDUCATION[j.edu]}${j.major ? ' in ' + j.major.join(' or ') : ''}${j.stat ? ' · ' + Object.entries(j.stat).map(([k, v]) => `${k} ${v}+`).join(', ') : ''}${j.realm ? ' · ' + REALMS[j.realm].name : ''}`),
+        h('div', { class: 'muted' }, `${fmtMoney(c, j.pay * wage(c) * (j.part ? 0.5 : 1))}/yr · age ${j.minAge}+ · ${EDUCATION[j.edu]}${j.major ? ' in ' + j.major.join(' or ') : ''}${j.stat ? ' · ' + Object.entries(j.stat).map(([k, v]) => `${k} ${v}+`).join(', ') : ''}${j.realm ? ' · ' + REALMS[j.realm].name : ''}${j.license ? ' · driver\'s license' : ''}`),
         h('div', { class: 'row', style: { marginTop: '8px' } }, h('button', { class: 'btn', disabled: !c.alive || c.prison || c.actions <= 0 || !ok || c.job?.id === j.id,
           onclick: () => runActivity({ id: 'apply_' + j.id, cat: 'work', run: async cc => { const b = J.jobBoard(cc); const r = await J.interview(cc, j); if (r.hired) { cc.job = { id: j.id, years: 0, perf: 50 }; b.ids = b.ids.filter(x => x !== j.id); b.leads = b.leads.filter(x => x !== j.id); } return r; } }) }, 'Apply (⚡1)'),
           ok ? h('span', { class: 'muted small' }, `${Math.round(J.hireChance(c, j) * 100)}% chance`) : h('span', { class: 'muted small' }, 'Not qualified'))); }))];
@@ -443,10 +458,11 @@ export const TABS = {
         a.type === 'house' ? h('button', { class: 'btn ghost', onclick: () => { a.tenant = !a.tenant; a.rent = Math.round(a.value * 0.05); logLine(a.tenant ? `I rented out my ${a.name}.` : `I evicted my tenant.`); render(); } }, a.tenant ? 'Evict' : 'Rent out') : null,
         a.type !== 'pet' ? h('button', { class: 'btn ghost', onclick: () => { money(c, a.value); c.assets.splice(i, 1); fx('coin'); logLine(`I sold my ${a.name} for ${fmtMoney(c, a.value)}.`); render(); } }, 'Sell') : null,
         willInfo(c).kids.length ? h('button', { class: 'btn ghost', title: 'Hand this to one of your children now', onclick: async () => { const kids = willInfo(c).kids; const k = kids.length === 1 ? kids[0] : await choice({ title: `Give ${a.name} to…`, options: kids.map(x => ({ label: `${x.first} (${x.role.toLowerCase()}, ${x.age})`, value: x })).concat([{ label: 'Cancel', value: null, ghost: true }]) }); if (!k) return; const t = giftToChild(c, k, { asset: a }); if (t) { logLine(t, 'good'); fx('action'); render(); } } }, 'Give') : null))) : h('div', { class: 'muted' }, 'Nothing yet.'),
+      licenseBox(c),
       h('h3', { class: 'display', style: { margin: '16px 0 8px' } }, 'Market'),
       h('p', { class: 'muted small' }, discount(c) ? `Your charisma gets you ${Math.round(discount(c) * 100)}% off everything here.` : 'Raise your Charisma to get better deals from merchants.'),
       h('div', { class: 'grid2' }, SHOP.map(([name, type, ic, price]) => { const p = priceFor(c, price * k); return h('div', { class: 'card row' }, icon(ic), h('div', { style: { flex: 1 } }, h('b', {}, name), h('div', { class: 'muted' }, fmtMoney(c, p))),
-        h('button', { class: 'btn', disabled: c.age < 18 || c.money < p || !c.alive, onclick: async () => { const ok = await choice({ title: 'Buy ' + name + '?', text: `Price: ${fmtMoney(c, p)}`, icon: ic, options: [{ label: 'Buy', value: true }, { label: 'Cancel', value: false, ghost: true }] }); if (!ok) return; money(c, -p); c.assets.push({ type, name, value: p }); fx('coin'); stat(c, 'happiness', 10); logLine(`I bought a ${name.toLowerCase()} for ${fmtMoney(c, p)}.`, 'good'); render(); } }, 'Buy')); })),
+        type === 'car' && !LIC.hasLicense(c) ? h('button', { class: 'btn', disabled: true, 'data-tip': LIC.licenseState(c) === 'suspended' ? 'Your license is suspended.' : 'You need a driver\'s license to buy a car. Get one above.' }, 'Needs license') : h('button', { class: 'btn', disabled: c.age < 18 || c.money < p || !c.alive, onclick: async () => { const ok = await choice({ title: 'Buy ' + name + '?', text: `Price: ${fmtMoney(c, p)}`, icon: ic, options: [{ label: 'Buy', value: true }, { label: 'Cancel', value: false, ghost: true }] }); if (!ok) return; money(c, -p); c.assets.push({ type, name, value: p }); fx('coin'); stat(c, 'happiness', 10); logLine(`I bought a ${name.toLowerCase()} for ${fmtMoney(c, p)}.`, 'good'); render(); } }, 'Buy')); })),
       h('div', { class: 'row', style: { marginTop: '14px' } }, h('button', { class: 'btn', disabled: c.age < 18, onclick: () => { G.ui.tab = 'market'; render(); } }, icon('stocks', 'sm'), ' Open the stock market'))];
   },
 

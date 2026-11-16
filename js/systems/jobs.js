@@ -7,6 +7,7 @@ import { CAREERS } from '../data/careers.js';
 import { money, fmtMoney, wage, country, priceFor } from './life.js';
 import { makePerson, gainClose } from './people.js';
 import { eff } from './body.js';
+import { hasLicense } from './license.js';
 import { perk } from '../data/legacyTree.js';
 
 export const AGENTS = {
@@ -19,7 +20,7 @@ export const agentFee = (c, tier) => priceFor(c, Math.round(AGENTS[tier].fee * w
 
 export function eligible(c, j) {
   return c.age >= j.minAge && c.age <= (j.maxAge || 99) && c.edu.level >= j.edu && (!j.major || j.major.includes(c.edu.major)) && (c.edu.school !== 'University' || j.part)
-    && Object.entries(j.stat || {}).every(([k, v]) => eff(c, k) >= v) && (!j.realm || c.qi.realm >= j.realm);
+    && Object.entries(j.stat || {}).every(([k, v]) => eff(c, k) >= v) && (!j.realm || c.qi.realm >= j.realm) && (!j.license || hasLicense(c));
 }
 // this year's openings: each job is hiring with some chance (rarer the better it pays), more with an agent
 export function jobBoard(c) {
@@ -67,19 +68,41 @@ export function jobsYear(c) {
   money(c, -fee);
 }
 
-// ---- v0.8.7 job interviews: one question, your answer is judged against your Smarts, Charisma and subject knowledge
+// ---- v0.9.7 job interviews: two questions. A wrong answer ends the interview on the spot.
+// Good answers are then judged against your Smarts (tech), Charisma (charm) or honesty.
 const QUESTIONS = [
-  { q: 'Why should we hire you over everyone else in that waiting room?', a: [['Lay out exactly what you know about the field.', 'tech'], ['Smile, hold their eye, and sell yourself.', 'charm'], ['"Honestly? I need this job, and I will work harder than anyone."', 'honest']] },
-  { q: 'Tell us about a time you failed.', a: [['Walk through a real mistake and what you changed after it.', 'honest'], ['Turn it into a funny story that ends well.', 'charm'], ['Explain the technical root cause in detail.', 'tech']] },
-  { q: 'Here is a problem from our work. How would you solve it?', a: [['Work it out step by step, out loud.', 'tech'], ['Ask smart questions until the answer appears.', 'charm'], ['"I don\'t know yet, but here\'s how I\'d find out."', 'honest']] },
+  { q: 'Why should we hire you over everyone else in that waiting room?', a: [['Lay out exactly what you know about the field.', 'tech'], ['Smile, hold their eye, and sell yourself.', 'charm'], ['"Honestly? I need this job, and I will work harder than anyone."', 'honest'],
+    ['"Because I\'m cheaper than the others, probably."', 'bad', 'You talked yourself down to nothing.'], ['"No idea. My mum told me to apply."', 'bad', 'They stopped writing halfway through your answer.']] },
+  { q: 'Tell us about a time you failed.', a: [['Walk through a real mistake and what you changed after it.', 'honest'], ['Turn it into a funny story that ends well.', 'charm'], ['Explain the technical root cause in detail.', 'tech'],
+    ['"I\'ve never really failed at anything."', 'bad', 'Nobody believes that, and now they don\'t believe anything else you said.'], ['Blame your last boss for all of it.', 'bad', 'They wondered what you\'d say about them one day.']] },
+  { q: 'Where do you see yourself in five years?', a: [['"Still here, but trusted with a lot more."', 'honest'], ['"In your chair. Kidding. Mostly."', 'charm'], ['Describe the skills you plan to master, one by one.', 'tech'],
+    ['"Somewhere that pays better than this."', 'bad', 'Why would they train someone who\'s already leaving?'], ['"Retired, rich, on a beach."', 'bad', 'The panel did not laugh.']] },
+  { q: 'What is your biggest weakness?', a: [['"I take on too much. I\'m learning to say no."', 'honest'], ['"I double-check everything — it slows me down a little."', 'tech'], ['Make a self-deprecating joke, then answer properly.', 'charm'],
+    ['"I get bored and stop showing up."', 'bad', 'Too honest.'], ['"I don\'t have any."', 'bad', 'Arrogance is a weakness. They noted it.']] },
+  { q: 'A coworker takes credit for your work. What do you do?', a: [['Talk to them privately first.', 'honest'], ['Bring it up lightly in the next team meeting.', 'charm'], ['Keep records of everything from now on.', 'tech'],
+    ['"Wait for them in the car park."', 'bad', 'Security walked you out.'], ['Quietly sabotage their next project.', 'bad', 'They don\'t hire saboteurs, even honest ones.']] },
+  { q: 'A customer is shouting at you. What do you do?', a: [['Stay calm, listen, and fix what you can.', 'honest'], ['Lower your voice and win them round.', 'charm'], ['Follow the complaints process, step by step.', 'tech'],
+    ['Shout back louder.', 'bad', 'They pictured you doing exactly that to their customers.'], ['Walk away and let someone else deal with it.', 'bad', 'That\'s not a job they can give you.']] },
+  { q: 'Do you have any questions for us?', a: [['"What does success look like in the first year?"', 'tech'], ['"What do you enjoy most about working here?"', 'charm'], ['"What would you need from me to make this easier for you?"', 'honest'],
+    ['"How soon can I take holidays?"', 'bad', 'Not the question they wanted first.'], ['"No."', 'bad', 'You looked like you didn\'t care.']] },
+  { q: 'We looked you up online. Want to explain that photo?', a: [['Own it calmly: it\'s not who you are at work.', 'honest'], ['Laugh it off, then turn the talk back to the job.', 'charm'], ['Explain the context, clearly and briefly.', 'tech'],
+    ['"That\'s fake. Someone is framing me."', 'bad', 'It wasn\'t fake, and they knew it.'], ['Get defensive and ask why they were stalking you.', 'bad', 'The temperature in the room dropped.']] },
 ];
+const shuffle = a => a.map(x => [Math.random(), x]).sort((p, q) => p[0] - q[0]).map(x => x[1]);
 export async function interview(c, j) {
-  const Q = pick(QUESTIONS), base = hireChance(c, j), sm = eff(c, 'smarts'), ch = eff(c, 'charisma'), knows = !j.major || j.major.includes(c.edu.major);
-  const v = await ui.choice({ title: `Interview: ${j.name}`, icon: 'career', text: `The panel looks up from your file.\n"${Q.q}"`, options: Q.a.map(([t, k]) => ({ label: t, value: k })) });
-  const fit = v === 'tech' ? (sm - 55) / 120 + (knows && j.edu >= 2 ? 0.08 : -0.04) : v === 'charm' ? (ch - 55) / 120 : 0.04;
-  const p = clamp(base + fit, 0.03, 0.9);
+  const qs = shuffle(QUESTIONS).slice(0, 2), base = hireChance(c, j), sm = eff(c, 'smarts'), ch = eff(c, 'charisma'), knows = !j.major || j.major.includes(c.edu.major);
+  let fit = 0;
+  for (const [i, Q] of qs.entries()) {
+    const goods = Q.a.filter(x => x[1] !== 'bad'), bads = shuffle(Q.a.filter(x => x[1] === 'bad')).slice(0, ri(1, 2));
+    const opts = shuffle([...goods, ...bads]);
+    const k = await ui.choice({ title: `Interview: ${j.name} (${i + 1}/2)`, icon: 'career', dismiss: false, text: `${i ? 'They lean back.' : 'The panel looks up from your file.'}\n"${Q.q}"`, options: opts.map((x, n) => ({ label: x[0], value: n })) });
+    const A = opts[k ?? 0];
+    if (A[1] === 'bad') return { text: `Interview for ${j.name}: rejected. ${A[2]} ${pick(['"Thank you for coming in."', 'They thanked you and showed you the door.', 'You knew it the moment you said it.'])}`, cls: 'bad' };
+    fit += A[1] === 'tech' ? (sm - 55) / 120 + (knows && j.edu >= 2 ? 0.08 : -0.04) : A[1] === 'charm' ? (ch - 55) / 120 : 0.04;
+  }
+  const p = clamp(base + fit / 2 + 0.05, 0.05, 0.9); // two good answers earn a little goodwill
   if (chance(p)) return { text: `${pick(['They shook my hand on the spot.', 'They called back the same evening.', 'The panel exchanged a look — a good one.'])} I was hired as a ${j.name}! (${Math.round(p * 100)}%)`, cls: 'good', big: true, hired: true };
-  return { text: `${pick(['"We\'ll be in touch." They were not.', 'They went with someone else.', 'I could tell it was over halfway through.'])} (${Math.round(p * 100)}%)`, cls: 'bad' };
+  return { text: `${pick(['I answered well, but they went with someone else.', '"We\'ll be in touch." They were not.', 'Good interview — just not good enough this time.'])} (${Math.round(p * 100)}%)`, cls: 'bad' };
 }
 
 // ---- odd jobs board: clear title, one-off or recurring, pay and risk

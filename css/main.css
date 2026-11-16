@@ -792,3 +792,6 @@ details.chron:not([open]) > summary h3::after { content: ' ▸'; }
 .tip div { white-space: pre-line; }
 .cond-eff { margin-top: 6px; color: var(--bad, #e05555); opacity: .9; line-height: 1.5; }
 .tip { max-width: 330px; }
+/* v0.9.7 driver's license */
+.lic-box .small:first-of-type { font-weight: 700; margin-bottom: 4px; }
+.lic-full { color: var(--good, #5fd38a); } .lic-suspended { color: var(--bad, #e05555); } .lic-permit { color: #ffb02e; }

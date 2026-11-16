@@ -4,6 +4,8 @@ export const CAREERS = [
   { id: 'cashier', name: 'Cashier', pay: 9000, minAge: 15, edu: 0, part: true },
   { id: 'teahouse', name: 'Tea House Server', pay: 11000, minAge: 15, edu: 0, part: true, sect: 'azure' },
   { id: 'laborer', name: 'Construction Laborer', pay: 24000, minAge: 18, edu: 0, stat: { strength: 35 } },
+  { id: 'delivery', name: 'Delivery Driver', pay: 27000, minAge: 18, edu: 0, license: true },
+  { id: 'taxi', name: 'Taxi Driver', pay: 31000, minAge: 21, edu: 0, license: true, stat: { charisma: 30 } },
   { id: 'cook', name: 'Line Cook', pay: 26000, minAge: 18, edu: 0 },
   { id: 'guard', name: 'Security Guard', pay: 30000, minAge: 18, edu: 1, stat: { strength: 40 } },
   { id: 'clerk', name: 'Office Clerk', pay: 34000, minAge: 18, edu: 1, stat: { smarts: 40 } },
