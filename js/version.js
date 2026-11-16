@@ -1,7 +1,17 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.6.3';
+export const VERSION = '0.6.6';
 export const CHANGELOG = [
+  { v: '0.6.6', date: '2026-11-15', title: 'Starter guide & fitting mirror', notes: ['A short starter guide explains what Fading Ink is and how everything works the first time you play. Reopen it any time from Settings.', 'Wardrobe & Armory: a fitting mirror shows your character wearing any clothes or holding any weapon/armour before you buy — just hover or tap an item.', 'Every clothing item now has its own pixel icon in its colour, and Armory gear shows its icon too.'] },
+  { v: '0.6.5', date: '2026-11-15', title: 'The Severed Path', notes: [
+    'A whole new progression line for those who reject Qi. From age 12 (and while at Golden Core or below) you can tear your Qi out forever — or be born Heaven-Severed (a rare Legendary trait) with none at all.',
+    'Temper your body through nine tiers, from Tempered Flesh to The Unbound. Each tier fights like a cultivation realm (up to Body Integration), raising stat caps and power, and counts for Gates, presence, missions and Guild ranks.',
+    'Severed fighters are immune to stronger cultivators\' presence, deal +15% damage to Qi users and spirits, heal faster, and learn five body techniques (Phantom Step, Bone Crusher, Mountain Breaker, Blood Rush, Unbound Strike).',
+    'Gain Tempering from new Severed training activities (conditioning, endurance ordeals, barehanded beast hunts), from every fight won and every Gate cleared. When ready, survive a no-escape Body Trial to reach the next tier.',
+    'The price: no meditation, breakthroughs, Qi arts or Qi medicine ever again, Qi sects won\'t keep you, and your lifespan only grows a little.',
+    'New Severed Path tab, 3 achievements, and a cinematic for every tier.',
+  ] },
+  { v: '0.6.4', date: '2026-11-15', title: 'Childhood with purpose', notes: ['Every childhood activity now grows something: Play pretend (Smarts, Battle Knowledge or Charisma), Play outside (Agility, Strength and new friends), Help around the house (replaces Throw a tantrum: closer to your parents and pocket money), and the new Read picture books (Smarts and grades).', 'Watching the clouds slowly raises your Qi affinity (up to +6) as well as sometimes revealing Qi.'] },
   { v: '0.6.3', date: '2026-11-15', title: 'Life, money & style', notes: [
     'Money now shows in your real local currency (yen, won, rupees, naira…) at realistic exchange rates. Prices across the game match your local economy.',
     'New Stock Market tab: 8 companies with charts. Buy and sell freely; prices move every year with each company\'s risk and the world news (crashes, Gate surges, Spirit Tides…). No more investing money you don\'t have.',

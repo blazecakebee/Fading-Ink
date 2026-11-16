@@ -1,5 +1,7 @@
 // Turn-based 1v1 combat screen: two portraits, realm/level, HP bars, momentum chevrons,
 // stamina + Qi bars and vertical move buttons with "Move info".
+import { onBodyPath, effRealm, bodyTier } from '../systems/path.js';
+import { BODY_MOVES } from '../data/bodypath.js';
 import { h, icon } from './dom.js';
 import { openModal } from './modal.js';
 import { portraitFor, randomGenes } from './portrait.js';
@@ -36,7 +38,7 @@ export function fight(enemyDef, opts = {}) {
     const diff = enemyDef.sparring ? 1 : DIFFICULTY;
     const en = { ...enemyDef, maxHp: Math.round(enemyDef.hp * (1 + (ePow - 1) * 0.5) * diff), str: Math.round(enemyDef.str * diff), agi: enemyDef.agi, pow: ePow, stam: 100, qi: 999, mom: 0, guard: false, armor: 0, evade: false, burn: 0, stun: 0, weak: false };
     en.hp = en.maxHp;
-    const P = presence(opts.tribulation || enemyDef.kind === 'heaven' || enemyDef.sparring ? 0 : c.qi.realm - (enemyDef.realm || 0));
+    const P = presence(opts.tribulation || enemyDef.kind === 'heaven' || enemyDef.sparring ? 0 : (onBodyPath(c) ? Math.max(0, effRealm(c) - (enemyDef.realm || 0)) : c.qi.realm - (enemyDef.realm || 0))); // the Severed have no Qi to suppress
     if (P.crushed) me.stam = 50;
     // enemies have a simple 4-zone body: crippling a zone weakens them
     en.zones = { head: en.maxHp * 0.25, torso: en.maxHp * 0.6, arms: en.maxHp * 0.35, legs: en.maxHp * 0.35 }; en.zMax = { ...en.zones }; en.crippled = {};
@@ -54,13 +56,13 @@ export function fight(enemyDef, opts = {}) {
       ui[isMe ? 'meHp' : 'enHp'] = hp; ui[isMe ? 'meMom' : 'enMom'] = mom;
       const hpTxt = h('div', { class: 'flvl' }); ui[isMe ? 'meHpTxt' : 'enHpTxt'] = hpTxt;
       const info = h('div', { class: 'info' }, h('div', { class: 'fname' }, isMe ? 'You' : who.name),
-        h('div', { class: 'flvl' }, `${isMe ? realmLabel(c.qi.realm) + (c.qi.realm ? ' ' + c.qi.stage : '') : realmLabel(who.realm || 0)} · Power ${Math.round(who.pow * 10) / 10}${isMe ? ` · ${bkLabel(c.stats.battle || 0)}` : ''}`),
+        h('div', { class: 'flvl' }, `${isMe ? (onBodyPath(c) ? bodyTier(c).name : realmLabel(c.qi.realm) + (c.qi.realm ? ' ' + c.qi.stage : '')) : realmLabel(who.realm || 0)} · Power ${Math.round(who.pow * 10) / 10}${isMe ? ` · ${bkLabel(c.stats.battle || 0)}` : ''}`),
         h('div', { class: 'hpbar' }, hp), hpTxt, mom);
       const pf = h('div', { class: 'fportrait' }, isMe ? mePortrait : ePortrait); ui[isMe ? 'mePf' : 'enPf'] = pf;
       return h('div', { class: 'fighter' + (isMe ? ' me' : '') }, isMe ? [pf, info] : [info, pf]);
     };
     const stamBar = h('i', { style: { '--c': '#3fcf5f' } }), qiBar = h('i', { style: { '--c': 'var(--qi)' } });
-    const log = h('div', { class: 'flog' }, opts.tribulation ? 'The sky splits open. Survive.' : enemyDef.sparring ? 'A friendly bout. Nobody gets badly hurt.' : `${en.name} squares up.${P.line ? ' ' + P.line : ''}`);
+    const log = h('div', { class: 'flog' }, opts.tribulation ? 'The sky splits open. Survive.' : enemyDef.sparring ? 'A friendly bout. Nobody gets badly hurt.' : `${en.name} squares up.${P.line ? ' ' + P.line : onBodyPath(c) && (enemyDef.realm || 0) > effRealm(c) ? ' Their aura washes over you — and finds nothing to grip.' : ''}`);
     const movesBox = h('div', { class: 'moves' }); const targetRow = h('div', { class: 'targets' });
     const infoBox = h('div', { class: 'flog', style: { display: 'none' } });
     const box = h('div', {}, h('div', { class: 'ftitle' }, opts.tribulation ? 'Tribulation' : enemyDef.sparring ? 'Sparring' : 'Fight'),
@@ -71,7 +73,7 @@ export function fight(enemyDef, opts = {}) {
       h('div', { class: 'finfo' }, h('a', { onclick: () => { infoBox.style.display = infoBox.style.display === 'none' ? 'block' : 'none'; } }, 'Move info')));
     const m = openModal(box, { cls: 'fight', dismiss: false });
 
-    const myMoves = [...BASE_MOVES, ...(c.qi.realm >= 1 ? ['qi_palm'] : []), ...c.qi.techs];
+    const myMoves = onBodyPath(c) ? [...BASE_MOVES, ...Object.keys(BODY_MOVES).filter(k => (c.bodyPath.tier || 0) >= BODY_MOVES[k].tier)] : [...BASE_MOVES, ...(c.qi.realm >= 1 ? ['qi_palm'] : []), ...c.qi.techs];
     infoBox.append(...myMoves.map(k => h('div', {}, icon(MOVES[k].icon, 'sm'), ' ', h('b', {}, MOVES[k].name + ': '), MOVES[k].info, MOVES[k].qi ? ` (${MOVES[k].qi} Qi)` : '')));
     const mini = enemyDef.mini && MINIS[enemyDef.mini] ? enemyDef.mini : null; let miniUsed = false;
     if (mini) myMoves.push('special');
@@ -104,8 +106,9 @@ export function fight(enemyDef, opts = {}) {
       attPf.classList.add(attIsMe ? 'lunge-r' : 'lunge-l'); setTimeout(() => attPf.classList.remove('lunge-r', 'lunge-l'), 140);
       if (!chance(clamp(acc, 0.1, 0.98) * 100 / 100)) { att.mom = 0; fx('miss'); return `${attIsMe ? 'You' : en.name} used ${mv.name}... and missed.`; }
       const statV = mv.stat === 'qi' ? 60 + (attIsMe ? c.qi.affinity : 40) : mv.stat === 'agility' ? att.agi : att.str;
-      let dmg = ri(...mv.dmg) * (0.6 + statV / 100) * (mv.stat === 'qi' ? att.pow : Math.sqrt(att.pow)) * (1 + att.mom * 0.1) * (1 + (att.gear?.dmg || 0)) * (1 + (att.bk || 0) / 250) * (!attIsMe || !en.weak ? 1 : 1.5) * (attIsMe ? (mv.stat === 'qi' ? me.mods.qi : me.mods.dmg) : (en.crippled.arms ? 0.65 : 1));
+      let dmg = ri(...mv.dmg) * (0.6 + statV / 100) * (mv.stat === 'qi' || mv.body ? att.pow : Math.sqrt(att.pow)) * (1 + att.mom * 0.1) * (1 + (att.gear?.dmg || 0)) * (1 + (att.bk || 0) / 250) * (!attIsMe || !en.weak ? 1 : 1.5) * (attIsMe ? (mv.stat === 'qi' ? me.mods.qi : me.mods.dmg) : (en.crippled.arms ? 0.65 : 1));
       dmg *= attIsMe ? P.me : P.them;
+      if (attIsMe && onBodyPath(c) && ((enemyDef.realm || 0) > 0 || enemyDef.kind === 'spirit')) dmg *= 1.15; // Qi users can't sense the Severed coming
       if (def.guard && !mv.pierce) { dmg *= 0.5; def.guard = false; } if (def.armor && !mv.pierce) { dmg *= 0.5; def.armor--; }
       const crit = chance(0.08 + (attIsMe ? (c.stats.luck + gs.luck) / 1000 + (c.stats.battle || 0) / 2000 : 0)); if (crit) dmg *= 1.7;
       if (enemyDef.sparring && attIsMe === false) dmg *= 0.7;

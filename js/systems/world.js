@@ -1,5 +1,6 @@
 // Living world: each year rolls world conditions that are reported in the news AND actually change the world.
 // news.mods feed straight into the bonus system (pay, qi, price…); flags change spawn rates and events.
+import { effRealm } from './path.js';
 import { G } from '../core/state.js';
 import { ui } from '../core/bus.js';
 import { ri, pick, chance, weighted, clamp } from '../core/rng.js';
@@ -48,7 +49,7 @@ export function newsYear(c) {
 }
 // Pick a Gate rank around the player's own realm so there is always something worth fighting.
 export function rankFor(c) {
-  let idx = 0; GATE_RANKS.forEach((r, i) => { if (r.realm <= c.qi.realm) idx = i; });
+  let idx = 0; GATE_RANKS.forEach((r, i) => { if (r.realm <= effRealm(c)) idx = i; });
   const off = weighted([{ d: -2, w: 1 }, { d: -1, w: 3 }, { d: 0, w: 5 }, { d: 1, w: 2 }], x => x.w).d;
   return GATE_RANKS[clamp(idx + off, 0, GATE_RANKS.length - 1)];
 }
@@ -61,7 +62,7 @@ export function spawnGate(c, quiet) {
 // Make sure a Gate near your level exists every year or two once you're old enough
 export function ensureMatchingGate(c) {
   if (c.age < 14) return;
-  let idx = 0; GATE_RANKS.forEach((r, i) => { if (r.realm <= c.qi.realm) idx = i; });
+  let idx = 0; GATE_RANKS.forEach((r, i) => { if (r.realm <= effRealm(c)) idx = i; });
   const near = c.gates.some(g => Math.abs(GATE_RANKS.findIndex(r => r.rank === g.rank) - idx) <= 1);
   if (!near && chance(0.5)) spawnGate(c, true);
 }

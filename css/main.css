@@ -546,3 +546,15 @@ body:not([data-theme='clean']):not([data-theme='parchment']):not([data-theme='pa
 /* only freshly-written chronicle lines ink in (no flicker on re-render) */
 .feed p { animation: none; }
 .feed p.fresh { animation: inkIn calc(.5s * var(--anim)) ease both; }
+/* wardrobe fitting mirror */
+.ward-layout { display: grid; grid-template-columns: 190px 1fr; gap: 14px; align-items: start; }
+.ward-preview { position: sticky; top: 10px; text-align: center; }
+@media (max-width: 760px) { .ward-layout { grid-template-columns: 1fr; } .ward-preview { position: static; } }
+/* starter guide */
+.guide { max-width: 520px; }
+.guide-head { display: flex; gap: 12px; align-items: center; }
+.guide-head h2 { margin: 2px 0 0; }
+.guide-body p { margin: 10px 0; line-height: 1.5; }
+.guide-dots { display: flex; gap: 6px; justify-content: center; margin-top: 8px; }
+.guide-dots i { width: 8px; height: 8px; border-radius: 50%; background: #ffffff33; cursor: pointer; }
+.guide-dots i.on { background: var(--accent2, #ffd84a); }

@@ -1,3 +1,4 @@
+import { BODY_MOVES } from './bodypath.js';
 // Combat moves. cost = stamina, qi = qi cost. dmg = [min,max] base, scaled by stats & realm power.
 export const MOVES = {
   slap:   { icon: 'feather', name: 'Slap', cost: 4, dmg: [2, 4], acc: 0.95, stat: 'agility', info: 'Fast, cheap, weak. Builds momentum.' , mom: 1 },
@@ -16,6 +17,7 @@ export const MOVES = {
   blood_drain: { icon: 'demon', name: 'Blood Drain', cost: 6, qi: 20, dmg: [14, 22], acc: 0.85, stat: 'qi', drain: 0.5, info: 'Heals you for half the damage. Demonic.' },
 };
 export const BASE_MOVES = ['jab', 'punch', 'kick', 'guard'];
+Object.assign(MOVES, BODY_MOVES); // Severed Path techniques
 // Overall difficulty: enemies get this much more HP and hit this much harder.
 export const DIFFICULTY = 1.5;
 // Realm presence: a cultivator 2+ realms above their foe presses down on them with sheer aura; 3+ realms above,

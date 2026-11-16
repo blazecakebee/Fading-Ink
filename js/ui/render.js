@@ -1,4 +1,5 @@
 // Main screen rendering: top bar, age bar, left nav, center tab content, right stats column.
+import { effRealm, onBodyPath } from '../systems/path.js';
 import { G, META, save } from '../core/state.js';
 import { ui } from '../core/bus.js';
 import { h, icon, $ } from './dom.js';
@@ -80,7 +81,7 @@ function topbar() {
   const c = G.char, cty = country(c);
   $('#topbar').replaceChildren(
     h('div', { class: 'who' }, h('div', { class: 'mini' }, portraitFor(c, 64)),
-      h('div', {}, h('div', { class: 'name display' }, flagEl(c.country, country(c).name), ' ', fullName(c)), h('div', { class: 'sub' }, `${c.qi.realm ? realmName(c) : 'Human'} · ${c.gender === 'F' ? 'Female' : 'Male'} · Age ${c.age} · ${lifeStage(c.age)}`), c.ownSect ? h('div', { class: 'clan' }, `👑 ${c.gender === 'F' ? 'Matriarch' : 'Patriarch'} of the ${c.ownSect.clan} Clan · ${c.ownSect.name}`) : null)),
+      h('div', {}, h('div', { class: 'name display' }, flagEl(c.country, country(c).name), ' ', fullName(c)), h('div', { class: 'sub' }, `${c.qi.realm || onBodyPath(c) ? realmName(c) : 'Human'} · ${c.gender === 'F' ? 'Female' : 'Male'} · Age ${c.age} · ${lifeStage(c.age)}`), c.ownSect ? h('div', { class: 'clan' }, `👑 ${c.gender === 'F' ? 'Matriarch' : 'Patriarch'} of the ${c.ownSect.clan} Clan · ${c.ownSect.name}`) : null)),
     h('div', { class: 'center' }, h('div', {}, h('b', {}, `Year ${G.world.year}`), ' · ', h('span', { class: 'era' }, G.world.era)),
       h('div', { class: 'where' }, '📍 ', `${c.city}, ${cty.name}`)),
     h('div', { class: 'right' }, h('div', {}, icon('market', 'sm'), ' ', h('span', { class: 'money' }, fmtMoney(c, c.money)), ' ', h('span', { class: 'muted', title: `Born into a ${WEALTH.find(w => w.id === c.wealth).name.toLowerCase()} family` }, wealthLabel(c))),
@@ -141,7 +142,7 @@ function rightCol() {
     h('div', {}, bar('Health', s.health, '#ff5a6a', 'heart'), bar(`Happiness ${moodFace(s.happiness)}`, s.happiness, '#ffd84a', 'sun'), bar('Stress', s.stress, '#ff8a3a', 'brokenheart'),
       bar('Smarts', s.smarts, '#6ab0ff', 'mind'), bar('Looks', s.looks, '#ff8ad0', 'flower'),
       c.qi.known ? bar('Qi', c.qi.qi, 'var(--qi)', 'cultivation', qiCap(c), `${c.qi.qi}/${qiCap(c)}`) : null),
-    h('div', { class: 'box' }, h('h3', {}, 'Your Stats'), h('div', { class: 'realm-line' }, icon('cultivation', 'sm'), ' ', h('b', {}, c.qi.known ? realmName(c) : 'Realm: ???')), h('div', { class: 'stats' },
+    h('div', { class: 'box' }, h('h3', {}, 'Your Stats'), h('div', { class: 'realm-line' }, icon('cultivation', 'sm'), ' ', h('b', {}, c.qi.known || onBodyPath(c) ? realmName(c) : 'Realm: ???')), h('div', { class: 'stats' },
       ...[['fist', 'Strength', s.strength], ['combat', 'Battle IQ', s.battle ?? 0], ['kick', 'Agility', s.agility], ['people', 'Charisma', s.charisma], ['star', 'Luck', s.luck],
         ['combat', 'Power', power(c).toFixed(1)], ['trophy', 'Fights won', c.wins], ['gates', 'Gates', c.gatesCleared],
         ['market', 'Gold', fmtMoney(c, c.money)], ['star', 'Fame', c.fame || 0]].map(([ic, k, v]) => h('div', {}, icon(ic, 'sm'), k, h('b', {}, v))))),
@@ -292,7 +293,7 @@ export const TABS = {
           gateYield(c, R) < 1 ? h('div', { class: 'small', style: { color: 'var(--bad, #ff7a6a)', marginTop: '4px' } }, `Outlevelled — only ${Math.round(gateYield(c, R) * 100)}% loot`) : null,
           h('div', { class: 'row', style: { marginTop: '8px', gap: '6px' } },
             h('button', { class: 'btn', disabled: !c.alive || c.actions <= 0 || c.age < 14, onclick: () => enterGate(i) }, icon('gates', 'sm'), ' Enter'),
-            c.qi.realm - R.realm >= 3 ? h('button', { class: 'btn ghost', disabled: !c.alive || c.actions <= 0, 'data-tip': 'You are 3+ realms above this Gate. Its monsters cannot even stand before you.', onclick: () => enterGate(i, true) }, icon('crown', 'sm'), ' Sweep with presence') : null)); }))
+            effRealm(c) - R.realm >= 3 ? h('button', { class: 'btn ghost', disabled: !c.alive || c.actions <= 0, 'data-tip': 'You are 3+ realms above this Gate. Its monsters cannot even stand before you.', onclick: () => enterGate(i, true) }, icon('crown', 'sm'), ' Sweep with presence') : null)); }))
         : h('div', { class: 'card muted' }, 'No open Gates near you. Hike the mountains or wait for news.'),
       h('div', { class: 'row', style: { marginTop: '14px' } }, h('button', { class: 'btn ghost', onclick: () => { G.ui.tab = 'inventory'; render(); } }, icon('bag', 'sm'), ` Open inventory (${inv.reduce((s, [, n]) => s + n, 0)} items)`))];
   },
@@ -450,7 +451,7 @@ async function coopPersonModal(p) {
 
 const gateType = g => { if (!g.type) Object.assign(g, makeGate(g.rank), { years: g.years }); return GATE_TYPES.find(t => t.id === g.type); };
 // Outlevelled gates give sharply less: 2 realms above → 55%, 3 → 30%, 4+ → 15%.
-export const gateYield = (c, R) => { const gap = c.qi.realm - R.realm; return gap >= 4 ? 0.15 : gap === 3 ? 0.3 : gap === 2 ? 0.55 : 1; };
+export const gateYield = (c, R) => { const gap = effRealm(c) - R.realm; return gap >= 4 ? 0.15 : gap === 3 ? 0.3 : gap === 2 ? 0.55 : 1; };
 async function enterGate(i, sweep) {
   const c = G.char, g = c.gates[i], R = GATE_RANKS.find(r => r.rank === g.rank), T = gateType(g);
   await runActivity({ id: 'gate', cat: 'adventure', run: async cc => {

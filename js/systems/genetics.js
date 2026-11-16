@@ -1,4 +1,5 @@
 // Genetics: base genes at birth, Awakening points from cultivation, the awakening tree, and inheritance.
+import { effRealm } from './path.js';
 import { BASE_IDS, TREE_GENES, GENE, MAX_AWAKENED } from '../data/genes.js';
 import { chance, pick, ri } from '../core/rng.js';
 import { ui } from '../core/bus.js';
@@ -23,7 +24,7 @@ export function npcDna(realm = 0) {
 export function grantPoints(c) {
   const d = ensureDna(c); let got = 0;
   if (c.age >= 18 && !d.earned.adult) { d.earned.adult = 1; got++; }
-  for (let r = 1; r <= c.qi.realm; r++) if (!d.earned['r' + r]) { d.earned['r' + r] = 1; got++; }
+  for (let r = 1; r <= effRealm(c); r++) if (!d.earned['r' + r]) { d.earned['r' + r] = 1; got++; }
   if (got) { d.points += got; ui.log(`Dormant genes stir in my blood (+${got} Awakening point${got > 1 ? 's' : ''}). Spend them in the Bloodline tab.`, 'qi'); }
 }
 export function geneState(c, id) {
@@ -31,7 +32,7 @@ export function geneState(c, id) {
   if (d.awakened.includes(id)) return { state: 'owned' };
   const why = [];
   if (g.req.some(r => !d.awakened.includes(r))) why.push('Awaken ' + g.req.filter(r => !d.awakened.includes(r)).map(r => TREE_GENES[r].name).join(' + ') + ' first');
-  if (c.qi.realm < g.realm) why.push(`Reach ${REALMS[g.realm].name}`);
+  if (effRealm(c) < g.realm) why.push(`Reach ${REALMS[g.realm].name}${c.path === 'body' ? ' (or the matching body tier)' : ''}`);
   if (d.points < g.cost) why.push(`${g.cost} point${g.cost > 1 ? 's' : ''} needed (you have ${d.points})`);
   if (d.awakened.length >= MAX_AWAKENED) why.push(`Your blood can hold ${MAX_AWAKENED} awakened genes`);
   return { state: why.length ? 'locked' : 'open', why };

@@ -1,4 +1,5 @@
 // Mood, skill decay, illnesses & mental health, and treatment (doctor, therapy, rest, Qi healing, Qi medicine).
+import { effRealm, bodyTier } from './path.js';
 import { ui } from '../core/bus.js';
 import { ri, chance, clamp, pick } from '../core/rng.js';
 import { CONDITIONS, COND_BY_ID, QI_MEDS, GENETIC } from '../data/conditions.js';
@@ -49,7 +50,7 @@ export function healthYear(c) {
     const idle = c.age - last;
     const r = decayRate(c, k); const loss = Math.floor(r) + (chance(r % 1) ? 1 : 0);
     if (loss >= 1 && c.stats[k] > 15) c.stats[k] = Math.max(15, c.stats[k] - loss); // skills never fade below 15
-    c.stats[k] = Math.min(c.stats[k], (REALMS[c.qi.realm].cap || 100));
+    c.stats[k] = Math.min(c.stats[k], c.path === 'body' ? bodyTier(c).cap : (REALMS[c.qi.realm].cap || 100));
   }
   // ---- looks only fade with age (cultivation slows or stops it)
   if (c.age > 30) { const rate = c.qi.realm >= 3 ? 0 : c.qi.realm >= 1 ? 0.25 : c.age > 50 ? 1 : 0.5; if (chance(rate)) c.stats.looks = clamp(c.stats.looks - 1); }
@@ -83,7 +84,7 @@ export function suddenDeathChance(c) {
   const hurt = c.body ? Object.values(c.body.parts || {}).some(p => p.missing || (p.inj && p.inj.length)) : false;
   const base = c.stats.health >= 70 && !(c.conditions || []).length && !hurt ? 0.0002 : c.stats.health >= 40 ? 0.0007 : 0.002;
   // accidents (stairs, cars, stray beasts) fade as your body is refined by cultivation
-  return Math.max(0, base / (1 + c.qi.realm * 0.6) + (c.conditions || []).reduce((s, x) => s + (COND_BY_ID[x.id].sudden || 0) + (x.id === 'heart' ? 0.01 : 0) + (COND_BY_ID[x.id].grows ? 0.004 * x.sev : 0), 0) - c.qi.realm * 0.0003);
+  return Math.max(0, base / (1 + effRealm(c) * 0.6) + (c.conditions || []).reduce((s, x) => s + (COND_BY_ID[x.id].sudden || 0) + (x.id === 'heart' ? 0.01 : 0) + (COND_BY_ID[x.id].grows ? 0.004 * x.sev : 0), 0) - c.qi.realm * 0.0003);
 }
 
 // Trauma hooks other systems can call

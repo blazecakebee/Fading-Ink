@@ -19,10 +19,12 @@ import { newsYear, ensureMatchingGate, spawnGate, birthAnomaly, BIRTH_EVENTS, ne
 import { FAMILY_SOCIAL, disputeYear, trainedHeir, MOVE_IN, birthYear } from './family.js';
 import { haveChild } from '../data/activities.js';
 import { MORE_NAMES } from '../data/names2.js';
-import { MARTIAL, SWITCH_ART, PRIVATE, MIGRATE, schoolYear } from './schooling.js';
+import { MARTIAL, SWITCH_ART, PRIVATE, MIGRATE, schoolYear, CHILDHOOD, cloudBonus } from './schooling.js';
 import { portfolioYear, migrateStocks } from './market.js';
 import { ownSectYear } from './factions.js';
 import { META } from '../core/state.js';
+import { REJECT, BODY_ACTS, bodyYear, startPath } from './bodypath.js';
+import { ACHIEVEMENTS, ACH_BY_ID } from '../data/achievements.js';
 
 // ---- traits
 for (const t of TRAITS2) if (!TRAIT_BY_ID[t.id]) { TRAITS.push(t); TRAIT_BY_ID[t.id] = t; }
@@ -33,7 +35,13 @@ SOCIAL.push(...FAMILY_SOCIAL, MOVE_IN);
 for (const cty of COUNTRIES) { const x = MORE_NAMES[cty.id]; if (x && !cty._more) { cty._more = 1; cty.m = [...new Set([...cty.m, ...x.m.split(' ')])]; cty.f = [...new Set([...cty.f, ...x.f.split(' ')])]; } }
 // ---- martial arts schools replace the old all-you-can-eat class; private school, migration
 { const i = ACTIVITIES.findIndex(a => a.id === 'martial'); if (i >= 0) ACTIVITIES[i] = MARTIAL; else ACTIVITIES.push(MARTIAL); }
-ACTIVITIES.push(SWITCH_ART, PRIVATE, MIGRATE);
+ACTIVITIES.push(SWITCH_ART, PRIVATE, MIGRATE, REJECT, ...BODY_ACTS);
+// born without Qi at all
+for (const t of [{ id: 'heaven_severed', tier: 'legendary', name: 'Heaven-Severed', desc: 'Born with no Qi at all. You walk the Severed Path from birth: +12 Strength, +10 Agility, +10 Health.', mods: { strength: 12, agility: 10, health: 10 } }]) if (!TRAIT_BY_ID[t.id]) { TRAITS.push(t); TRAIT_BY_ID[t.id] = t; }
+for (const a of [{ id: 'severed', name: 'Severed', desc: 'Walk the Severed Path.', pts: 5, check: c => c.path === 'body' }, { id: 'iron_body', name: 'Steel Without Qi', desc: 'Reach Steel Sinew on the Severed Path.', pts: 10, check: c => (c.bodyPath?.tier || 0) >= 3 }, { id: 'unbound', name: 'The Unbound', desc: 'Complete the Severed Path.', pts: 40, check: c => (c.bodyPath?.tier || 0) >= 9 }]) if (!ACH_BY_ID[a.id]) { ACHIEVEMENTS.push(a); ACH_BY_ID[a.id] = a; }
+// childhood activities now each grow something (stats, friends, family bonds, Qi affinity)
+for (const a of CHILDHOOD) { const i = ACTIVITIES.findIndex(x => x.id === a.id); if (i >= 0) ACTIVITIES[i] = a; else ACTIVITIES.splice(ACTIVITIES.findIndex(x => x.cat === 'childhood'), 0, a); }
+globalThis.__cloudBonus = cloudBonus;
 
 // ---- activities
 const econ = c => country(c).econ;
@@ -80,6 +88,7 @@ function birthIntro(c, anomaly) {
 // ---- hooks
 HOOKS.birth.push((c, opts) => {
   ensureDna(c);
+  if (c.traits.includes('heaven_severed')) startPath(c, 'born');
   const an = opts.generation > 1 ? null : birthAnomaly(c);
   c.flags.intro = birthIntro(c, an);
 });
@@ -93,7 +102,7 @@ HOOKS.inherit.push((old, c, ch) => {
 });
 HOOKS.yearStart.push(c => { newsYear(c); portfolioYear(c); birthYear(c, haveChild); });
 HOOKS.yearEnd.push(async c => {
-  grantPoints(c); schoolYear(c); ownSectYear(c);
+  grantPoints(c); schoolYear(c); ownSectYear(c); bodyYear(c);
   await factionsYear(c);
   if (c.alive) await disputeYear(c);
   ensureMatchingGate(c);
@@ -111,7 +120,8 @@ export async function installExpansion() {
   TABS.bloodline = P.bloodlineTab; TABS.factions = P.factionsTab;
   P.bindPanels(render, runActivity);
   const P2 = await import('../ui/panels2.js'); const { NAV } = await import('../ui/render.js');
-  TABS.market = P2.marketTab; TABS.wardrobe = P2.wardrobeTab; P2.bindPanels2(render, runActivity);
+  TABS.market = P2.marketTab; TABS.wardrobe = P2.wardrobeTab; TABS.severed = P2.bodyPathTab; P2.bindPanels2(render, runActivity);
+  if (!NAV[0][1].some(x => x[0] === 'severed')) NAV[0][1].splice(7, 0, ['severed', 'Severed Path', 'fist']);
   if (!NAV[0][1].some(x => x[0] === 'wardrobe')) NAV[0][1].push(['wardrobe', 'Wardrobe & Armory', 'robe']);
   if (!NAV[1][1].some(x => x[0] === 'market')) NAV[1][1].splice(5, 0, ['market', 'Stock Market', 'stocks']);
   if (!META.shuffleSet) { META.shuffleSet = true; META.settings.station = 'shuffle'; }

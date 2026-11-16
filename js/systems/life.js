@@ -1,4 +1,6 @@
 // Character creation, yearly aging loop, death, and generational inheritance.
+import { onBodyPath, bodyTier } from './path.js';
+import { BODY_TIERS } from '../data/bodypath.js';
 import { G, META, save } from '../core/state.js';
 import { ui } from '../core/bus.js';
 import { ri, pick, chance, clamp, uid, weighted, rand } from '../core/rng.js';
@@ -50,7 +52,7 @@ export function makeName(cty, gender) {
 // ---- stats helpers ---------------------------------------------------------
 // Stat caps rise with each cultivation realm; past the soft cap (70%) gains shrink toward zero.
 export const CAPPED = ['strength', 'battle', 'agility', 'smarts', 'charisma', 'luck', 'looks'];
-export const statCap = c => REALMS[c.qi.realm].cap || 100;
+export const statCap = c => onBodyPath(c) ? bodyTier(c).cap : REALMS[c.qi.realm].cap || 100;
 export const softCap = c => Math.round(statCap(c) * 0.7);
 export function gainMult(c, k) {
   const v = c.stats[k] ?? 0, cap = statCap(c), soft = softCap(c);
@@ -257,6 +259,7 @@ export function lifespan(c) {
   // cultivation adds lifespan little by little: earlier realms in full, the current realm grows with each stage
   let l = c.lifespan; for (let r = 1; r < c.qi.realm; r++) l += REALMS[r].life;
   const R = REALMS[c.qi.realm]; if (c.qi.realm) l += Math.round(R.life * c.qi.stage / R.stages);
+  if (onBodyPath(c)) for (let t = 1; t <= (c.bodyPath?.tier || 0); t++) l += BODY_TIERS[t].life;
   return Math.round(l + bonusVal(c, 'life'));
 }
 function checkDeath(c) {

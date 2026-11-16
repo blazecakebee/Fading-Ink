@@ -1,4 +1,5 @@
 // Qi cultivation: gathering Qi, opening meridians, breakthroughs and Heavenly Tribulations.
+import { onBodyPath, bodyTier } from './path.js';
 import { ui } from '../core/bus.js';
 import { ri, chance, clamp } from '../core/rng.js';
 import { REALMS, MANUALS } from '../data/realms.js';
@@ -12,9 +13,9 @@ import { SECTS, METHODS, RI } from '../data/realms.js';
 import { perk as perkC } from '../data/legacyTree.js';
 import { ITEMS } from '../data/items.js';
 
-export const realmName = c => c.qi.realm === 0 ? 'Mortal' : `${REALMS[c.qi.realm].name} ${REALMS[c.qi.realm].stages > 1 ? 'Stage ' + c.qi.stage : ''}`.trim();
+export const realmName = c => onBodyPath(c) ? `${bodyTier(c).name} (Severed)` : c.qi.realm === 0 ? 'Mortal' : `${REALMS[c.qi.realm].name} ${REALMS[c.qi.realm].stages > 1 ? 'Stage ' + c.qi.stage : ''}`.trim();
 export const qiCap = c => Math.round(REALMS[c.qi.realm].maxQi * (1 + (c.qi.stage - 1) * 0.7));
-export const power = c => REALMS[c.qi.realm].power * (1 + (c.qi.stage - 1) * 0.11) * traitMult(c, 'power');
+export const power = c => (onBodyPath(c) ? bodyTier(c).power * (1 + Math.min(1, (c.bodyPath.prog || 0) / bodyTier(c).need) * 0.3) : REALMS[c.qi.realm].power * (1 + (c.qi.stage - 1) * 0.11)) * traitMult(c, 'power');
 
 export function qiGain(c, base) {
   const manual = Math.max(1, ...c.qi.manuals.map(m => MANUALS.find(x => x.id === m)?.qi || 1));

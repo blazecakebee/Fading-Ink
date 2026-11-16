@@ -77,6 +77,7 @@ function play(id) {
   if (c.stats.mood != null) { c.stats.happiness = Math.round((c.stats.happiness + c.stats.mood) / 2); delete c.stats.mood; } // Mood merged into Happiness (v0.5.4)
   c.stats.battle ??= 5; c.conditions ||= []; c.lastTrained ||= {}; c.qi.methods ||= ['basic']; c.gear ||= {}; c.maxActions ||= 4; ensureBody(c);
   G.ui = { tab: 'life', openCats: {} };
+  import('./ui/guide.js').then(m => m.maybeGuide());
   sessionStorage.setItem('fi-in-game', '1');
   save(); render();
   if (!G.char.alive) deathScreen();

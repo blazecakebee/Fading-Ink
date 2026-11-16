@@ -1,5 +1,6 @@
 // Sects (ranks, contribution, mission board, stipends, ousting, wars, inter-sect exchange),
 // personal disciples, and the Hunter Guild (harsh entry, contracts, ranks E → SSS).
+import { effRealm, onBodyPath } from './path.js';
 import { G } from '../core/state.js';
 import { ui } from '../core/bus.js';
 import { ri, pick, chance, clamp } from '../core/rng.js';
@@ -70,7 +71,7 @@ export function boards(c) {
   if (c.board?.year === G.world.year) return c.board;
   const mk = (kinds, org, n) => Array.from({ length: n }, () => {
     const k = pick(kinds); const diff = pick([-1, 0, 0, 1]);
-    const base = org === 'guild' ? Math.max(c.qi.realm, GATE_RANKS[Math.min(7, c.guild?.rank || 0)].realm) : c.qi.realm;
+    const base = org === 'guild' ? Math.max(effRealm(c), GATE_RANKS[Math.min(7, c.guild?.rank || 0)].realm) : effRealm(c);
     const er = clamp(base + diff, 0, REALMS.length - 2);
     return { ...k, org, diff, er, id: Math.random().toString(36).slice(2, 8), done: false };
   });
@@ -90,7 +91,7 @@ function enemyFor(m) {
 export async function runMission(c, m) {
   const I = missionInfo(c, m); let ok = true; let line = '';
   if (m.check && !(m.fight >= 1)) {
-    const [a, b] = m.check; const score = (c.stats[a] + c.stats[b]) / 2 + power(c) * 4 - (m.er - c.qi.realm) * 18;
+    const [a, b] = m.check; const score = (c.stats[a] + c.stats[b]) / 2 + power(c) * 4 - (m.er - effRealm(c)) * 18;
     ok = chance(clamp(0.35 + score / 160, 0.1, 0.92));
   }
   if (m.fight >= 1 || chance(m.fight)) {
@@ -188,7 +189,7 @@ export function guildJoinReq(c) {
 }
 export async function guildTrial(c) {
   c.flags.guildTry = G.world.year;
-  const r = await ui.fight({ id: 'examiner', mini: 'dodge', name: 'Guild Examiner', kind: 'human', realm: Math.max(1, c.qi.realm), hp: 110, str: 62, agi: 58, moves: ['jab', 'punch', 'kick', 'guard', ...(c.qi.realm >= 1 ? ['qi_palm'] : [])] }, { noFlee: true });
+  const r = await ui.fight({ id: 'examiner', mini: 'dodge', name: 'Guild Examiner', kind: 'human', realm: Math.max(1, effRealm(c) || c.qi.realm), hp: 110, str: 62, agi: 58, moves: ['jab', 'punch', 'kick', 'guard', ...(c.qi.realm >= 1 ? ['qi_palm'] : [])] }, { noFlee: true });
   if (r !== 'win') return { text: 'I failed the Hunter Guild trial. The examiner told me to come back stronger.', cls: 'bad' };
   c.wins++; c.guild = { rank: 0, merit: 0, joined: G.world.year };
   ui.cinematic?.({ motif: 'sword', color: '#ffb02e', lines: ['The examiner lowers their guard and nods.', 'A bronze plate with your name is pressed into your hand.'], title: 'Hunter Guild', sub: 'E-Rank Hunter' });
@@ -198,8 +199,8 @@ export function guildNext(c) {
   const r = c.guild.rank + 1; if (r >= GUILD_RANKS.length) return null;
   const why = [], needR = Math.max(0, GATE_RANKS[r].realm - 1);
   if (c.guild.merit < MERIT[r]) why.push(`${MERIT[r]} merit (you have ${c.guild.merit})`);
-  const ranker = c.qi.realm === 0 && r <= 3 && (c.stats.battle || 0) >= 40 + r * 12;
-  if (c.qi.realm < needR && !ranker) why.push(c.qi.realm === 0 && r <= 3 ? `Battle Knowledge ${40 + r * 12} (mortal Rankers) or reach ${realmN(needR)}` : `reach ${realmN(needR)}`);
+  const ranker = !onBodyPath(c) && c.qi.realm === 0 && r <= 3 && (c.stats.battle || 0) >= 40 + r * 12;
+  if (effRealm(c) < needR && !ranker) why.push(c.qi.realm === 0 && !onBodyPath(c) && r <= 3 ? `Battle Knowledge ${40 + r * 12} (mortal Rankers) or reach ${realmN(needR)}` : `reach ${realmN(needR)}`);
   return { r, name: GUILD_RANKS[r], why, ok: !why.length };
 }
 export function guildPromote(c) { const n = guildNext(c); if (!n?.ok) return null; c.guild.rank = n.r; ui.fx('milestone'); return { text: `The Hunter Guild promoted me to ${n.name}-rank.`, cls: 'big', big: true }; }
@@ -244,8 +245,8 @@ async function sectWar(c, enemy) {
   const v = await ui.choice({ title: 'Sect War', icon: 'combat', text: `The ${sectLabel(c)} is at war with the ${enemy.name}. Every disciple is called to the front.${dis.length ? `\nYour disciples stand with you (enemies weakened by ${Math.round(help * 100)}%).` : ''}`,
     options: [{ label: 'Hold the line', value: 'fight' }, { label: 'Lead a raid on their territory (harder, bigger reward)', value: 'raid' }, { label: 'Stay behind (-40 contribution)', value: 'stay' }] });
   if (v === 'stay' || !v) { c.contrib -= 40; ui.log('I stayed out of the war. People noticed.', 'bad'); if (c.sectRank >= 1 && chance(0.2)) oust(c, 'cowardice in wartime'); return; }
-  const er = clamp(c.qi.realm + (v === 'raid' ? 1 : 0), 0, REALMS.length - 2);
-  const e = ENEMIES.find(x => x.id === pick(['demonic', 'blood_cultist', 'gangster'])) || ENEMIES[2];
+  const er = clamp(effRealm(c) + (v === 'raid' ? 1 : 0), 0, REALMS.length - 2);
+  const eid = pick(['demonic', 'blood_cultist', 'gangster']), e = ENEMIES.find(x => x.id === eid) || ENEMIES[2];
   const r = await ui.fight({ ...e, realm: er, hp: Math.round(e.hp * (1 - help)), str: Math.round(e.str * (1 - help)), name: `${enemy.name} ${er >= 6 ? 'Elder' : 'Disciple'}` });
   if (r === 'win') {
     c.wins++; const g = v === 'raid' ? ri(90, 160) : ri(50, 90); c.contrib += g; c.flags.sectActive = G.world.year;
