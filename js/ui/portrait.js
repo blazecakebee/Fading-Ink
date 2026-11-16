@@ -13,15 +13,25 @@ export const HAIR_COLORS = {
 export const NATURAL_HAIR = ['black', 'darkbrown', 'brown', 'auburn', 'blonde', 'platinum'];
 export const EYE_COLORS = ['#6b3a1e', '#3a2418', '#8d6a2c', '#3f9a5a', '#3f7fd6', '#7f92a8', '#d69a2a', '#9a5ad6', '#d63a3a'];
 export const HAIR_STYLES = {
-  F: ['long', 'twintails', 'bob', 'ponytail', 'hime', 'buns', 'wavy'],
-  M: ['short', 'spiky', 'messy', 'sidepart', 'longtied', 'buzz', 'swept'],
+  F: ['long', 'twintails', 'bob', 'ponytail', 'hime', 'buns', 'wavy', 'pixie', 'sidebraid', 'curly', 'lowbun', 'hairband', 'shag', 'odango', 'longbangs', 'sidetail', 'afro', 'drills', 'braids', 'halfup', 'highpony', 'fringebob'],
+  M: ['short', 'spiky', 'messy', 'sidepart', 'longtied', 'buzz', 'swept', 'mohawk', 'undercut', 'manbun', 'curtains', 'wolfcut', 'topknot', 'ahoge', 'slickback', 'dreads', 'quiff', 'pompadour', 'fauxhawk', 'bowl', 'crewcut', 'longsweep'],
 };
+// v0.6.3 styles reuse an older style's shape (back hair, side locks) plus their own fringe and details
+const HAIR_BASE = { pixie: 'short', sidebraid: 'long', curly: 'wavy', lowbun: 'bob', hairband: 'long', shag: 'bob', odango: 'buns', longbangs: 'hime', sidetail: 'ponytail', afro: 'short',
+  mohawk: 'buzz', undercut: 'sidepart', manbun: 'short', curtains: 'short', wolfcut: 'bob', topknot: 'buzz', ahoge: 'messy', slickback: 'short', dreads: 'long', quiff: 'short',
+  drills: 'twintails', braids: 'twintails', halfup: 'long', highpony: 'ponytail', fringebob: 'bob', pompadour: 'short', fauxhawk: 'spiky', bowl: 'bob', crewcut: 'buzz', longsweep: 'long' };
+const BANGS2 = { pixie: [-1, 0, -1, 0, -1, 0, -1, 0, -1, 0, -1, 0, -1, -1], curtains: [1, 1, 0, -1, -2, -3, -3, -3, -3, -2, -1, 0, 1, 1], slickback: Array(14).fill(-4),
+  quiff: [-1, -2, -3, -3, -2, -2, -1, -1, -1, -1, -1, -1, -1, -1], shag: [1, 0, 1, -1, 1, 0, 1, 0, -1, 1, 0, 1, 0, 1], longbangs: Array(14).fill(2), wolfcut: [1, 0, -1, 1, 0, -1, 0, 1, -1, 0, 1, -1, 0, 1], fringebob: Array(14).fill(1), bowl: Array(14).fill(1), pompadour: Array(14).fill(-3), longsweep: [2, 2, 1, 1, 0, 0, -1, -1, -2, -2, -2, -2, -1, 0] };
+export const FACE_BROWS = ['none', 'soft', 'arched', 'fierce', 'worried', 'thick', 'high', 'short'];
+export const FACE_MOUTHS = ['default', 'smile', 'smirk', 'open', 'flat', 'pout', 'grin', 'fang'];
+export const FACE_EYES = ['default', 'sleepy', 'sharp', 'wide', 'happy', 'starry'];
+export const FACE_MARKS = ['none', 'beauty mark', 'scar', 'freckles', 'cheek scar', 'forehead dot', 'blush', 'tear mark'];
 const CLOTHES = ['#3b4a7a', '#7a2f3b', '#2f6b55', '#5a3b7a', '#d9d4c7', '#2b2b33', '#b8743a', '#4a7aa8', '#c85a8a', '#6a6a72'];
 
 export function randomGenes(gender) {
   return {
     seed: ri(1, 1e9), skin: ri(0, SKINS.length - 1), hairColor: pick(NATURAL_HAIR),
-    eye: chance(0.03) ? ri(7, 8) : ri(0, 6), style: pick(HAIR_STYLES[gender]), looks: clamp(Math.round(30 + Math.random() * 45 + (chance(0.1) ? 25 : 0))),
+    eye: chance(0.03) ? ri(7, 8) : ri(0, 6), style: pick(HAIR_STYLES[gender]), looks: clamp(Math.round(30 + Math.random() * 45 + (chance(0.1) ? 25 : 0))), brow: chance(0.5) ? ri(1, 7) : 0, mouth: chance(0.4) ? ri(1, 7) : 0, eyes: chance(0.3) ? ri(1, 5) : 0, mark: chance(0.15) ? ri(1, 7) : 0,
     freckles: chance(0.15), glasses: chance(0.1), mole: chance(0.12),
     carriers: GENETIC_IDS.filter(() => chance(0.03)), // hidden genetic conditions
   };
@@ -32,7 +42,7 @@ export function mixGenes(a, b, gender) {
   const g = {
     seed: ri(1, 1e9), skin: clamp(Math.round((a.skin + b.skin) / 2 + (chance(0.5) ? 0.4 : -0.4)), 0, SKINS.length - 1),
     hairColor: chance(0.05) ? pick(NATURAL_HAIR) : from().hairColor, eye: chance(0.04) ? ri(0, 8) : from().eye,
-    style: pick(HAIR_STYLES[gender]), looks: clamp(Math.round((a.looks + b.looks) / 2 + ri(-18, 18))),
+    style: pick(HAIR_STYLES[gender]), looks: clamp(Math.round((a.looks + b.looks) / 2 + ri(-18, 18))), brow: pick([a.brow, b.brow]) || 0, mouth: pick([a.mouth, b.mouth]) || 0, eyes: pick([a.eyes, b.eyes]) || 0, mark: chance(0.1) ? ri(1, 7) : 0,
     freckles: from().freckles, glasses: chance(0.1), mole: chance(0.1),
     // each carried gene passes to a child half the time; rare fresh mutations
     carriers: [...new Set([...(a.carriers || []), ...(b.carriers || [])])].filter(() => chance(0.5)).concat(GENETIC_IDS.filter(() => chance(0.01))),
@@ -64,7 +74,8 @@ export function buildPortrait(genes, { age = 20, gender = 'F', realm = 0, hair =
   let hc = HAIR_COLORS[hair?.color || genes.hairColor] || HAIR_COLORS.black;
   if (st === 'elder') hc = genes.hairColor === 'platinum' ? '#f4f2ee' : '#cfcfd6';
   const hcD = shade(hc, -0.28), hcL = shade(hc, 0.32);
-  const style = hair?.style || genes.style;
+  const style0 = hair?.style || genes.style; const style = HAIR_BASE[style0] || style0;
+  const brow = hair?.brow ?? genes.brow ?? 0, mouth = hair?.mouth ?? genes.mouth ?? 0, eyes = hair?.eyes ?? genes.eyes ?? 0, mark = hair?.mark ?? genes.mark ?? 0;
   const eyeC = EYE_COLORS[genes.eye] || EYE_COLORS[0];
   const cloth = CLOTHES[Math.floor(R() * CLOTHES.length)], clothD = shade(cloth, -0.3);
   const accent = ['#ff6b8a', '#ffd166', '#6be0ff', '#ffffff', '#c7a6ff'][Math.floor(R() * 5)];
@@ -147,6 +158,35 @@ export function buildPortrait(genes, { age = 20, gender = 'F', realm = 0, hair =
   if (gender === 'F' || st === 'infant' || st === 'child') { set(cx - 1, my, '#c25a68'); set(cx, my, '#d97a86'); }
   else { set(cx - 1, my, shade(skin, -0.42)); set(cx, my, shade(skin, -0.42)); }
   if (gender === 'F' || st === 'infant' || st === 'child') for (const bx of [eyeL - 1, eyeL, eyeR + 3, eyeR + 4]) set(bx, eyeY + 4, shade('#ff8fa3', genes.skin > 3 ? -0.2 : 0.1));
+  if (st !== 'infant') {
+    const by = eyeY - 2, browC = shade(hc, -0.15);
+    const browPx = { 1: [[0, 0], [1, 0], [2, 0]], 2: [[0, 1], [1, 0], [2, 0], [3, 1]], 3: [[0, -1], [1, 0], [2, 0], [3, 1]], 4: [[0, 1], [1, 0], [2, 0], [3, -1]], 5: [[0, 0], [1, 0], [2, 0], [3, 0], [1, -1], [2, -1]], 6: [[1, -1], [2, -1]], 7: [[1, 0], [2, 0]] }[brow];
+    if (browPx) for (const [ex, side] of [[eyeL, -1], [eyeR, 1]]) for (const [dx, dy] of browPx) set(side < 0 ? ex + dx : ex + 3 - dx, by + dy, browC);
+    const lip = gender === 'F' || st === 'child' ? '#c25a68' : shade(skin, -0.42);
+    if (mouth === 1) { set(cx - 2, my - 1, lip); set(cx + 1, my - 1, lip); }
+    if (mouth === 2) { set(cx + 1, my - 1, lip); set(cx - 1, my, shade(skin, -0.1)); }
+    if (mouth === 3) { set(cx - 1, my + 1, '#7a2a3a'); set(cx, my + 1, '#7a2a3a'); }
+    if (mouth === 4) { set(cx - 2, my, lip); set(cx + 1, my, lip); }
+    if (mouth === 5) { set(cx - 1, my + 1, shade(lip, 0.15)); set(cx, my + 1, shade(lip, 0.15)); }
+    if (mouth === 6) { set(cx - 2, my - 1, lip); set(cx + 1, my - 1, lip); set(cx - 1, my, '#ffffff'); set(cx, my, '#ffffff'); }
+    if (mouth === 7) { set(cx + 1, my + 1, '#ffffff'); }
+    // eye shapes
+    for (const ex of [eyeL, eyeR]) {
+      if (eyes === 1) for (let x = ex; x < ex + 4; x++) set(x, eyeY - 1, skinS);
+      if (eyes === 2) { set(ex, eyeY + (big ? 2 : 1), skin); set(ex + 3, eyeY + (big ? 2 : 1), skin); }
+      if (eyes === 3) set(ex + 1, eyeY, '#ffffff');
+      if (eyes === 4) { for (let y = eyeY - 1; y <= eyeY + 2; y++) for (let x = ex; x < ex + 4; x++) set(x, y, skin); set(ex, eyeY + 1, lash); set(ex + 1, eyeY, lash); set(ex + 2, eyeY, lash); set(ex + 3, eyeY + 1, lash); }
+      if (eyes === 5) { set(ex + 1, eyeY, '#ffffff'); set(ex + 2, eyeY + 1, '#fff6a0'); }
+    }
+    // face marks
+    if (mark === 1) set(eyeR + 3, eyeY + 4, skinD);
+    if (mark === 2) for (let i = 0; i < 4; i++) set(eyeL + i, eyeY - 2 + i, '#b06a6a');
+    if (mark === 3) for (const [fx, fy] of [[eyeL, eyeY + 4], [eyeL + 2, eyeY + 5], [eyeR + 1, eyeY + 4], [eyeR + 3, eyeY + 5], [cx - 1, eyeY + 4]]) set(fx, fy, skinD);
+    if (mark === 4) { set(eyeR + 1, eyeY + 4, '#b06a6a'); set(eyeR + 2, eyeY + 5, '#b06a6a'); set(eyeR + 3, eyeY + 4, '#b06a6a'); }
+    if (mark === 5) set(cx, top + 4, '#d83a3f');
+    if (mark === 6) for (const bx of [eyeL - 1, eyeL, eyeR + 3, eyeR + 4]) set(bx, eyeY + 4, '#ff8fa3');
+    if (mark === 7) set(eyeL + 1, eyeY + 4, '#7fb0ff');
+  }
   if (genes.freckles && st !== 'infant') for (const [fx, fy] of [[eyeL + 1, eyeY + 4], [eyeL + 3, eyeY + 5], [eyeR, eyeY + 5], [eyeR + 2, eyeY + 4]]) set(fx, fy, skinD);
   if (genes.mole) set(eyeR + 3, my, skinD);
   if (genes.looks < 20 && st !== 'infant') set(eyeL + 1, eyeY + 4, skinD);
@@ -167,6 +207,7 @@ export function buildPortrait(genes, { age = 20, gender = 'F', realm = 0, hair =
       messy: [0, 1, -1, 1, 0, -1, 1, 0, 1, -1, 0, 1, 0, 0], sidepart: [1, 1, 1, 0, 0, -1, -2, -2, -2, -2, -2, -2, -1, -1], longtied: [0, 0, -1, -1, 0, -1, -2, -2, -1, 0, -1, -1, 0, 0],
       buzz: Array(14).fill(0), swept: [1, 1, 1, 1, 0, 0, -1, -1, -2, -2, -2, -3, -2, -1],
     }[style] || Array(14).fill(0);
+    if (BANGS2[style0]) bangs.splice(0, 14, ...BANGS2[style0]);
     for (let y = 0; y <= fringeBottom + 2; y++) for (let x = 0; x < W; x++) {
       const col = x - Math.round(cx - rx);
       const crown = inEllipse(x, y, cx, cy - 0.6, crownRx, crownRy) && y < cy - 1;
@@ -175,6 +216,28 @@ export function buildPortrait(genes, { age = 20, gender = 'F', realm = 0, hair =
     }
     if (style === 'spiky') for (let i = 0; i < 6; i++) { const sx = cx - 5 + i * 2; set(sx, top - 2, hc); set(sx, top - 1, hc); set(sx + 1, top - 3 + (i % 2), hc); }
     if (style === 'messy') { set(cx - 2, top - 2, hc); set(cx + 3, top - 2, hc); set(cx + 4, top - 1, hc); }
+    // details for the newer styles
+    switch (style0) {
+      case 'afro': for (let y = 0; y < eyeY; y++) for (let x = 0; x < W; x++) if (inEllipse(x, y, cx, top + 3, rx + 3, 6) && !g[y][x]) set(x, y, hc); break;
+      case 'mohawk': for (let y = top - 4; y < top + 3; y++) { set(cx - 1, y, hc); set(cx, y, hc); } break;
+      case 'manbun': case 'topknot': for (let y = 0; y < 8; y++) for (let x = 0; x < W; x++) if (inEllipse(x, y, cx, top - 1.5, 2.6, 2.2)) set(x, y, hcD); break;
+      case 'ahoge': set(cx, top - 1, hc); set(cx + 1, top - 2, hc); set(cx + 2, top - 3, hc); set(cx + 1, top - 4, hc); break;
+      case 'hairband': for (let x = cx - Math.round(rx); x <= cx + Math.round(rx); x++) if (g[top + 2]?.[x] === hc || g[top + 2]?.[x] === hcL) set(x, top + 2, accent); break;
+      case 'sidebraid': for (let y = eyeY + 2; y <= Math.min(30, eyeY + 14); y++) { set(Math.round(cx - rx) - 1, y, y % 2 ? hc : hcD); set(Math.round(cx - rx), y, y % 2 ? hcD : hc); } break;
+      case 'sidetail': for (let y = cy - 4; y <= cy + 8; y++) for (let x = 0; x < W; x++) if (inEllipse(x, y, cx - rx - 1.5, cy + 2, 2.2, 7)) set(x, y, hc); break;
+      case 'lowbun': for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (inEllipse(x, y, cx + rx, eyeY + 3, 2.4, 2.4) && !g[y][x]) set(x, y, hcD); break;
+      case 'undercut': for (let y = eyeY - 2; y < eyeY + 2; y++) { set(Math.round(cx - rx), y, shade(hc, -0.5)); set(Math.round(cx + rx) - 1, y, shade(hc, -0.5)); } break;
+      case 'quiff': for (let x = cx - 4; x <= cx + 2; x++) set(x, top - 2, hc); set(cx - 3, top - 3, hc); set(cx - 2, top - 3, hcL); break;
+      case 'dreads': for (const dx of [-6, -3, 2, 5]) for (let y = eyeY; y < Math.min(30, eyeY + 12); y++) if (!g[y][cx + dx] || g[y][cx + dx] === hcD) set(cx + dx, y, y % 3 ? hc : hcD); break;
+      case 'curly': for (let i = 0; i < 10; i++) set(cx - 6 + (i * 7) % 13, top - 1 + (i % 2), hc); break;
+      case 'drills': for (const sx of [-1, 1]) for (let k = 0; k < 3; k++) { set(cx + sx * 9, cy + 6 + k * 3, hcL); set(cx + sx * 9, cy + 7 + k * 3, hcD); } break;
+      case 'braids': for (const sx of [-1, 1]) for (let y = cy - 2; y <= cy + 12; y += 2) set(cx + sx * 9, y, hcD); break;
+      case 'halfup': for (let y = 0; y < 8; y++) for (let x = 0; x < W; x++) if (inEllipse(x, y, cx + 4, top, 2.2, 2) && !g[y][x]) set(x, y, hcD); break;
+      case 'highpony': for (let y = top - 3; y < top + 2; y++) { set(cx + rx, y, hc); set(cx + rx + 1, y + 1, hc); } break;
+      case 'pompadour': for (let x = cx - 5; x <= cx + 4; x++) { set(x, top - 2, hc); set(x, top - 3, x % 2 ? hcL : hc); } break;
+      case 'fauxhawk': for (let y = top - 3; y < top + 1; y++) { set(cx - 1, y, hc); set(cx, y - 1, hcL); set(cx + 1, y, hc); } break;
+      case 'longsweep': for (let y = eyeY - 3; y < eyeY + 1; y++) set(cx + 3, y, hc); break;
+    }
     // angel-ring highlight
     const hy = top + 1; for (let x = cx - 4; x <= cx + 4; x++) if (g[hy][x] === hc && (x + hy) % 3 !== 0) set(x, hy, hcL);
     // side locks framing the face
@@ -191,7 +254,7 @@ export function buildPortrait(genes, { age = 20, gender = 'F', realm = 0, hair =
   // cultivation forehead mark
   if (realm >= 4) { const mc = elemColor || REALMS[realm].color; set(cx, top + 4, mc); set(cx - 1, top + 5, mc); set(cx, top + 5, '#ffffff'); set(cx, top + 6, mc); }
 
-  if (raw) return { g, st, skin, skinS, skinD, cloth, clothD, accent, hc, bodyTop, bottomHead };
+  if (raw) return { g, st, skin, skinS, skinD, cloth, clothD, accent, hc, bodyTop, bottomHead, top0: top };
   return finish(g, realm, elemColor, R);
 }
 
@@ -215,9 +278,9 @@ function finish(g, realm, elemColor, R) {
 }
 
 // ---- Full-body sprite (32x64) for the Status sheet: same head, plus outfit, gear and aura.
-const GEAR_COLORS = { iron_sword: ['#cfd6de', '#7a5a3a'], spirit_blade: ['#8fe0ff', '#3a4a7a'], demon_saber: ['#ff5a6a', '#2a0a10'] };
+const GEAR_COLORS = { iron_sword: ['#cfd6de', '#7a5a3a'], spirit_blade: ['#8fe0ff', '#3a4a7a'], demon_saber: ['#ff5a6a', '#2a0a10'], bronze_dagger: ['#c98a3a', '#5a3a1a'], wooden_staff: ['#9a6a3a', '#5a3a1a'], steel_saber: ['#e2e8ee', '#2a2a2a'], twin_daggers: ['#d0d6de', '#3a2a2a'], war_hammer: ['#8a8a92', '#5a3a1a'], long_spear: ['#cfd6de', '#8a5a2a'], jade_sword: ['#5fd38a', '#2a5a3a'], flame_glaive: ['#ff8a3a', '#5a1a0a'], thunder_blade: ['#b18cff', '#2a1a5a'], void_edge: ['#6a5aff', '#0a0a1a'], celestial_sword: ['#fff4b0', '#c9a23a'] };
 export function buildFullBody(genes, opts = {}) {
-  const { age = 20, gender = 'F', realm = 0, elemColor = null, gear = {}, robeColor = null, body = null, heightCm = 170 } = opts;
+  const { age = 20, gender = 'F', realm = 0, elemColor = null, gear = {}, robeColor = null, body = null, heightCm = 170, outfit = {} } = opts;
   const gone = id => body?.parts?.[id]?.missing || (id.startsWith('hand') && body?.parts?.['arm' + id.slice(4)]?.missing) || (id.startsWith('foot') && body?.parts?.['leg' + id.slice(4)]?.missing);
   const prost = id => body?.parts?.[id]?.prosthetic || (id.startsWith('hand') && body?.parts?.['arm' + id.slice(4)]?.prosthetic) || (id.startsWith('foot') && body?.parts?.['leg' + id.slice(4)]?.prosthetic);
   const muscle = body?.muscle || 0; const METAL = '#8a929e';
@@ -230,10 +293,11 @@ export function buildFullBody(genes, opts = {}) {
   const tall = age >= 16 ? Math.max(0.85, Math.min(1.15, heightCm / (gender === 'M' ? 175 : 162))) : 1;
   const top = head.bodyTop - 1, torsoH = Math.round(14 * scale), legH = Math.min(30, Math.round(20 * scale * tall));
   const sw = (st === 'infant' ? 5 : gender === 'M' ? 7 : 6) + (muscle >= 60 && st !== 'infant' ? 1 : 0); // half shoulder width
-  const robe = realm >= 1 && st !== 'infant';
-  const main = robe ? (robeColor || shade(REALMS[realm].color, -0.45)) : cloth, mainD = shade(main, -0.3);
-  const skirt = !robe && gender === 'F' && (st === 'teen' || st === 'adult' || st === 'child') && R() < 0.6;
-  const pants = shade(CLOTHES[Math.floor(R() * CLOTHES.length)], -0.35), shoes = '#2a2230';
+  const O = outfit || {}, dressed = O.top || O.dress || O.outer;
+  const robe = realm >= 1 && st !== 'infant' && !dressed;
+  const main = O.outer?.color || O.dress?.color || O.top?.color || (robe ? (robeColor || shade(REALMS[realm].color, -0.45)) : cloth), mainD = shade(main, -0.3);
+  const rs = R(); const skirt = !robe && (O.dress || O.bottom?.kind === 'skirt' || (!O.bottom && gender === 'F' && (st === 'teen' || st === 'adult' || st === 'child') && rs < 0.6));
+  const pants = O.bottom?.color || shade(CLOTHES[Math.floor(R() * CLOTHES.length)], -0.35), shoes = O.shoes?.color || '#2a2230', socks = O.socks?.color;
   // torso
   for (let y = top; y < top + torsoH; y++) { const w = sw - (y > top + torsoH * 0.55 && gender === 'F' ? 1 : 0);
     for (let x = cx - w; x < cx + w; x++) set(x, y, x === cx - w || x === cx + w - 1 ? mainD : main); }
@@ -252,17 +316,19 @@ export function buildFullBody(genes, opts = {}) {
   // lower body
   const hip = top + torsoH;
   if (robe) { for (let y = hip; y < hip + Math.round(legH * 0.75); y++) { const w = sw + Math.floor((y - hip) / 4); for (let x = cx - w; x < cx + w; x++) set(x, y, x === cx - w || x === cx + w - 1 || x === cx ? mainD : main); } }
-  else if (skirt) { for (let y = hip; y < hip + Math.round(legH * 0.45); y++) { const w = sw + Math.floor((y - hip) / 2); for (let x = cx - w; x < cx + w; x++) set(x, y, (x + y) % 5 === 0 ? clothD : pants === shoes ? cloth : shade(accent, -0.25)); } }
+  else if (skirt) { for (let y = hip; y < hip + Math.round(legH * 0.45); y++) { const w = sw + Math.floor((y - hip) / 2); for (let x = cx - w; x < cx + w; x++) set(x, y, (x + y) % 5 === 0 ? shade(O.dress?.color || O.bottom?.color || clothD, -0.2) : O.dress?.color || O.bottom?.color || shade(accent, -0.25)); } }
   // legs + shoes
   for (let y = hip; y < hip + legH; y++) for (const [lx, side] of [[cx - 4, 'l'], [cx + 1, 'r']]) for (let i = 0; i < 3; i++) {
     if (g[y]?.[lx + i]) continue; const shoe = y >= hip + legH - 2; const id = (shoe ? 'foot_' : 'leg_') + side;
     if (gone(id)) { if (prost(id)) set(lx + i, y, i === 1 ? METAL : null); continue; }
-    set(lx + i, y, shoe ? shoes : skirt || st === 'infant' ? skinS : pants);
+    set(lx + i, y, shoe ? shoes : socks && y >= hip + legH - 4 ? socks : O.bottom?.kind === 'shorts' && y > hip + legH * 0.4 ? skinS : skirt || st === 'infant' ? skinS : pants);
   }
   // armour overlays
   if (gear.armor === 'iron_mail') for (let y = top + 2; y < hip; y++) for (let x = cx - sw + 1; x < cx + sw - 1; x++) if ((x + y) % 2 === 0) set(x, y, '#9aa3ad');
   if (gear.armor === 'dragon_vest') for (let y = top + 2; y < hip; y++) for (let x = cx - sw + 1; x < cx + sw - 1; x++) set(x, y, (x + y * 2) % 3 === 0 ? '#ffb347' : '#d9622b');
   if (gear.armor === 'padded_robe') for (let y = top + 2; y < hip; y += 3) for (let x = cx - sw + 1; x < cx + sw - 1; x++) set(x, y, shade(main, 0.2));
+  // hat
+  if (O.hat) for (let x = cx - 7; x <= cx + 6; x++) { set(x, head.top0 ?? 4, O.hat.color); if (x > cx - 6 && x < cx + 5) set(x, (head.top0 ?? 4) - 1, O.hat.color); }
   // charm pendant
   if (gear.charm) { set(cx - 1, top + 3, gear.charm === 'jade_charm' ? '#5fd38a' : '#f2efe6'); set(cx, top + 3, gear.charm === 'jade_charm' ? '#3fa36a' : '#d8d2c2'); }
   // weapon in right hand
@@ -288,6 +354,6 @@ export function drawPortrait(canvas, genes, opts) {
 export function portraitFor(p, size = 64, extra = {}) {
   const cv = document.createElement('canvas'); cv.className = 'portrait';
   cv.style.width = cv.style.height = size + 'px';
-  drawPortrait(cv, p.genes, { age: p.age, gender: p.gender, realm: p.qi ? p.qi.realm : p.realm || 0, hair: p.hair, elemColor: extra.elemColor });
+  drawPortrait(cv, p.genes, { age: p.age, gender: p.gender, realm: p.qi ? p.qi.realm : p.realm || 0, hair: p.face ? { ...(p.hair || {}), ...p.face } : p.hair, elemColor: extra.elemColor });
   return cv;
 }

@@ -40,6 +40,7 @@ export function familyAtBirth(c, wealth, parents) {
     // destitute kids are sometimes orphaned at birth
     if (wealth.id === 'destitute' && chance(0.35)) { dad.alive = false; if (chance(0.5)) mom.alive = false; c.flags.orphan = true; }
   }
+  if (parents) { (arguments[3] || []).forEach(p => c.people.push(p)); return; }
   const sibs = chance(0.55) ? ri(1, 3) : 0;
   for (let i = 0; i < sibs; i++) c.people.push(makePerson(c, { last: c.last, role: chance(0.5) ? 'Brother' : 'Sister', age: ri(1, 9), close: ri(30, 90) }));
   c.people.filter(p => p.role === 'Sister').forEach(p => p.gender = 'F');

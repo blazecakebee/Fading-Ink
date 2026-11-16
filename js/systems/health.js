@@ -82,7 +82,8 @@ export const bleedMult = c => (c.conditions || []).reduce((m, x) => m * (COND_BY
 export function suddenDeathChance(c) {
   const hurt = c.body ? Object.values(c.body.parts || {}).some(p => p.missing || (p.inj && p.inj.length)) : false;
   const base = c.stats.health >= 70 && !(c.conditions || []).length && !hurt ? 0.0002 : c.stats.health >= 40 ? 0.0007 : 0.002;
-  return Math.max(0, base + (c.conditions || []).reduce((s, x) => s + (COND_BY_ID[x.id].sudden || 0) + (x.id === 'heart' ? 0.01 : 0) + (COND_BY_ID[x.id].grows ? 0.004 * x.sev : 0), 0) - c.qi.realm * 0.0003);
+  // accidents (stairs, cars, stray beasts) fade as your body is refined by cultivation
+  return Math.max(0, base / (1 + c.qi.realm * 0.6) + (c.conditions || []).reduce((s, x) => s + (COND_BY_ID[x.id].sudden || 0) + (x.id === 'heart' ? 0.01 : 0) + (COND_BY_ID[x.id].grows ? 0.004 * x.sev : 0), 0) - c.qi.realm * 0.0003);
 }
 
 // Trauma hooks other systems can call

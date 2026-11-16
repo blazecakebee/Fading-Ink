@@ -54,3 +54,35 @@ export function trainedHeir(ch, c) {
   if (ch.qiFound) { c.qi.known = true; c.qi.affinity = clamp(c.qi.affinity + Math.min(25, ch.qiFound * 3)); c.qi.meridians = Math.min(12, c.qi.meridians + Math.floor(ch.qiFound / 4)); ui.log(`My parent's patient Qi lessons left their mark: Qi affinity +${Math.min(25, ch.qiFound * 3)}.`, 'qi'); }
 }
 export const blessName = REALMS[BLESS_REALM].name;
+
+// ---- fertility, pregnancy and baby names (v0.6.3)
+import { COUNTRIES } from '../data/countries.js';
+import { G } from '../core/state.js';
+const LIFE_CUM = [0, 2, 7, 19, 44, 79, 124, 179, 244, 319, 404, 504, 654];
+// Women can have children until ~45, men until ~75; cultivation stretches both along with the lifespan.
+export function fertileUntil(x) { const r = x.qi?.realm ?? x.realm ?? 0; return (x.gender === 'F' ? 45 : 75) + Math.round((LIFE_CUM[r] || 0) * 0.6); }
+export function fertile(a, b) { return a.gender !== b.gender && [a, b].every(x => x.age >= 16 && x.age <= fertileUntil(x)); }
+export function uniqueFirst(c, gender) {
+  const cty = COUNTRIES.find(x => x.id === c.country) || COUNTRIES[0]; const pool = gender === 'F' ? cty.f : cty.m;
+  const used = new Set([c.first, ...c.people.map(p => p.first)]);
+  const free = pool.filter(n => !used.has(n)); return pick(free.length ? free : pool);
+}
+export const canTryForBaby = (c, p) => (p.role === 'Spouse' || (p.role === 'Partner' && p.livesWith)) && fertile(c, p) && !c.expecting && (c.flags.babyTries?.[G.world.year] || 0) < 2;
+// Conceive: the baby arrives next year. kid = a ready-made child (co-op) or null (made at birth).
+export function conceive(c, p, kid = null) {
+  c.expecting = { due: G.world.year + 1, other: p.id, kid };
+  return `${c.gender === 'F' ? 'I\'m' : `${p.first} is`} pregnant! The baby is due next year.`;
+}
+export function birthYear(c, haveChild) {
+  const e = c.expecting; if (!e || G.world.year < e.due) return;
+  c.expecting = null; const p = c.people.find(x => x.id === e.other) || { genes: c.genes, stats: {}, gender: c.gender === 'F' ? 'M' : 'F', last: c.last, id: e.other };
+  let t;
+  if (e.kid) { if (!c.people.some(x => x.id === e.kid.id)) c.people.push({ ...e.kid, otherParent: p.id }); stat(c, 'happiness', 15); ui.fx('birth'); t = `${e.kid.first} was born — ${p.first ? p.first + '\'s and ' : ''}my ${e.kid.gender === 'F' ? 'daughter' : 'son'}!`; }
+  else t = haveChild(c, p);
+  ui.log(t, 'big');
+  const kid = c.people[c.people.length - 1];
+  ui.cinematic?.({ motif: 'lotus', color: '#ffb7d0', lines: ['A new cry fills the house.', `${kid.first} ${kid.last}.`], title: 'A Child Is Born', sub: `House of ${c.last}`, sound: 'birth' });
+}
+export const MOVE_IN = { id: 'movein', emoji: '🏠', name: 'Move in together', need: (c, p) => p.role === 'Partner' && !p.livesWith && !p.coop && c.age >= 18, run: (c, p) => {
+  if (p.close < 55) { p.close = clamp(p.close - 3); return `${p.first} isn't ready to move in with me yet.`; }
+  p.livesWith = true; gainClose(c, p, 8); stat(c, 'happiness', 6); return { text: `${p.first} and I moved in together.`, cls: 'good' }; } };

@@ -2,7 +2,7 @@
 import { G, META, save } from '../core/state.js';
 import { ui } from '../core/bus.js';
 import { h, icon, $ } from './dom.js';
-import { portraitFor, HAIR_COLORS, HAIR_STYLES, NATURAL_HAIR } from './portrait.js';
+import { portraitFor, HAIR_COLORS, HAIR_STYLES, NATURAL_HAIR, FACE_BROWS, FACE_MOUTHS, FACE_EYES, FACE_MARKS } from './portrait.js';
 import { fx } from './fx.js';
 import { choice, openModal, toast, prompt } from './modal.js';
 import { inventoryTab, craftingTab, healthTab } from './itemsPanel.js';
@@ -168,12 +168,18 @@ export function traitChip(id) {
 }
 
 // ---------- center tabs
+// Remember how many chronicle lines were already shown so re-renders don't replay the ink-in animation (no flicker).
+const seen = { key: null, n: 0 };
+function seenLines(c, cur) { const k = c.id + ':' + cur.age; const n = seen.key === k ? seen.n : 0; seen.key = k; seen.n = cur.lines.length; return n; }
+// GPA on a 4.0 scale from the 0-100 grade average (90+ = A = 4.0)
+export const gpa = g => Math.max(0, Math.min(4, (g - 50) / 10)).toFixed(2);
+const gpaText = g => { const v = +gpa(g); const L = v >= 3.7 ? 'A' : v >= 3.3 ? 'A-' : v >= 3 ? 'B+' : v >= 2.7 ? 'B' : v >= 2.3 ? 'B-' : v >= 2 ? 'C' : v >= 1 ? 'D' : 'F'; return `${v.toFixed(2)} / 4.0 (${L}) — the higher the better`; };
 export const TABS = {
   life() {
     const c = G.char, cur = c.log[c.log.length - 1] || { lines: [] };
     const flavor = c.age === 0 ? 'A new story begins in faded ink.' : c.prison ? 'Cold walls. Counting days.' : pick(['The city hums. Somewhere, a Gate whispers.', 'Another year written into the ledger.', 'The ink of your life is still wet.']);
     const card = h('div', { class: 'year-card' }, h('h2', { class: 'display' }, `AGE ${c.age}`, h('small', {}, '· ' + lifeStage(c.age))),
-      h('div', { class: 'feed' }, cur.lines.length ? cur.lines.map(l => h('p', { class: l.c }, l.t)) : h('p', { class: 'muted' }, flavor)),
+      h('div', { class: 'feed' }, cur.lines.length ? cur.lines.map((l, i) => h('p', { class: l.c + (i >= seenLines(c, cur) ? ' fresh' : '') }, l.t)) : h('p', { class: 'muted' }, flavor)),
       h('div', { class: 'budget-line' }, h('span', {}, '⚡ ', h('b', {}, c.actions), ' actions left'), h('span', {}, '💬 ', h('b', {}, c.social), ' social left (People tab)'), h('span', {}, 'then press ', h('b', {}, 'AGE UP'))));
     if (!c.alive) return [card, h('div', { class: 'row', style: { marginTop: '16px' } }, h('button', { class: 'btn', onclick: () => import('./legacyPanel.js').then(m => m.deathScreen()) }, 'Continue your legacy'))];
     const cats = CATEGORIES.map(cat => {
@@ -305,14 +311,15 @@ export const TABS = {
 
   career() {
     const c = G.char; const cur = c.job && CAREERS.find(j => j.id === c.job.id);
-    const eligible = j => c.age >= j.minAge && c.age <= (j.maxAge || 99) && c.edu.level >= j.edu && Object.entries(j.stat || {}).every(([k, v]) => c.stats[k] >= v) && (!j.realm || c.qi.realm >= j.realm) && (!j.sect || c.sect === j.sect || true);
+    // degree jobs need the matching major; university students can only work part-time
+    const eligible = j => c.age >= j.minAge && c.age <= (j.maxAge || 99) && c.edu.level >= j.edu && (!j.major || j.major.includes(c.edu.major)) && (c.edu.school !== 'University' || j.part) && Object.entries(j.stat || {}).every(([k, v]) => c.stats[k] >= v) && (!j.realm || c.qi.realm >= j.realm) && (!j.sect || c.sect === j.sect || true);
     return [h('h2', { class: 'display' }, 'Career'),
       cur ? h('div', { class: 'year-card', style: { marginTop: '10px' } }, h('h3', {}, `${cur.name}`), h('div', {}, `Years: ${c.job.years} · Performance ${c.job.perf}%`), bar('Performance', c.job.perf, 'var(--good)'),
         h('div', { class: 'row' }, h('button', { class: 'btn ghost', onclick: () => { logLine(`I quit my job as a ${cur.name}.`); c.job = null; render(); } }, 'Quit job')))
         : h('p', { class: 'muted' }, c.prison ? 'You are in prison.' : 'Unemployed.'),
       h('h3', { class: 'display', style: { margin: '16px 0 8px' } }, 'Job listings'),
       h('div', { class: 'grid2' }, CAREERS.map(j => h('div', { class: 'card' }, h('h4', {}, j.name, j.part ? h('span', { class: 'muted' }, ' (part-time)') : ''),
-        h('div', { class: 'muted' }, `${fmtMoney(c, j.pay * country(c).econ * (j.part ? 0.5 : 1))}/yr · age ${j.minAge}+ · ${EDUCATION[j.edu]}${j.stat ? ' · ' + Object.entries(j.stat).map(([k, v]) => `${k} ${v}+`).join(', ') : ''}${j.realm ? ' · ' + REALMS[j.realm].name : ''}`),
+        h('div', { class: 'muted' }, `${fmtMoney(c, j.pay * country(c).econ * (j.part ? 0.5 : 1))}/yr · age ${j.minAge}+ · ${EDUCATION[j.edu]}${j.major ? ' in ' + j.major.join(' or ') : ''}${j.stat ? ' · ' + Object.entries(j.stat).map(([k, v]) => `${k} ${v}+`).join(', ') : ''}${j.realm ? ' · ' + REALMS[j.realm].name : ''}`),
         h('button', { class: 'btn', style: { marginTop: '8px' }, disabled: !c.alive || c.prison || c.actions <= 0 || !eligible(j) || c.job?.id === j.id,
           onclick: () => runActivity({ id: 'apply_' + j.id, cat: 'work', run: cc => { if (chance(0.45 + cc.stats.charisma / 250 + cc.stats.smarts / 400)) { cc.job = { id: j.id, years: 0, perf: 50 }; return { text: `I was hired as a ${j.name}!`, cls: 'good', big: true }; } return { text: `My application to be a ${j.name} was rejected.`, cls: 'bad' }; } }) }, 'Apply (⚡1)'))))];
   },
@@ -321,7 +328,7 @@ export const TABS = {
     const c = G.char, e = c.edu;
     const acts = ACTIVITIES.filter(a => a.cat === 'school' && c.age >= (a.minAge || 0) && (!a.need || a.need(c)));
     return [h('h2', { class: 'display' }, 'Education'), h('table', { class: 'kv', style: { marginTop: '10px' } },
-      [['Currently', e.school || 'Not enrolled'], ['Highest', EDUCATION[e.level]], ['Grades', e.school ? e.grades + '%' : '—'], ['Major', e.major || '—'], ['University year', e.school === 'University' ? e.uniYears + 1 + ' / 4' : '—']].map(([k, v]) => h('tr', {}, h('td', {}, k), h('td', {}, v)))),
+      [['Currently', (e.school || 'Not enrolled') + (e.private && e.school ? ' (private)' : '') + (e.scholarship && e.school ? ' · 🎓 scholarship' : '')], ['Highest', EDUCATION[e.level]], ['GPA', e.school || e.level ? gpaText(e.grades) : '—'], ['Major', e.major || '—'], ['University year', e.school === 'University' ? e.uniYears + 1 + ' / 4' : '—']].map(([k, v]) => h('tr', {}, h('td', {}, k), h('td', {}, v)))),
       h('div', { class: 'row', style: { marginTop: '12px' } }, acts.map(a => h('button', { class: 'btn', disabled: c.actions <= 0 || !c.alive, onclick: () => runActivity(a) }, icon(a.icon, 'sm'), ' ', a.name)))];
   },
 
@@ -347,7 +354,7 @@ export const TABS = {
       h('p', { class: 'muted small' }, discount(c) ? `Your charisma gets you ${Math.round(discount(c) * 100)}% off everything here.` : 'Raise your Charisma to get better deals from merchants.'),
       h('div', { class: 'grid2' }, SHOP.map(([name, type, ic, price]) => { const p = priceFor(c, price * k); return h('div', { class: 'card row' }, icon(ic), h('div', { style: { flex: 1 } }, h('b', {}, name), h('div', { class: 'muted' }, fmtMoney(c, p))),
         h('button', { class: 'btn', disabled: c.age < 18 || c.money < p || !c.alive, onclick: async () => { const ok = await choice({ title: 'Buy ' + name + '?', text: `Price: ${fmtMoney(c, p)}`, icon: ic, options: [{ label: 'Buy', value: true }, { label: 'Cancel', value: false, ghost: true }] }); if (!ok) return; money(c, -p); c.assets.push({ type, name, value: p }); fx('coin'); stat(c, 'happiness', 10); logLine(`I bought a ${name.toLowerCase()} for ${fmtMoney(c, p)}.`, 'good'); render(); } }, 'Buy')); })),
-      h('div', { class: 'row', style: { marginTop: '14px' } }, h('button', { class: 'btn', disabled: c.age < 18 || c.actions <= 0, onclick: () => runActivity(ACTIVITIES.find(a => a.id === 'invest')) }, icon('stocks', 'sm'), ' Invest / cash out (⚡1)'))];
+      h('div', { class: 'row', style: { marginTop: '14px' } }, h('button', { class: 'btn', disabled: c.age < 18, onclick: () => { G.ui.tab = 'market'; render(); } }, icon('stocks', 'sm'), ' Open the stock market'))];
   },
 
   world() {
@@ -433,8 +440,9 @@ const traitVal0 = c => c.traits.reduce((m, id) => m * (TRAIT_BY_ID[id]?.loot || 
 async function coopPersonModal(p) {
   const c = G.char;
   const acts = COOP_ACTIONS.filter(a => p.alive && c.alive && c.age >= (a.age || 0) && (!a.need || a.need(c, p)));
-  const v = await choice({ title: `${p.first} ${p.last}`, portrait: h('div', { class: 'pframe' }, portraitFor(p, 96)),
-    text: `Player · ${p.role} · Age ${p.age}\n${p.online ? 'Online now' : 'Offline — they need to be in your co-op room'}\nRelationship: ${relLabel(p)} (${p.close}%)\nSocial actions left: ${c.social}`,
+  const { indexCard } = await import('./conversation.js');
+  const v = await choice({ title: `${p.first} ${p.last}`, portrait: indexCard(p),
+    text: `Player · ${p.role} · Age ${p.age}${p.sectName ? ' · ' + p.sectName : ''}${p.pregnant ? ' · expecting a baby' : ''}${p.livesWith ? ' · lives with you' : ''}\n${p.online ? 'Online now' : 'Offline — they need to be in your co-op room'}\nRelationship: ${relLabel(p)} (${p.close}%)\nSocial actions left: ${c.social}`,
     options: [...acts.map(a => ({ label: `${a.emoji || '•'}  ${a.name}   · 1 social`, value: a.id, disabled: c.social <= 0 || !p.online })), { label: 'Open chat', value: '_chat', ghost: true }, { label: 'Close', value: null, ghost: true }] });
   if (!v) return; if (v === '_chat') { G.ui.tab = 'coop'; return render(); }
   await runActivity({ id: 'coop_' + v, cost: 's', run: () => doCoopAction(p, v) });
@@ -446,12 +454,16 @@ export const gateYield = (c, R) => { const gap = c.qi.realm - R.realm; return ga
 async function enterGate(i, sweep) {
   const c = G.char, g = c.gates[i], R = GATE_RANKS.find(r => r.rank === g.rank), T = gateType(g);
   await runActivity({ id: 'gate', cat: 'adventure', run: async cc => {
+    let awakened = false;
     if (sweep) { cc.flags.presenceWin = true; cc.wins += R.fights; }
     else for (let f = 0; f < R.fights; f++) {
       const boss = f === R.fights - 1;
       const e = ENEMIES.find(x => x.id === (boss ? T.boss[g.rank] || pick(T.pool) : pick(T.pool)));
       const er = Math.max(e.realm || 0, R.realm + (boss ? 1 : 0));
-      const def = boss ? { ...e, realm: er, hp: Math.round(e.hp * 1.3), str: Math.round(e.str * 1.1), name: `BOSS · ${e.name}` } : { ...e, realm: Math.max(e.realm || 0, R.realm), name: `${e.name} (${f + 1}/${R.fights})` };
+      // bosses of C-rank and up may be AWAKENED: much tougher, much richer. Big bosses get an entrance.
+      if (boss && GATE_RANKS.indexOf(R) >= 2 && chance(0.25)) awakened = true;
+      if (boss && (awakened || GATE_RANKS.indexOf(R) >= 4)) await ui.cinematic?.({ motif: awakened ? 'crack' : 'seal', color: awakened ? '#ff3a4a' : R.color, threads: 9, lines: [awakened ? 'The air in the Gate turns to iron.' : 'The deepest chamber of the Gate.', `${e.name} rises${awakened ? ', eyes burning — AWAKENED' : ''}.`], title: e.name, sub: awakened ? 'Awakened Boss' : `${g.rank}-rank Boss`, sound: 'heavy', hold: 1.6 });
+      const def = boss ? { ...e, realm: er, hp: Math.round(e.hp * (awakened ? 2.1 : 1.3)), str: Math.round(e.str * (awakened ? 1.4 : 1.1)), name: `${awakened ? 'AWAKENED' : 'BOSS'} · ${e.name}` } : { ...e, realm: Math.max(e.realm || 0, R.realm), name: `${e.name} (${f + 1}/${R.fights})` };
       const r = await import('./combat.js').then(m => m.fight(def));
       if (r === 'win' && e.id === 'ghost_king') cc.flags.ghostKing = true;
       if (r !== 'win') return { text: r === 'flee' ? `I fled the ${T.name}.` : `I was beaten inside the ${g.rank}-rank ${T.name} and dragged myself out.`, cls: 'bad' };
@@ -459,7 +471,7 @@ async function enterGate(i, sweep) {
     }
     cc.gates.splice(i, 1); cc.gatesCleared++; if (cc.gatesCleared >= 10) earnTrait(cc, 'gatebreaker'); if (/^S/.test(g.rank)) cc.flags.gateS = true;
     const tier = GATE_RANKS.indexOf(R), yld = gateYield(cc, R);
-    const n = Math.max(1, Math.round((ri(2, 3) + Math.floor(tier / 2)) * traitVal0(cc) * yld));
+    const n = Math.max(1, Math.round((ri(2, 3) + Math.floor(tier / 2) + (awakened ? 3 : 0)) * traitVal0(cc) * yld));
     const table = Object.entries(T.loot).map(([id, w]) => ({ id, w }));
     const got = {};
     const add = (name, k = 1) => { got[name] = (got[name] || 0) + k; };
@@ -470,9 +482,10 @@ async function enterGate(i, sweep) {
         if (mm.length && (chance(0.5) || !m)) { const x = pick(mm); learnMethod(cc, x.id); add(x.name); } else if (m) { learnManual(cc, m.id); add(m.name); } }
       else { addItem(cc, L.id); add(ITEMS[L.id]?.name || L.id); }
     }
-    if (chance(gateHeirloomChance(tier) * yld)) { const x = gainHeirloom(cc, `${g.rank}-rank ${T.name}`); if (x) add(HEIRLOOMS[x.id].name); }
+    if (awakened) { addItem(cc, pick(['bloodline_essence', 'recipe_scroll', 'trib_talisman', 'marrow_pill'])); add('Awakened core'); }
+    if (chance(gateHeirloomChance(tier) * yld * (awakened ? 2.5 : 1))) { const x = gainHeirloom(cc, `${g.rank}-rank ${T.name}`); if (x) add(HEIRLOOMS[x.id].name); }
     if (cc.guild && tier >= cc.guild.rank - 1) cc.guild.merit += Math.round((tier + 1) * 8 * yld);
-    return { text: `${sweep ? `I walked into the ${g.rank}-rank ${T.name} and nothing inside dared move. ` : ''}I cleared the ${g.rank}-rank ${T.name}!${yld < 1 ? ` (outlevelled: ${Math.round(yld * 100)}% loot)` : ''} Loot: ${Object.entries(got).map(([k, v]) => v > 1 ? `${v}× ${k}` : k).join(', ')}.`, cls: 'good', big: true };
+    return { text: `${sweep ? `I walked into the ${g.rank}-rank ${T.name} and nothing inside dared move. ` : ''}I cleared the ${g.rank}-rank ${T.name}${awakened ? ' and slew its AWAKENED boss' : ''}!${yld < 1 ? ` (outlevelled: ${Math.round(yld * 100)}% loot)` : ''} Loot: ${Object.entries(got).map(([k, v]) => v > 1 ? `${v}× ${k}` : k).join(', ')}.`, cls: 'good', big: true };
   } });
 }
 
@@ -502,7 +515,7 @@ function realmLadder(c) {
     const row = h('div', { class: 'rung' + (cur ? ' current' : done ? ' done' : ' locked') },
       h('span', { class: 'rung-glyph', style: { '--rc': r.color } }, r.glyph),
       h('span', { class: 'rung-name' }, r.name, cur && r.stages > 1 ? h('small', {}, ` · Stage ${q.stage}/${r.stages}`) : null),
-      h('span', { class: 'rung-meta' }, r.trib ? h('span', { title: `${r.trib}-bolt Heavenly Tribulation` }, '⚡'.repeat(Math.min(3, r.trib))) : null, r.req?.pill ? h('span', { class: 'muted small', title: 'Needs a Foundation Establishment Pill' }, ' 💊') : null));
+      null);
     row.style.setProperty('--rc', r.color);
     row.title = `${r.name} — stat cap ${r.cap}, +${r.life}y lifespan, power ×${r.power}`;
     return row;
@@ -510,13 +523,20 @@ function realmLadder(c) {
 }
 
 export function openSalon() {
-  const c = G.char; const preview = h('div', { class: 'pframe' }); let sel = { style: c.hair?.style || c.genes.style, color: c.hair?.color || c.genes.hairColor };
-  const cost = priceFor(c, 60 * country(c).econ);
-  const redraw = () => preview.replaceChildren(portraitFor({ ...c, hair: sel }, 128));
-  const body = h('div', {}, h('div', { class: 'row' }, preview, h('div', { class: 'muted' }, `Haircut & dye: ${fmtMoney(c, cost)}.\nYour face and base looks stay the same.`)),
-    h('h3', { style: { margin: '10px 0 4px' } }, 'Style'), h('div', { class: 'row' }, [...HAIR_STYLES.F, ...HAIR_STYLES.M].map(st => h('button', { class: 'btn ghost', onclick: () => { sel.style = st; redraw(); } }, st))),
+  const c = G.char; const preview = h('div', { class: 'pframe' });
+  const f0 = c.face || {}; let sel = { style: c.hair?.style || c.genes.style, color: c.hair?.color || c.genes.hairColor, brow: f0.brow ?? c.genes.brow ?? 0, mouth: f0.mouth ?? c.genes.mouth ?? 0, eyes: f0.eyes ?? c.genes.eyes ?? 0, mark: f0.mark ?? c.genes.mark ?? 0 };
+  const hairCost = priceFor(c, Math.round(60 * country(c).econ)), faceCost = priceFor(c, Math.round(250 * country(c).econ));
+  const cur = { ...sel };
+  const total = () => ((sel.style !== cur.style || sel.color !== cur.color) ? hairCost : 0) + (['brow', 'mouth', 'eyes', 'mark'].some(k => sel[k] !== cur[k]) ? faceCost : 0);
+  const costEl = h('div', { class: 'muted' });
+  const redraw = () => { preview.replaceChildren(portraitFor({ ...c, hair: { style: sel.style, color: sel.color }, face: { brow: sel.brow, mouth: sel.mouth, eyes: sel.eyes, mark: sel.mark } }, 128)); costEl.textContent = `Haircut & dye ${fmtMoney(c, hairCost)} · face styling ${fmtMoney(c, faceCost)}\nTotal: ${fmtMoney(c, total())} (you have ${fmtMoney(c, c.money)})`; okBtn.disabled = !total() || c.money < total(); };
+  const row = (label, list, key) => [h('h3', { style: { margin: '10px 0 4px' } }, label), h('div', { class: 'row', style: { flexWrap: 'wrap', gap: '4px' } }, list.map((nm, i) => h('button', { class: 'btn ghost mini', onclick: () => { sel[key] = typeof nm === 'string' && key === 'style' ? nm : i; redraw(); } }, nm)))];
+  const okBtn = h('button', { class: 'btn', onclick: () => { const t = total(); if (c.money < t) return; money(c, -t); c.hair = { style: sel.style, color: sel.color }; c.face = { brow: sel.brow, mouth: sel.mouth, eyes: sel.eyes, mark: sel.mark }; stat(c, 'happiness', 4); logLine(`I got a new look at the salon (${fmtMoney(c, t)}).`); fx('action'); m.close(); render(); } }, 'Pay & confirm');
+  const body = h('div', {}, h('div', { class: 'row' }, preview, costEl),
+    ...row(`Hair style (${HAIR_STYLES.F.length + HAIR_STYLES.M.length})`, [...HAIR_STYLES.F, ...HAIR_STYLES.M], 'style'),
     h('h3', { style: { margin: '10px 0 4px' } }, 'Color'), h('div', { class: 'row' }, Object.entries(HAIR_COLORS).map(([k, v]) => h('button', { class: 'btn ghost', title: k, style: { background: v, width: '34px', height: '34px', padding: 0 }, onclick: () => { sel.color = k; redraw(); } }))),
-    h('div', { class: 'row', style: { marginTop: '14px' } }, h('button', { class: 'btn', disabled: c.money < cost && c.age >= 18, onclick: () => { if (c.age >= 18) money(c, -cost); c.hair = { ...sel }; stat(c, 'happiness', 4); logLine(`I got a new look at the salon: ${sel.style}, ${sel.color}.`); fx('action'); m.close(); render(); } }, 'Confirm')));
+    ...row('Brows', FACE_BROWS, 'brow'), ...row('Eyes', FACE_EYES, 'eyes'), ...row('Mouth', FACE_MOUTHS, 'mouth'), ...row('Marks', FACE_MARKS, 'mark'),
+    h('div', { class: 'row', style: { marginTop: '14px' } }, okBtn));
   redraw(); const m = openModal([h('h2', {}, icon('salon', 'lg'), 'Salon'), body]);
 }
 

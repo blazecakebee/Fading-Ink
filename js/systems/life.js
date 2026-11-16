@@ -29,7 +29,11 @@ export const STAT_KEYS = ['health', 'happiness', 'stress', 'smarts', 'looks', 's
 export const tierOf = c => TIERS[country(c).tier] || TIERS.developed;
 export const country = c => COUNTRIES.find(x => x.id === c.country) || COUNTRIES[0];
 export const realm = c => REALMS[c.qi.realm];
-export const fmtMoney = (c, n) => country(c).currency + Math.round(n).toLocaleString();
+// Money is stored in one base unit (≈ US dollars). It's shown in your local currency at a real-world-ish exchange rate,
+// so 3 euros and 3 yuan are no longer the same thing.
+export const FX = { cn: 7.2, kr: 1350, jp: 150, us: 1, gb: 0.79, br: 5, ng: 1500, in: 83, ru: 90, mx: 17, fr: 0.92, eg: 48 };
+export const fxRate = c => FX[c?.country] ?? 1;
+export const fmtMoney = (c, n) => { const v = Math.round(n * fxRate(c)); return (v < 0 ? '-' : '') + country(c).currency + Math.abs(v).toLocaleString(); };
 export function lifeStage(age) {
   if (age < 3) return 'Infancy'; if (age < 13) return 'Childhood'; if (age < 18) return 'Adolescence';
   if (age < 30) return 'Young Adult'; if (age < 55) return 'Adulthood'; if (age < 75) return 'Middle Age'; return 'Elder';
@@ -90,7 +94,7 @@ export function newLife(opts = {}) {
   const genes = opts.genes || randomGenes(gender);
   const base = () => ri(20, 80);
   const c = {
-    id: uid(), first: nm.first, last: nm.last, gender, country: cty.id, city: pick(cty.city), wealth: wealth.id,
+    id: opts.id || uid(), first: nm.first, last: nm.last, gender, country: cty.id, city: pick(cty.city), wealth: wealth.id,
     age: 0, alive: true, birthYear: G.world.year, generation: opts.generation || 1,
     money: 0, fame: 0, genes, hair: null,
     stats: { health: ri(60, 100), happiness: ri(60, 95), stress: ri(0, 15), smarts: base(), looks: genes.looks, battle: ri(0, 8),
@@ -121,7 +125,7 @@ export function newLife(opts = {}) {
   c.lifespan += traitVal(c, 'life');
   c.money += ri(...wealth.money) * (opts.moneyBonus ? 1 : 1);
   G.char = c;
-  familyAtBirth(c, wealth, opts.parents);
+  familyAtBirth(c, wealth, opts.parents, opts.siblings);
   if (opts.inheritMoney) c.money += opts.inheritMoney;
   // birth log
   ensureBody(c); if (opts.heights) c.body.adultHeight = adultHeight(c.country, c.gender, opts.heights);
@@ -190,10 +194,7 @@ export async function ageUp() {
     ui.log(`Earned ${fmtMoney(c, pay)} as a ${job.name}.`);
     if (c.job.perf < 15 && chance(0.4)) { ui.log(`I was fired from my job as a ${job.name}.`, 'bad'); c.job = null; }
   }
-  if (c.stocks > 0) {
-    const r = (rand() * 0.4 - 0.12); const d = Math.round(c.stocks * r); c.stocks += d;
-    ui.log(`My investments ${d >= 0 ? 'grew' : 'fell'} by ${fmtMoney(c, Math.abs(d))} (${(r * 100).toFixed(1)}%).`, d >= 0 ? 'good' : 'bad');
-  }
+  // investments are handled by the stock market (systems/market.js)
   // comfort: a home, a car and pets make life easier
   const cf = comfort(c); if (cf.happy) stat(c, 'happiness', cf.happy); if (cf.stress) stat(c, 'stress', -cf.stress); if (cf.health) stat(c, 'health', cf.health);
   c.assets.forEach(a => { if (a.rent && a.tenant) { money(c, a.rent); } a.value = Math.round(a.value * (a.type === 'car' ? 0.88 : 1 + (rand() * 0.1 - 0.02))); });
@@ -305,6 +306,13 @@ export function willInfo(c) {
 }
 // Give an asset or money to a child while you're alive; it waits for them if you ever continue as that child.
 export function giftToChild(c, kid, what) {
+  if (kid.coop) { // another player: hand it over right now over the network
+    if (what.money && c.money < what.money) return null;
+    if (what.asset) { const i = c.assets.indexOf(what.asset); if (i < 0) return null; c.assets.splice(i, 1); } else money(c, -what.money);
+    if (!ui.coopGift?.(kid, what)) { if (what.asset) c.assets.push(what.asset); else money(c, what.money); ui.toast?.(`${kid.first} is not online.`); return null; }
+    kid.close = clamp(kid.close + (what.asset ? 12 : 6));
+    return what.asset ? `I gave my ${what.asset.name.toLowerCase()} to ${kid.first}.` : `I sent ${kid.first} ${fmtMoney(c, what.money)}.`;
+  }
   kid.gifts ||= { money: 0, assets: [] };
   if (what.asset) { const i = c.assets.indexOf(what.asset); if (i < 0) return null; c.assets.splice(i, 1); what.asset.tenant = what.asset.tenant || false; kid.gifts.assets.push(what.asset); kid.close = clamp(kid.close + 12); return `I gave my ${what.asset.name.toLowerCase()} to ${kid.first}.`; }
   if (what.money) { if (c.money < what.money) return null; c.money -= what.money; kid.gifts.money += what.money; kid.close = clamp(kid.close + 8); return `I gave ${kid.first} ${fmtMoney(c, what.money)}.`; }
@@ -327,7 +335,12 @@ export function continueAs(childId) {
   else if (will.heir === 'spouse') { heirMoney = Math.round(will.value * 0.1); willNote = `${will.spouse.first} inherited ${fullName(old)}'s estate (no prenup). They gave me ${fmtMoney(old, heirMoney)} to help me along.`; }
   const heir = heirMoney + gifts.money;
   G.world.year = old.birthYear + old.age - ch.age;
-  const c = newLife({
+  // the heir's real family: the parent who just died, the other parent (an NPC or a co-op player) and their siblings
+  const mk = (p, role) => ({ ...p, role, close: Math.max(60, p.close || 80) });
+  const realParents = [{ id: old.id, first: old.first, last: old.last, gender: old.gender, age: old.age, alive: false, genes: old.genes, hair: old.hair, stats: { ...old.stats }, realm: old.qi.realm, role: old.gender === 'F' ? 'Mother' : 'Father', close: 90, dna: [...(old.dna?.base || [])] }];
+  if (partner) realParents.push(mk(partner, partner.gender === 'F' ? 'Mother' : 'Father'));
+  const sibs = old.people.filter(p => ['Son', 'Daughter'].includes(p.role) && p.id !== ch.id).map(p => mk(p, p.gender === 'F' ? 'Sister' : 'Brother'));
+  const c = newLife({ parents: realParents, siblings: sibs, id: ch.id,
     country: COUNTRIES.find(x => x.id === old.country), gender: ch.gender, name: { first: ch.first, last: ch.last },
     genes: ch.genes, wealth: WEALTH.find(w => w.id === old.wealth), generation: old.generation + 1,
     inherit, heirlooms: [],

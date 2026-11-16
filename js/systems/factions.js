@@ -163,7 +163,7 @@ export function disciplesYear(c) {
   for (const d of [...c.disciples]) {
     d.age++;
     if (d.taught !== G.world.year - 1 && d.taught !== G.world.year) d.loyalty = clamp(d.loyalty - ri(4, 8));
-    if (d.assigned && c.sect) { const g = 3 * (d.realm + 1); c.contrib = (c.contrib || 0) + g; if (chance(0.05)) { addItem(c, 'spirit_herb'); } }
+    if (d.assigned && c.sect) { const g = Math.round(3 * (d.realm + 1) * (1 + (d.rank || 0) * 0.5)); c.contrib = (c.contrib || 0) + g; if (chance(0.05)) { addItem(c, 'spirit_herb'); } }
     if (d.loyalty < 15 && chance(0.4)) {
       c.disciples.splice(c.disciples.indexOf(d), 1);
       const stolen = Math.max(0, Math.round(c.money * ri(5, 15) / 100)); if (stolen) money(c, -stolen);
@@ -240,7 +240,7 @@ export function oust(c, why, voluntary) {
 }
 async function sectWar(c, enemy) {
   const dis = (c.disciples || []).filter(d => d.realm >= 1);
-  const help = Math.min(0.3, dis.reduce((s, d) => s + 0.04 * d.realm, 0));
+  const help = Math.min(0.35, dis.reduce((s, d) => s + 0.04 * d.realm * (1 + (d.rank || 0) * 0.25), 0));
   const v = await ui.choice({ title: 'Sect War', icon: 'combat', text: `The ${sectLabel(c)} is at war with the ${enemy.name}. Every disciple is called to the front.${dis.length ? `\nYour disciples stand with you (enemies weakened by ${Math.round(help * 100)}%).` : ''}`,
     options: [{ label: 'Hold the line', value: 'fight' }, { label: 'Lead a raid on their territory (harder, bigger reward)', value: 'raid' }, { label: 'Stay behind (-40 contribution)', value: 'stay' }] });
   if (v === 'stay' || !v) { c.contrib -= 40; ui.log('I stayed out of the war. People noticed.', 'bad'); if (c.sectRank >= 1 && chance(0.2)) oust(c, 'cowardice in wartime'); return; }
@@ -255,4 +255,45 @@ async function sectWar(c, enemy) {
     ui.log(`The ${enemy.name} pushed us back.`, 'bad');
     if (dis.length && chance(0.15)) { const d = pick(dis); c.disciples.splice(c.disciples.indexOf(d), 1); ui.log(`My disciple ${d.first} fell in the fighting.`, 'death'); stat(c, 'happiness', -15); }
   }
+}
+
+// ---------------- v0.6.3: promoting your disciples, and running your own sect
+export const D_RANKS = [{ name: 'Outer', realm: 0, loyal: 0 }, { name: 'Inner', realm: 1, loyal: 40 }, { name: 'Core', realm: 3, loyal: 55 }, { name: 'Elder', realm: 5, loyal: 70 }];
+export function canPromoteDisciple(c, d) {
+  const r = (d.rank || 0) + 1; if (r >= D_RANKS.length) return { ok: false, why: ['highest rank'] };
+  const R = D_RANKS[r], why = [];
+  if (d.realm < R.realm) why.push(`reach ${realmN(R.realm)}`);
+  if (d.loyalty < R.loyal) why.push(`loyalty ${R.loyal}+`);
+  if (!isOwn(c) && (c.sectRank || 0) < r + 1) why.push(`you must outrank them (${SECT_RANKS[Math.min(4, r + 1)].name})`);
+  return { ok: !why.length, why, R };
+}
+export function promoteDisciple(c, d) {
+  const p = canPromoteDisciple(c, d); if (!p.ok) return null;
+  d.rank = (d.rank || 0) + 1; d.loyalty = clamp(d.loyalty + 10);
+  return { text: `I promoted ${d.first} to ${p.R.name} disciple. They bowed so low their forehead touched the floor.`, cls: 'good' };
+}
+export const discRank = d => D_RANKS[d.rank || 0].name;
+// own sect halls
+export const HALLS = {
+  library: { name: 'Scripture Library', icon: 'manual', desc: '+4% Qi gains per level.' },
+  alchemy: { name: 'Alchemy Room', icon: 'cauldron', desc: 'A Qi Gathering Pill per level each year.' },
+  grounds: { name: 'Training Grounds', icon: 'gym', desc: '+1 Strength and Battle Knowledge per level each year.' },
+  gate: { name: 'Mountain Gate', icon: 'shield', desc: 'More disciples join each year (+2 per level).' },
+};
+export const hallCost = (c, lvl) => Math.round(15000 * (lvl + 1) ** 2 * econ(c));
+export function buildHall(c, id) {
+  const o = c.ownSect; o.halls ||= {}; const lvl = o.halls[id] || 0; if (lvl >= 3) return null;
+  const cost = hallCost(c, lvl); if (c.money < cost) return null; money(c, -cost); o.halls[id] = lvl + 1;
+  return { text: `The ${o.name} built a level ${lvl + 1} ${HALLS[id].name}.`, cls: 'good', big: true };
+}
+export function recruitDrive(c) {
+  const o = c.ownSect; const cost = Math.round(3000 * econ(c)); if (c.money < cost) return null; money(c, -cost);
+  const n = Math.max(1, Math.round(ri(2, 6) * (1 + c.stats.charisma / 100) + c.qi.realm));
+  o.disciples += n; return { text: `A recruitment drive brought ${n} new disciples to the ${o.name}.`, cls: 'good' };
+}
+export function ownSectYear(c) {
+  const o = c.ownSect; if (!o?.halls) return;
+  if (o.halls.alchemy) addItem(c, 'qi_pill', o.halls.alchemy);
+  if (o.halls.grounds) { stat(c, 'strength', o.halls.grounds); stat(c, 'battle', o.halls.grounds); }
+  if (o.halls.gate) o.disciples += o.halls.gate * 2;
 }

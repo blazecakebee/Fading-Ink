@@ -1,7 +1,24 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.6.2';
+export const VERSION = '0.6.3';
 export const CHANGELOG = [
+  { v: '0.6.3', date: '2026-11-15', title: 'Life, money & style', notes: [
+    'Money now shows in your real local currency (yen, won, rupees, naira…) at realistic exchange rates. Prices across the game match your local economy.',
+    'New Stock Market tab: 8 companies with charts. Buy and sell freely; prices move every year with each company\'s risk and the world news (crashes, Gate surges, Spirit Tides…). No more investing money you don\'t have.',
+    'New Wardrobe & Armory tab: 80 clothes (tops, bottoms, dresses, outerwear, socks, shoes, hats) you can buy and wear — they show on your Status body and stylish outfits make people like you faster. The Armory sells weapons and armour; 20 new weapons, armours and charms (the best drop in high Gates).',
+    'Salon: 30 new hairstyles (44 in total) and a new face menu — brows, eyes, mouths and marks. The salon now costs money for everyone.',
+    'Pregnancy: babies arrive the year after you conceive, you can\'t try while expecting, women are fertile until ~45 (cultivation extends it), and partners must live together first ("Move in together"). Baby names repeat far less.',
+    'Martial arts: pick a school (Karate, Taekwondo, Kung Fu, Judo, Muay Thai, Wing Chun) and earn belts up to black. Classes cost money and are limited to 2 a year.',
+    'Education: GPA (4.0 scale) is shown, private schools, and scholarships for smart students. Degree jobs now need the right major (no more lawyers becoming doctors), and university students can only work part-time.',
+    'Move to another country (Work activities).',
+    'Sect & Guild tab reorganised into sections. Promote your disciples (Outer → Inner → Core → Elder). As Sect Master, build halls (Library, Alchemy Room, Training Grounds, Mountain Gate) and hold recruitment drives.',
+    'Gate bosses of C-rank and up can be AWAKENED — much harder, with an entrance cinematic and much better loot. More cinematics: weddings, joining a sect, births, black belts, emigrating.',
+    'Co-op: players get the full info card, you can send money and give houses/assets to other players, hanging out / gym / Qi training no longer need a confirmation, you can\'t invite someone already in your sect, and a player who continues as your child shows up as your son or daughter (with their real parents).',
+    'Conversations give more closeness (~3 per good answer). Sparring now trains your Strength and Agility, and stronger cultivators may teach you a technique.',
+    'Music: 5 new songs, and the new default "Rotate all songs" moves on to a different song every few minutes.',
+    'Random accidents get rarer the higher your cultivation realm.',
+    'Fixes: the chronicle and headlines no longer flicker; spending Legacy points no longer softlocks you (a "Continue your legacy" button waits on the Legacy page); removed the ⚡/💊 markers from the realm ladder.',
+  ] },
   { v: '0.6.2', date: '2026-11-15', title: 'Co-op: age up together', notes: ['In a co-op room, everyone must agree before the year advances. The first player to press AGE UP starts a 60-second timer; when everyone is ready (or the timer runs out) all players move on to the next year together.', 'Players whose life has ended don\'t hold the vote up.'] },
   { v: '0.6.1', date: '2026-11-15', title: 'Cleaner cloud button', notes: ['When your Google account is linked, the menu button now just says "Linked ✓" and can\'t be clicked — your saves already sync automatically.'] },
   { v: '0.6.0', date: '2026-11-15', title: 'Bloodlines', notes: [

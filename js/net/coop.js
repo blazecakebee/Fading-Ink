@@ -6,7 +6,10 @@ import { G, save } from '../core/state.js';
 import { ui } from '../core/bus.js';
 import { ri, pick, clamp, chance, uid } from '../core/rng.js';
 import { mixGenes } from '../ui/portrait.js';
-import { stat } from '../systems/life.js';
+import { stat, money, fmtMoney, giftToChild } from '../systems/life.js';
+import { fertile, conceive, uniqueFirst } from '../systems/family.js';
+export const weddingCine = (c, p) => ui.cinematic?.({ motif: 'lotus', color: '#ff6a8a', lines: [`Red lanterns, two families, one table.`, `${c.first} and ${p.first} bow to heaven, to earth, and to each other.`], title: 'Married', sub: `${c.first} ♥ ${p.first}`, sound: 'milestone' });
+export const sectCine = (c, name) => ui.cinematic?.({ motif: 'seal', color: '#9ad0ff', lines: ['The gate opens. Incense, bells, a long stair.', 'You kneel, and are given a name in the register.'], title: name, sub: 'You joined', sound: 'milestone' });
 import { learnManual, sectName } from '../systems/cultivation.js';
 import { gainClose } from '../systems/people.js';
 import { SECTS } from '../data/realms.js';
@@ -30,9 +33,9 @@ const setStatus = s => { net.status = s; refresh(); };
 
 export function myProfile() {
   const c = G.char; if (!c) return null;
-  return { charId: c.id, first: c.first, last: c.last, gender: c.gender, age: c.age, genes: c.genes, hair: c.hair, alive: c.alive,
+  return { charId: c.id, first: c.first, last: c.last, gender: c.gender, age: c.age, genes: c.genes, hair: c.hair, face: c.face, alive: c.alive,
     stats: { smarts: c.stats.smarts, strength: c.stats.strength, agility: c.stats.agility, charisma: c.stats.charisma, luck: c.stats.luck, looks: c.stats.looks, health: c.stats.health },
-    realm: c.qi.realm, stage: c.qi.stage, techs: c.qi.techs, sect: c.sect, traits: c.traits, city: c.city, partnerCharId: c.people.find(p => p.id === c.partnerId)?.coop || null };
+    realm: c.qi.realm, stage: c.qi.stage, techs: c.qi.techs, sect: c.sect, sectName: sectName(c), traits: c.traits, pregnant: !!c.expecting, city: c.city, partnerCharId: c.people.find(p => p.id === c.partnerId)?.coop || null, parentIds: c.people.filter(p => ['Father', 'Mother'].includes(p.role)).map(p => p.coop || p.id) };
 }
 
 // ---------- connecting
@@ -168,12 +171,15 @@ export function sendChat(text) { text = String(text || '').trim(); if (!text || 
 function upsertPerson(peerId, prof) {
   const c = G.char; if (!c) return;
   let p = c.people.find(x => x.coop === prof.charId);
+  // a co-op player who continued as OUR child (or parent) keeps that family role
+  if (!p) { p = c.people.find(x => x.id === prof.charId && !x.coop); if (p) { p.coop = prof.charId; ui.log(`${prof.first} is a player now — my ${p.role.toLowerCase()} lives on.`, 'good'); } }
+  if (!p && prof.parentIds?.includes(c.id)) { p = { id: prof.charId, coop: prof.charId, role: prof.gender === 'F' ? 'Daughter' : 'Son', close: 85, met: G.world.year }; c.people.push(p); }
   if (!p) {
     p = { id: uid(), coop: prof.charId, role: 'Co-op Friend', close: 50, met: G.world.year };
     c.people.push(p); ui.log(`I met ${prof.first} ${prof.last} (another player).`, 'good');
   }
-  Object.assign(p, { peerId, online: true, first: prof.first, last: prof.last, gender: prof.gender, age: prof.age, genes: prof.genes, hair: prof.hair,
-    alive: prof.alive, stats: { ...prof.stats }, realm: prof.realm, techs: prof.techs, sect: prof.sect, traits: prof.traits });
+  Object.assign(p, { peerId, online: true, first: prof.first, last: prof.last, gender: prof.gender, age: prof.age, genes: prof.genes, hair: prof.hair, face: prof.face,
+    alive: prof.alive, stats: { ...prof.stats }, realm: prof.realm, techs: prof.techs, sect: prof.sect, sectName: prof.sectName, traits: prof.traits, pregnant: prof.pregnant });
   if (!prof.alive && !p.deathNoted) { p.deathNoted = true; ui.log(`${prof.first} ${prof.last} has died.`, 'death'); if (c.partnerId === p.id) c.partnerId = null; }
 }
 
@@ -183,10 +189,12 @@ export const COOP_ACTIONS = [
   { id: 'gym', emoji: '🏋️', name: 'Hit the gym together', ask: 'wants to hit the gym with you.', age: 12 },
   { id: 'train', emoji: '🌀', name: 'Train Qi together', ask: 'wants to circulate Qi together.', need: (c, p) => c.qi.realm >= 1 && p.realm >= 1 },
   { id: 'spar', emoji: '⚔️', name: 'Spar', ask: 'challenges you to a friendly spar.', age: 8 },
-  { id: 'sect', emoji: '🏯', name: 'Invite to my sect/gang', ask: 'invites you to join their', need: (c, p) => !!c.sect && c.sect !== 'guest' && p.sect !== c.sect && p.age >= 12 },
+  { id: 'sect', emoji: '🏯', name: 'Invite to my sect/gang', ask: 'invites you to join their', need: (c, p) => !!c.sect && c.sect !== 'guest' && p.sect !== c.sect && (p.sectName || '') !== (sectName(c) || '') && p.age >= 12 },
+  { id: 'money', emoji: '💸', name: 'Send money', notice: true, need: (c, p) => c.money > 0 },
+  { id: 'movein', emoji: '🏠', name: 'Move in together', ask: 'wants to move in together.', need: (c, p) => ['Partner', 'Spouse'].includes(p.role) && !p.livesWith },
   { id: 'date', emoji: '🌹', name: 'Ask out', ask: 'is asking you out!', age: 14, need: (c, p) => !c.partnerId && p.role === 'Co-op Friend' && p.age >= 14 },
   { id: 'marry', emoji: '💍', name: 'Propose', ask: 'is proposing to you!', age: 18, need: (c, p) => p.role === 'Partner' && p.age >= 18 },
-  { id: 'baby', emoji: '👶', name: 'Try for a baby', ask: 'wants to have a child with you.', age: 18, need: (c, p) => ['Partner', 'Spouse'].includes(p.role) && c.age < 50 && p.age < 50 },
+  { id: 'baby', emoji: '👶', name: 'Try for a baby', ask: 'wants to have a child with you.', age: 18, need: (c, p) => ['Partner', 'Spouse'].includes(p.role) && (p.livesWith || p.role === 'Spouse') && fertile(c, p) && !c.expecting && !p.pregnant },
   { id: 'breakup', emoji: '💔', name: 'Break up', need: (c, p) => ['Partner', 'Spouse'].includes(p.role), notice: true },
 ];
 
@@ -204,6 +212,12 @@ export async function doCoopAction(p, kind) {
   const c = G.char;
   if (!p.online || !net.peers.has(p.peerId)) { ui.toast(`${p.first} is not online.`); return null; }
   const A = COOP_ACTIONS.find(a => a.id === kind);
+  if (kind === 'money') {
+    const amts = [0.05, 0.1, 0.25, 0.5].map(f => Math.max(1, Math.round(c.money * f))).filter((v, i, a) => a.indexOf(v) === i);
+    const amt = await ui.choice({ title: `Send money to ${p.first}`, icon: 'market', text: `You have ${fmtMoney(c, c.money)}.`, options: [...amts.map(v => ({ label: fmtMoney(c, v), value: v })), { label: 'Cancel', value: null, ghost: true }] });
+    if (!amt || amt > c.money) return null;
+    const t = giftToChild(c, p, { money: amt }); return t ? { text: t, cls: 'good' } : null;
+  }
   if (A.notice) { // one-way, no permission needed
     sendTo(p.peerId, { t: 'note', kind, profile: myProfile() });
     if (p.role === 'Spouse') c.flags.divorces = (c.flags.divorces || 0) + 1; p.role = 'Ex'; c.partnerId = null; p.close = clamp(p.close - 30); return { text: `${p.first} and I broke up.`, cls: 'bad' };
@@ -223,8 +237,9 @@ async function onRequest(d) {
   upsertPerson(d.from, d.profile); const p = c.people.find(x => x.coop === d.profile.charId);
   const A = COOP_ACTIONS.find(a => a.id === d.kind); if (!A) return respond(d.from, d.id, false);
   // auto-decline what this character can't do right now
-  const blocked = !c.alive || (A.age && c.age < A.age) || (d.kind === 'date' && c.partnerId) || (d.kind === 'marry' && p.role !== 'Partner') || (d.kind === 'baby' && (c.age >= 50 || !['Partner', 'Spouse'].includes(p.role)));
+  const blocked = !c.alive || (A.age && c.age < A.age) || (d.kind === 'date' && c.partnerId) || (d.kind === 'marry' && p.role !== 'Partner') || (d.kind === 'baby' && (!fertile(c, p) || c.expecting || !['Partner', 'Spouse'].includes(p.role)));
   if (blocked) return respond(d.from, d.id, false);
+  if (AUTO.includes(d.kind)) { respond(d.from, d.id, true); applyAccepted(c, p, d.kind, d.data, {}, false); save(); return refresh(); }
   ui.fx('milestone');
   const sn = d.kind === 'sect' ? ' ' + (d.data.name || 'sect') + '.' : '';
   const ok = await ui.choice({ title: `${d.profile.first} ${d.profile.last}`, icon: 'people', text: `${d.profile.first} ${A.ask}${sn}`, dismiss: false,
@@ -232,8 +247,11 @@ async function onRequest(d) {
   respond(d.from, d.id, !!ok);
   if (ok) { applyAccepted(c, p, d.kind, d.data, {}, false); save(); refresh(); }
 }
+// small, friendly things don't need a popup; sparring and life-changing choices still ask
+const AUTO = ['hangout', 'gym', 'train'];
 function onNote(d) {
   const c = G.char; const p = c?.people.find(x => x.coop === d.profile?.charId); if (!p) return;
+  if (d.kind === 'gift') { if (d.asset) { c.assets.push(d.asset); ui.log(`${p.first} gave me their ${d.asset.name.toLowerCase()}!`, 'good'); } if (d.money > 0) { money(c, d.money); ui.log(`${p.first} sent me ${fmtMoney(c, d.money)}.`, 'good'); } p.close = clamp(p.close + 5); ui.fx('coin'); }
   if (d.kind === 'breakup') { p.role = 'Ex'; if (c.partnerId === p.id) c.partnerId = null; p.close = clamp(p.close - 30); ui.log(`${p.first} broke up with me.`, 'bad'); ui.fx('fail'); }
   if (d.kind === 'spar_result') ui.log(`${p.first} sparred with me: ${d.text}`);
   save(); refresh();
@@ -256,18 +274,14 @@ function applyAccepted(c, p, kind, data, resData, iAmSender) {
     case 'sect': {
       if (iAmSender) return { text: `${p.first} joined my ${data.name}.`, cls: 'good', big: true };
       if (SECTS.some(s => s.id === data.sect)) c.sect = data.sect; else { c.sect = 'guest'; c.guestSect = data.name; }
-      learnManual(c, 'breathing'); ui.log(`I joined the ${data.name} with ${p.first}.`, 'qi'); return;
+      learnManual(c, 'breathing'); ui.log(`I joined the ${data.name} with ${p.first}.`, 'qi'); sectCine(c, data.name); return;
     }
     case 'date': p.role = 'Partner'; c.partnerId = p.id; gainClose(c, p, 15); stat(c, 'happiness', 12);
       return logRet(c, iAmSender, `${p.first} and I are dating!`, 'good', true);
-    case 'marry': p.role = 'Spouse'; c.partnerId = p.id; c.flags.coopMarried = true; gainClose(c, p, 20); stat(c, 'happiness', 20);
+    case 'marry': p.role = 'Spouse'; p.livesWith = true; c.partnerId = p.id; c.flags.coopMarried = true; gainClose(c, p, 20); stat(c, 'happiness', 20); weddingCine(c, p);
       return logRet(c, iAmSender, `${p.first} and I got married!`, 'good', true);
-    case 'baby': {
-      const kid = { ...data.kid, otherParent: p.id, last: data.kid.last };
-      if (!c.people.some(x => x.id === kid.id)) c.people.push(kid); ui.fx('birth');
-      stat(c, 'happiness', 15);
-      return logRet(c, iAmSender, `${kid.first} was born — ${p.first}'s and my ${kid.gender === 'F' ? 'daughter' : 'son'}!`, 'good', true);
-    }
+    case 'baby': return logRet(c, iAmSender, conceive(c, p, { ...data.kid }), 'good', true);
+    case 'movein': p.livesWith = true; gainClose(c, p, 8); stat(c, 'happiness', 6); return logRet(c, iAmSender, `${p.first} and I moved in together.`, 'good', true);
   }
 }
 function logRet(c, iAmSender, text, cls, big) { if (iAmSender) return { text, cls, big }; ui.log(text, cls); if (big) ui.fx('milestone'); }
@@ -275,9 +289,9 @@ function logRet(c, iAmSender, text, cls, big) { if (iAmSender) return { text, cl
 // The child exists in BOTH players' lives (same id) so either parent can continue as them.
 function makeKid(c, p) {
   const gender = chance(0.5) ? 'F' : 'M';
-  const names = gender === 'F' ? ['Mei', 'Yuna', 'Aoi', 'Luna', 'Sofia', 'Amara', 'Lin', 'Ivy'] : ['Kai', 'Ren', 'Leo', 'Arjun', 'Mateo', 'Jin', 'Ezra', 'Tao'];
+
   const st = {}; for (const k of ['smarts', 'strength', 'agility', 'charisma', 'luck']) st[k] = clamp(Math.round(((c.stats[k] ?? 50) + (p.stats?.[k] ?? 50)) / 2 + ri(-15, 15)));
-  return { id: uid(), first: pick(names), last: c.ownSect || c.gender === 'M' ? c.last : p.gender === 'M' ? p.last : c.last, gender, age: 0, role: gender === 'F' ? 'Daughter' : 'Son', alive: true, close: 90,
+  return { id: uid(), first: uniqueFirst(c, gender), last: c.ownSect || c.gender === 'M' ? c.last : p.gender === 'M' ? p.last : c.last, gender, age: 0, role: gender === 'F' ? 'Daughter' : 'Son', alive: true, close: 90,
     genes: mixGenes(c.genes, p.genes, gender), stats: st, realm: 0, met: G.world.year };
 }
 
@@ -322,6 +336,8 @@ function voteGo(id) {
   net.lastGo = id; net.vote = null; clearInterval(voteTimer); net.onVote?.();
   net.doAgeUp?.();
 }
+// gifts to another player (called through ui.coopGift by giftToChild)
+ui.coopGift = (p, what) => { if (!p.online || !net.peers.has(p.peerId)) return false; sendTo(p.peerId, { t: 'note', kind: 'gift', asset: what.asset || null, money: what.money || 0, profile: myProfile() }); return true; };
 export function coopTick() {
   if (net.status !== 'online') return;
   const now = Date.now(); if (now - lastSent < 1500) { if (!queued) { queued = true; setTimeout(() => { queued = false; coopTick(); }, 1600); } return; }

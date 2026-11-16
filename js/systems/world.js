@@ -38,8 +38,6 @@ export function rollNews(c) {
 export function newsYear(c) {
   const n = rollNews(c);
   n.lines.forEach(t => ui.log(`News: ${t}`, 'world'));
-  if (n.id === 'crash' && c.stocks > 0) { const d = Math.round(c.stocks * ri(15, 35) / 100); c.stocks -= d; ui.log(`The crash wiped ${fmtMoney(c, d)} off my investments.`, 'bad'); }
-  if (n.id === 'boom' && c.stocks > 0) { const d = Math.round(c.stocks * ri(5, 12) / 100); c.stocks += d; }
   if (n.id === 'gate_surge' && c.age >= 10) { for (let i = 0; i < ri(1, 2); i++) spawnGate(c, true); }
   if (n.id === 'beast_tide' && c.age >= 6) {
     const safe = c.qi.realm >= 3 || c.assets.some(a => a.type === 'house');

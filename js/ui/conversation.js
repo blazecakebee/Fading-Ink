@@ -78,7 +78,7 @@ export function converse(c, p) {
     function choose(a) {
       if (done) return; done = true; fx('click');
       const s = scoreAnswer(p, a.style), w = warmth(p.close);
-      let d = s > 0 ? Math.round((3 + s * 3) * w) : s < 0 ? Math.round(-4 + s * 2) : (p.close < 25 ? -1 : 1);
+      let d = s > 0 ? Math.max(4, Math.round((4 + s * 3) * w)) : s < 0 ? Math.round(-4 + s * 2) : 4; // a decent answer is worth ~3 closeness
       d += ri(-1, 1);
       gainClose(c, p, d);
       let reveal = '';

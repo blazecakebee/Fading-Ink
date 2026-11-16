@@ -81,6 +81,31 @@ export const STATIONS = {
       if (i === 0) { v(N(ch[0] - 12), t, s * 15, { type: 'sine', gain: 0.07 }); notes.forEach(n => v(N(n), t, s * 16, { type: 'sine', gain: 0.018, attack: 1.2, sustain: 1, verb: 1 })); }
       if ((i === 3 || i === 7 || i === 11) && Math.random() < 0.6) v(N(walk(PENTA_MAJ, ch[0] + 24)), t, s * 4, { type: 'sine', gain: 0.045, vib: 5, vibAmt: 8, delay: 1, verb: 1 });
       if (i === 8 && Math.random() < 0.4) noise(t, 0.05, { freq: 6000, gain: 0.015, q: 1, type: 'highpass', out: bus.music }); } },
+  koi: { name: 'Koi Pond', mood: 'Slow koto plucks over still water', bpm: 58, prog: [[55, 'maj'], [52, 'min'], [50, 'sus'], [53, 'maj7']],
+    play(st, t, s, ch) { const i = st % 16;
+      if ([0, 3, 5, 8, 11, 13].includes(i) && Math.random() < 0.8) v(N(walk(PENTA_MAJ, ch[0] + 12)), t, s * 7, { type: 'triangle', gain: 0.065, cut: 3200, cutEnd: 500, verb: 1, delay: 1 });
+      if (i === 0) v(N(ch[0] - 12), t, s * 16, { type: 'sine', gain: 0.07, attack: 0.8, sustain: 1, verb: 1 });
+      if (i === 6 && Math.random() < 0.25) noise(t, 0.4, { freq: 700, gain: 0.03, q: 3, out: bus.music }); } },
+  lantern: { name: 'Lantern Festival', mood: 'Bright, bouncing festival melody', bpm: 112, prog: [[60, 'maj'], [57, 'min'], [65, 'maj'], [67, 'maj']],
+    play(st, t, s, ch) { const i = st % 16; const notes = chordNotes(ch[0], ch[1]);
+      if (i % 4 === 0) kick(t, 0.08); if (i % 4 === 2) hat(t, 0.03); if (i === 12) snare(t, 0.07);
+      if (i % 2 === 0) v(N(walk(PENTA_MAJ, ch[0] + 12)), t, s * 1.8, { type: 'sawtooth', gain: 0.03, cut: 2400, vib: 6, vibAmt: 10 });
+      if (i % 4 === 1) v(N(notes[(i >> 2) % notes.length]), t, s * 1.4, { type: 'square', gain: 0.025, cut: 1600 }); } },
+  dojo: { name: 'Dojo Drums', mood: 'Taiko thunder and a lone flute', bpm: 96, prog: [[50, 'min'], [50, 'min'], [48, 'maj'], [53, 'maj']],
+    play(st, t, s, ch) { const i = st % 16;
+      if ([0, 6, 8, 11].includes(i)) kick(t, 0.16); if (i === 4 || i === 12) noise(t, 0.12, { freq: 900, gain: 0.08, q: 2, out: bus.music });
+      if ((i === 0 || i === 8) && Math.random() < 0.7) v(N(walk(PENTA_MIN, ch[0] + 24)), t, s * 6, { type: 'sine', gain: 0.05, vib: 5, vibAmt: 12, verb: 1, attack: 0.08 }); } },
+  starlight: { name: 'Starlit Meditation', mood: 'Shimmering pads and distant bells', bpm: 54, prog: [[48, 'maj7'], [45, 'min7'], [53, 'add9'], [50, 'sus']], hiss: true,
+    play(st, t, s, ch) { const i = st % 16; const notes = chordNotes(ch[0], ch[1]);
+      if (i === 0) notes.forEach(n => v(N(n + 12), t, s * 16, { type: 'sine', gain: 0.03, attack: 2, sustain: 1, verb: 1 }));
+      if (i % 4 === 2 && Math.random() < 0.5) v(N(notes[i % notes.length] + 36), t, s * 8, { type: 'sine', gain: 0.025, delay: 1, verb: 1 }); } },
+  citylights: { name: 'City Lights', mood: 'Funky bass and late-night city pop', bpm: 108, prog: [[53, 'maj7'], [52, 'min7'], [50, 'min7'], [55, 'add9']],
+    play(st, t, s, ch) { const i = st % 16; const notes = chordNotes(ch[0], ch[1]);
+      if ([0, 3, 6, 10, 13].includes(i)) v(N(ch[0] - 12 + (i === 6 ? 7 : i === 13 ? 12 : 0)), t, s * 1.2, { type: 'sawtooth', gain: 0.05, cut: 700 });
+      if (i % 4 === 0) kick(t, 0.1); if (i === 4 || i === 12) snare(t, 0.08); if (i % 2 === 1) hat(t, 0.02);
+      if (i === 2 || i === 10) notes.forEach(n => v(N(n + 12), t, s * 1.5, { type: 'square', gain: 0.018, cut: 2200 }));
+      if ((i === 7 || i === 15) && Math.random() < 0.5) v(N(walk(MAJOR, ch[0] + 24)), t, s * 2, { type: 'triangle', gain: 0.04, delay: 1 }); } },
+  shuffle: { name: '🔀 Rotate all songs', mood: 'Moves on to a different song every couple of minutes', shuffle: true },
   battle: { name: 'Clash of Qi', mood: 'Driving drums for fights', bpm: 140, prog: [[45, 'min'], [45, 'min'], [43, 'maj'], [44, 'maj']],
     play(st, t, s, ch) { const i = st % 16;
       if ([0, 3, 6, 8, 10].includes(i)) kick(t); if (i === 4 || i === 12) snare(t, 0.14); hat(t, 0.025);
@@ -94,7 +119,12 @@ function startHiss() { if (hiss) return; const ctx = audio(); const len = ctx.sa
   hiss.connect(f).connect(g).connect(bus.music); hiss.start(); }
 function stopHiss() { try { hiss?.stop(); } catch (e) {} hiss = null; }
 
+// Rotation: play one station for ~2.5 minutes, then move to a different one
+let rotateTimer = null;
+const ROTATION = () => Object.entries(STATIONS).filter(([k, x]) => !x.shuffle && !x.menuOnly && k !== 'battle').map(([k]) => k);
 export function playStation(id) {
+  clearTimeout(rotateTimer);
+  if (id === 'shuffle') { const pool = ROTATION().filter(k => k !== lastRot); const k = pool[Math.floor(Math.random() * pool.length)]; lastRot = k; playStation(k); current = 'shuffle'; rotateTimer = setTimeout(() => { if (current === 'shuffle') playStation('shuffle'); }, 150000); return; }
   stopMusic(); if (!id || id === 'off') return;
   if (id === 'files') return playFiles();
   const S = STATIONS[id]; if (!S) return;
@@ -110,8 +140,10 @@ export function playStation(id) {
     }
   }, 30);
 }
-export function stopMusic() { clearInterval(timer); timer = null; current = null; stopHiss(); fileAudio.pause(); }
+export function stopMusic() { clearTimeout(rotateTimer); clearInterval(timer); timer = null; current = null; stopHiss(); fileAudio.pause(); }
+let lastRot = null;
 export const currentStation = () => current;
+export const nowPlaying = () => current === 'shuffle' ? STATIONS[lastRot]?.name : STATIONS[current]?.name;
 
 // ---- player-loaded files (kept in memory only)
 export function loadFiles(files) { playlist = [...files].filter(f => f.type.startsWith('audio')).map(f => ({ name: f.name, url: URL.createObjectURL(f) })); plIndex = 0; return playlist.length; }

@@ -16,21 +16,28 @@ import { ensureDna, grantPoints, childDna, npcDna, geneName } from './genetics.j
 import { inheritHeirlooms, migrateHeirlooms, gainHeirloom } from './heirlooms.js';
 import { factionsYear } from './factions.js';
 import { newsYear, ensureMatchingGate, spawnGate, birthAnomaly, BIRTH_EVENTS, newsMult } from './world.js';
-import { FAMILY_SOCIAL, disputeYear, trainedHeir } from './family.js';
+import { FAMILY_SOCIAL, disputeYear, trainedHeir, MOVE_IN, birthYear } from './family.js';
+import { haveChild } from '../data/activities.js';
+import { MORE_NAMES } from '../data/names2.js';
+import { MARTIAL, SWITCH_ART, PRIVATE, MIGRATE, schoolYear } from './schooling.js';
+import { portfolioYear, migrateStocks } from './market.js';
+import { ownSectYear } from './factions.js';
+import { META } from '../core/state.js';
 
 // ---- traits
 for (const t of TRAITS2) if (!TRAIT_BY_ID[t.id]) { TRAITS.push(t); TRAIT_BY_ID[t.id] = t; }
 
-// ---- social actions (children, blessing)
-SOCIAL.push(...FAMILY_SOCIAL);
+// ---- social actions (children, blessing, moving in)
+SOCIAL.push(...FAMILY_SOCIAL, MOVE_IN);
+// ---- more names (fewer repeats)
+for (const cty of COUNTRIES) { const x = MORE_NAMES[cty.id]; if (x && !cty._more) { cty._more = 1; cty.m = [...new Set([...cty.m, ...x.m.split(' ')])]; cty.f = [...new Set([...cty.f, ...x.f.split(' ')])]; } }
+// ---- martial arts schools replace the old all-you-can-eat class; private school, migration
+{ const i = ACTIVITIES.findIndex(a => a.id === 'martial'); if (i >= 0) ACTIVITIES[i] = MARTIAL; else ACTIVITIES.push(MARTIAL); }
+ACTIVITIES.push(SWITCH_ART, PRIVATE, MIGRATE);
 
 // ---- activities
 const econ = c => country(c).econ;
 ACTIVITIES.push(
-  { id: 'odd_jobs', cat: 'work', name: 'Do odd jobs', icon: 'bag', minAge: 12, run: c => {
-      const [what, k] = pick([['delivered parcels across the city', 'agility'], ['walked a dozen dogs', 'happiness'], ['helped a family move house', 'strength'], ['fixed phones at a street stall', 'smarts'], ['handed out flyers for a tea house', 'charisma']]);
-      const m = Math.round(ri(40, 180) * econ(c) * (c.age < 16 ? 0.5 : 1)); money(c, m); stat(c, k, 1); stat(c, 'stress', 2);
-      return `I ${what} and earned ${fmtMoney(c, m)}.`; } },
   { id: 'mercenary', cat: 'work', name: 'Take a mercenary contract', icon: 'saber', minAge: 18, need: c => (c.stats.battle || 0) >= 25, run: async c => {
       const e = pick(ENEMIES.filter(x => x.kind === 'human' && x.realm <= c.qi.realm + 1 && x.id !== 'tribulation' && x.id !== 'bully'));
       const r = await ui.fight({ ...e, realm: Math.max(e.realm, Math.min(c.qi.realm, 10)), name: `${e.name} (target)` });
@@ -84,9 +91,9 @@ HOOKS.inherit.push((old, c, ch) => {
   inheritHeirlooms(old, c); trainedHeir(ch, c);
   c.flags.intro = { motif: 'tree', color: '#7fe3a0', lines: [`${fullName(old)} has died: ${old.cause || 'their story ended'}.`, 'The ink of their life dries on the page.', 'Their blood runs on in you.'], title: fullName(c), sub: `Generation ${c.generation}`, sound: 'birth' };
 });
-HOOKS.yearStart.push(c => newsYear(c));
+HOOKS.yearStart.push(c => { newsYear(c); portfolioYear(c); birthYear(c, haveChild); });
 HOOKS.yearEnd.push(async c => {
-  grantPoints(c);
+  grantPoints(c); schoolYear(c); ownSectYear(c);
   await factionsYear(c);
   if (c.alive) await disputeYear(c);
   ensureMatchingGate(c);
@@ -103,6 +110,11 @@ export async function installExpansion() {
   ui.cinematic = o => cinematic(o);
   TABS.bloodline = P.bloodlineTab; TABS.factions = P.factionsTab;
   P.bindPanels(render, runActivity);
+  const P2 = await import('../ui/panels2.js'); const { NAV } = await import('../ui/render.js');
+  TABS.market = P2.marketTab; TABS.wardrobe = P2.wardrobeTab; P2.bindPanels2(render, runActivity);
+  if (!NAV[0][1].some(x => x[0] === 'wardrobe')) NAV[0][1].push(['wardrobe', 'Wardrobe & Armory', 'robe']);
+  if (!NAV[1][1].some(x => x[0] === 'market')) NAV[1][1].splice(5, 0, ['market', 'Stock Market', 'stocks']);
+  if (!META.shuffleSet) { META.shuffleSet = true; META.settings.station = 'shuffle'; }
   const fx0 = ui.fx;
   ui.fx = (kind, o = {}) => {
     if (kind === 'breakthrough' && o.major) {
@@ -116,7 +128,7 @@ export async function installExpansion() {
 // ---- save migration for characters from before v0.6.0
 export function migrateExpansion(c) {
   if (!c) return;
-  migrateHeirlooms(c); ensureDna(c);
+  migrateHeirlooms(c); ensureDna(c); migrateStocks(c); c.closet ||= []; c.outfit ||= {};
   if (c.sect && c.sectRank == null) { c.sectRank = c.sect === 'own' ? 4 : 0; c.contrib ??= 0; c.flags.sectJoined ??= G.world?.year; }
   for (const p of c.people || []) p.dna ||= npcDna(p.realm || 0);
   // award points for realms already reached
