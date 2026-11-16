@@ -12,7 +12,7 @@ import { moodFace, TRAINABLE, decayRate } from '../systems/health.js';
 import { COND_BY_ID } from '../data/conditions.js';
 import { ITEMS } from '../data/items.js';
 import { METHODS } from '../data/realms.js';
-import { wage } from '../systems/life.js';
+import { wage, rollQuality, tiered, QUALITY } from '../systems/life.js';
 import { comfort, willInfo, giftToChild, wealthLabel, statCap, softCap, gainMult, CAPPED, discount, priceFor, country, lifeStage, fullName, fmtMoney, realm as realmOf, lifespan, ageUp, money, stat, addItem, ACTIONS_PER_YEAR, SOCIAL_PER_YEAR } from '../systems/life.js';
 import { fatigueMult, realmName, qiCap, power, learnManual, breakthroughInfo, meridianInfo, meditateRange, HELPFUL_ITEMS, sectName, foundReq, foundSect, method, learnMethod } from '../systems/cultivation.js';
 import { relLabel, isFamily, bonds, bondList, favor } from '../systems/people.js';
@@ -227,6 +227,9 @@ export const TABS = {
         const capped = CAPPED.includes(k), cap = capped ? statCap(c) : 100;
         const ev = STAT_SYSTEMS[k] ? eff(c, k) : v, lim = ev < v ? statLimits(c, k) : [];
         return h('div', { class: 'card' }, lim.length ? h('div', { class: 'small', style: { color: 'var(--bad, #ff7a6a)' } }, `Usable: ${ev} of ${v} — held back by ${lim.map(([n, x]) => `${n} ${Math.round(x * 100)}%`).join(', ')}`) : null, bar(label, v, v >= softCap(c) && capped ? 'var(--legend)' : 'var(--accent2)', null, cap, capped ? `${v} / ${cap}` : undefined), capped && v >= softCap(c) ? h('div', { class: 'small', style: { color: 'var(--legend)' } }, `Soft cap: gains ×${gainMult(c, k).toFixed(2)} — break through to raise the cap`) : null, k === 'battle' ? h('div', { class: 'muted small' }, `+${Math.round(v / 4)}% hit chance, +${Math.round(v / 2.5)}% damage, +${(v / 20).toFixed(1)}% crit in fights`) : null, tr ? h('div', { class: 'muted small' }, idle <= 0 ? 'Trained this year ✓' : `Last trained ${idle}y ago${loss ? ` · fading ~${loss}/yr` : idle < 5 ? ' · safe for now' : ''}`) : k === 'looks' ? h('div', { class: 'muted small' }, 'Fades with age only') : null); })),
+      h('div', { class: 'box', style: { marginTop: '14px' } }, h('h3', {}, 'Sub-skills'),
+        h('div', { class: 'row' }, icon('hammer'), h('div', { style: { flex: 1 } }, h('b', {}, `Craftsmanship ${Math.floor(c.craftsman || 0)} / 100`), h('span', { class: 'muted small' }, ` · ${c.craftsman >= 90 ? 'Grandmaster' : c.craftsman >= 70 ? 'Master' : c.craftsman >= 50 ? 'Artisan' : c.craftsman >= 30 ? 'Journeyman' : c.craftsman >= 12 ? 'Apprentice' : 'Novice'}`),
+          h('div', { class: 'bar' }, h('i', { style: { width: (c.craftsman || 0) + '%', '--c': '#ffb02e' } })), h('div', { class: 'muted small' }, 'Every craft raises it. Better odds and better-grade gear and pills.')))),
       h('div', { class: 'box', style: { marginTop: '14px' } }, h('h3', {}, 'Records'), h('table', { class: 'kv' },
         [['Fights won', c.wins], ['Lives taken', c.kills], ['Gates cleared', c.gatesCleared], ['Combat power', power(c).toFixed(2)], ['Most repeated activity', Object.entries(c.counts).sort((a, b) => b[1] - a[1])[0]?.join(' × ') || '—']].map(([k, v]) => h('tr', {}, h('td', {}, k), h('td', {}, v))))),
       h('div', { class: 'box', style: { marginTop: '14px' } }, h('h3', {}, 'Trait Codex'), h('p', { class: 'muted' }, 'Traits come in 8 tiers. Some can only be earned by doing specific things.'),
@@ -314,7 +317,7 @@ export const TABS = {
 
   people() {
     const c = G.char;
-    const groups = [['Family', p => isFamily(p) && p.role !== 'Spouse'], ['Love', p => ['Spouse', 'Partner', 'Crush', 'Ex'].includes(p.role)], ['Friends & Players', p => p.role === 'Friend' || p.role === 'Co-op Friend'], ['School & Work', p => ['Classmate', 'Coworker', 'Acquaintance'].includes(p.role)], ['Enemies', p => p.role === 'Enemy']];
+    const groups = [['Family', p => isFamily(p) && p.role !== 'Spouse'], ['Love', p => ['Spouse', 'Partner', 'Crush', 'Ex'].includes(p.role)], ['Friends & Players', p => p.role === 'Friend' || p.role === 'Co-op Friend'], ['School & Work', p => ['Classmate', 'Coworker', 'Acquaintance'].includes(p.role)], ['Teachers', p => !!p.trainer], ['Enemies', p => p.role === 'Enemy']];
     const bl = bondList(c), best = bonds(c).best;
     return [h('h2', { class: 'display' }, 'People'), h('p', { class: 'muted' }, `Social actions left: ${c.social}/${c.maxSocial || SOCIAL_PER_YEAR}. Click someone to interact. Socialising trains Charisma; people at 75%+ may gift you things or teach you skills, recipes and cultivation methods.`),
       h('div', { class: 'box' }, h('h3', {}, 'Bonds'), bl.length ? bl.map(b => h('div', { style: { margin: '4px 0' } }, h('b', {}, `${b.label}: ${b.who.first}`), h('span', { class: 'muted' }, ' — ' + b.perks.join(' · ')))) : h('div', { class: 'muted' }, 'Get a friend to 80% closeness to make them your Best Friend, or a partner to 50%+, to unlock training, study, Qi and salary bonuses.')),
@@ -509,7 +512,7 @@ async function enterGate(i, sweep) {
       if (L.id === 'gold') { const m = Math.round(ri(100, 900) * (1 + tier) * (1 + Math.max(0, tier - 5)) * yld * wage(cc)); money(cc, m); add(fmtMoney(cc, m)); }
       else if (L.id === 'manual') { const mm = METHODS.filter(x => !(cc.qi.methods || ['basic']).includes(x.id) && (T.id === 'altar' || !x.demonic)); const m = pick(MANUALS.filter(x => x.id !== 'breathing' && !cc.qi.manuals.includes(x.id)));
         if (mm.length && (chance(0.5) || !m)) { const x = pick(mm); learnMethod(cc, x.id); add(x.name); } else if (m) { learnManual(cc, m.id); add(m.name); } }
-      else { addItem(cc, L.id); add(ITEMS[L.id]?.name || L.id); }
+      else { const q = rollQuality(cc, awakened ? 0.08 : 0); addItem(cc, L.id, 1, q); add((tiered(L.id) && q !== 'mid' ? QUALITY[q].short + ' ' : '') + (ITEMS[L.id]?.name || L.id)); }
     }
     if (awakened) { addItem(cc, pick(['bloodline_essence', 'recipe_scroll', 'trib_talisman', 'marrow_pill'])); add('Awakened core'); }
     if (chance(gateHeirloomChance(tier) * yld * (awakened ? 2.5 : 1))) { const x = gainHeirloom(cc, `${g.rank}-rank ${T.name}`); if (x) add(HEIRLOOMS[x.id].name); }

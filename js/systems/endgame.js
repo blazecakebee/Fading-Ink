@@ -2,7 +2,7 @@
 import { G, META } from '../core/state.js';
 import { ui } from '../core/bus.js';
 import { ri, pick, chance, clamp } from '../core/rng.js';
-import { stat, money, addItem, fmtMoney, wage, die } from './life.js';
+import { stat, money, addItem, fmtMoney, wage, die, rollQuality } from './life.js';
 import { ENEMIES } from '../data/combat.js';
 import { REALMS } from '../data/realms.js';
 import { effRealm } from './path.js';
@@ -45,11 +45,11 @@ export async function huntStage(c) {
     return { text: `The ${H.boss} nearly killed me at ${H.stages[i].toLowerCase()}. I crawled back to try again next year.`, cls: 'bad' };
   }
   c.wins++; c.hunt.stage++;
-  const part = Math.round(H.pay * 0.08 * wage(c)); money(c, part); addItem(c, pick(Object.keys(H.items)));
+  const part = Math.round(H.pay * 0.08 * wage(c)); money(c, part); addItem(c, pick(Object.keys(H.items)), 1, rollQuality(c, 0.1));
   if (!last) return { text: `Hunt stage cleared: ${H.stages[i]}. Spoils worth ${fmtMoney(c, part)}. The ${H.boss} retreats deeper — next year I follow.`, cls: 'good', big: true };
   // final payout
   const pay = Math.round(H.pay * wage(c)); money(c, pay);
-  for (const [id, n] of Object.entries(H.items)) addItem(c, id, n);
+  for (const [id, n] of Object.entries(H.items)) for (let k = 0; k < n; k++) addItem(c, id, 1, rollQuality(c, 0.2));
   if (H.heir === 'mythicChance') gainHeirloom(c, `the ${H.boss}`, chance(0.25) ? 'mythic' : 'legendary'); else gainHeirloom(c, `the ${H.boss}`, H.heir);
   ensureDna(c).points += 2; META.legacy += 20 + H.realm * 3; if (c.guild) c.guild.merit += 500 + H.realm * 100;
   (c.huntsDone ||= []).push(H.id); c.hunt = null;

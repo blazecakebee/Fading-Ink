@@ -1,7 +1,14 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.7.9';
+export const VERSION = '0.8.0';
 export const CHANGELOG = [
+  { v: '0.8.0', date: '2026-11-15', title: 'Masters & craftsmanship', notes: [
+    'Your teachers are real people now: your martial arts master, your Severed Path mentor and your sect master appear under Teachers in the People tab. Talk to them, take private lessons, and once they trust you (closeness 70+) and you are far enough along (Brown belt, Steel Sinew, or an inner disciple at Foundation Establishment), ask them for a hidden technique: eight in total, one per art. Teachers grow old and die, sometimes violently. When one dies, a senior student takes over.',
+    'Item grades: gear and pills now come as Low, Mid or High grade. High-grade items are 20% stronger and Low-grade ones 20% weaker. Gate and Hunt loot rolls a grade, and luck helps a little.',
+    'Craftsmanship: a new sub-skill from 0 to 100 that grows each time you craft, even when you fail. It raises your success chance and the grade of what you make. No craft is ever certain any more (92% at most), even with the Primordial Forge.',
+    'Every row in the Status tab has an icon. Combat numbers there now match the new combat rules.',
+    'The Health tab dummy now wears your current hairstyle, whited out like the rest of it. Prosthetic limbs are the same width as real ones.',
+  ] },
   { v: '0.7.9', date: '2026-11-15', title: 'Unforgiving', notes: [
     'Combat rebalanced from the ground up, with every enemy tuned in a simulator. Your stats now count as a share of your realm\'s cap. Your realm decides who is stronger, and your stats decide by how much. An average fighter wins about 7 in 10 even fights. Bosses are close to a coin flip, and only a maxed-out fighter really dominates. Fights last longer, so no more one-hit kills either way.',
     'Gate bosses now fight at the Gate\'s own realm but are much tougher. Awakened bosses stand a realm above. Hunts start at your entry realm and the final stage is a realm above you. Gods are far stronger: only someone at the very peak, at their best, has a real chance.',

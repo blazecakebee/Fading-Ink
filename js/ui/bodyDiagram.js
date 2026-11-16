@@ -4,6 +4,7 @@ import { h } from './dom.js';
 import { PARTS, PART_BY_ID, INJURIES, PROSTHETICS } from '../data/body.js';
 import { partEff, isMissing, maxHp, prostheticOf } from '../systems/body.js';
 import { G } from '../core/state.js';
+import { hairMask } from './portrait.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const el = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); return e; };
@@ -31,6 +32,16 @@ const color = (c, id) => {
 export function bodyDiagram(c, rerender) {
   const focus = G.ui.bodyFocus || null;
   const svg = el('svg', { viewBox: '0 0 120 250', class: 'body-svg' });
+  // your current hairstyle, whited out like the rest of the dummy, drawn behind the head
+  try {
+    const m = hairMask(c.genes, { age: c.age, gender: c.gender, realm: c.qi?.realm || 0, hair: c.face ? { ...(c.hair || {}), ...c.face } : c.hair });
+    const k = 40 / Math.max(1, m.bottom - m.top), ox = 60 - 16 * k, oy = 6 - m.top * k; // portrait head → doll head (y 6..46)
+    const gH = el('g', { class: 'doll-hair', 'shape-rendering': 'crispEdges' });
+    // one path per layer (no seams): a dark, slightly fatter copy underneath makes the outline
+    const sq = pad => m.px.map(([x, y]) => `M${(ox + x * k - pad).toFixed(2)} ${(oy + y * k - pad).toFixed(2)}h${(k + pad * 2).toFixed(2)}v${(k + pad * 2).toFixed(2)}h-${(k + pad * 2).toFixed(2)}z`).join('');
+    gH.append(el('path', { d: sq(1), fill: '#0b0e16' }), el('path', { d: sq(0.25), fill: '#eef2f7' }));
+    svg.append(gH);
+  } catch (e) { /* hair is decoration only */ }
   for (const [id, [tag, attrs]] of Object.entries(SHAPES)) {
     const miss = isMissing(c, id), s = el(tag, { ...attrs, fill: color(c, id), class: 'bpart' + (focus === id ? ' focus' : '') + (miss ? (prostheticOf(c, id) ? ' artificial' : ' missing') : '') });
     const t = el('title', {}); t.textContent = `${PART_BY_ID[id].name}: ${miss ? (prostheticOf(c, id) ? PROSTHETICS[prostheticOf(c, id)].name : 'missing') : Math.round(partEff(c, id) * 100) + '%'}`; s.append(t);

@@ -575,10 +575,15 @@ body:not([data-theme='clean']):not([data-theme='parchment']):not([data-theme='pa
 .arena-choice .t { text-align: center; color: #fff; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 22px; }
 .arena-choice .btn small { display: block; font-size: 11px; opacity: .8; font-weight: 400; }
 /* artificial (prosthetic) parts */
-.bpart.artificial { stroke: #bfe4ff; stroke-width: 1.2; filter: drop-shadow(0 0 3px #5fb4ff); }
+.bpart.artificial { stroke: #0b0e16; stroke-width: 1.2; filter: drop-shadow(0 0 2.5px #5fb4ff); } /* same outline as real limbs, so same width */
 .blist-inj.artificial { background: linear-gradient(90deg, #1f5a8a88, transparent); color: #d6ecff; }
 /* trait codex tiers fold away */
 .codex-tier { border-top: 1px solid var(--border-soft, #ffffff14); padding: 4px 0; }
 .codex-tier > summary { cursor: pointer; list-style: none; padding: 6px 0; }
 .codex-tier > summary::before { content: '▸ '; } .codex-tier[open] > summary::before { content: '▾ '; }
 .codex-tier > summary::-webkit-details-marker { display: none; }
+
+/* v0.8.0 status rows with icons */
+.kv-key { display: inline-flex; align-items: center; gap: 6px; } .kv-key .icon { flex: none; opacity: .9; }
+.grade { display: inline-block; font-size: .7rem; font-weight: 700; padding: 1px 6px; margin-right: 6px; border-radius: 4px; color: #111; background: var(--gc); vertical-align: middle; }
+.card.item.q-hi { box-shadow: inset 0 0 0 1px #ffd36f66; } .card.item.q-lo { opacity: .9; }

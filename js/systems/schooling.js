@@ -28,8 +28,9 @@ export const MARTIAL = { id: 'martial', cat: 'training', name: 'Martial arts cla
   }
   const A = ARTS[art]; money(c, -fee); (c.flags.martialYear ||= {})[G.world.year] = (c.flags.martialYear[G.world.year] || 0) + 1;
   const before = beltOf(c.martial[art] || 0); c.martial[art] = (c.martial[art] || 0) + 1; const after = beltOf(c.martial[art]);
-  const t = traitMult(c, 'train'); stat(c, A.main, Math.max(1, Math.round(ri(1, 2) * t))); stat(c, 'battle', Math.max(1, Math.round(ri(0, 2) * t))); addMuscle(c, 1);
-  let text = `${A.name} class: kata after kata.`;
+  const T = await import('./trainers.js'), M = T.ensureTrainer(c, 'martial', art); M.close = Math.min(100, M.close + ri(2, 4));
+  const t = traitMult(c, 'train') * (1 + M.close / 400); stat(c, A.main, Math.max(1, Math.round(ri(1, 2) * t))); stat(c, 'battle', Math.max(1, Math.round(ri(0, 2) * t))); addMuscle(c, 1);
+  let text = `${A.name} class with Master ${M.first}: kata after kata.`;
   if (after !== before) { stat(c, 'battle', 2); stat(c, 'happiness', 6); text += ` I earned my ${after} belt in ${A.name}!`; if (after.startsWith('Black') && !before.startsWith('Black')) ui.cinematic?.({ motif: 'sword', color: '#e9e6df', lines: ['Years of sweat on the dojo floor.', 'Your master ties the black belt himself.'], title: `${A.name} Black Belt`, sub: `${c.first} ${c.last}`, sound: 'milestone' }); }
   return { text, cls: after !== before ? 'good' : '', big: after !== before };
 } };

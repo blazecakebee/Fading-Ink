@@ -357,3 +357,11 @@ export function portraitFor(p, size = 64, extra = {}) {
   drawPortrait(cv, p.genes, { age: p.age, gender: p.gender, realm: p.qi ? p.qi.realm : p.realm || 0, hair: p.face ? { ...(p.hair || {}), ...p.face } : p.hair, elemColor: extra.elemColor });
   return cv;
 }
+
+// v0.8.0: the pixels of your current hair (for the white silhouette on the Health tab), plus where the head sits
+export function hairMask(genes, opts = {}) {
+  const r = buildPortrait(genes, { ...opts, raw: true });
+  const cols = new Set([r.hc, shade(r.hc, -0.28), shade(r.hc, 0.32)]);
+  const px = []; r.g.forEach((row, y) => row.forEach((v, x) => { if (cols.has(v)) px.push([x, y]); }));
+  return { px, top: r.top0, bottom: r.bottomHead };
+}

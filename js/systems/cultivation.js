@@ -7,7 +7,7 @@ import { ri, chance, clamp } from '../core/rng.js';
 import { REALMS, MANUALS } from '../data/realms.js';
 import { ENEMIES } from '../data/combat.js';
 import { traitMult, traitVal, earnTrait, has } from './traits.js';
-import { stat, die, addItem, money, country, fmtMoney } from './life.js';
+import { stat, die, addItem, money, country, fmtMoney, QUALITY, bestQ } from './life.js';
 import { bondBonus } from './people.js';
 import { condQiMult, addCondition } from './health.js';
 import { gearStats } from './crafting.js';
@@ -79,7 +79,8 @@ export function breakthroughInfo(c) {
   if (c.flags.incense) add('Calming Incense burned', 0.12);
   if (major && c.inv.trib_talisman) add('Lightning Ward Talisman', 0.15);
   const bp = major && next && Object.entries(ITEMS).find(([id, it]) => it.bt?.realm === next.id && c.inv[id]);
-  if (bp) add(bp[1].name, bp[1].bt.bonus);
+  if (bp) { const q = bestQ(c, bp[0]); add(`${QUALITY[q].name} ${bp[1].name}`, bp[1].bt.bonus * QUALITY[q].mult); }
+  if (major && next?.req?.pill && c.inv[next.req.pill]) { const q = bestQ(c, next.req.pill); if (q !== 'mid') add(`${QUALITY[q].name} ${ITEMS[next.req.pill].name}`, q === 'hi' ? 0.05 : -0.05); }
   if (c.conditions?.some(x => x.id === 'qi_deviation')) add('Qi Deviation Sickness', -0.2);
   const raw = parts.reduce((s, [, v]) => s + v, 0);
   if (raw < 1) parts.push(['Unforgiving heavens', -(1 - raw) * (HARD - 1)]); // failure is 1.5x as likely
@@ -100,9 +101,9 @@ export async function breakthrough(c) {
   if (major && next.req?.pill && !c.inv[next.req.pill]) return `Breaking into ${next.name} needs a Foundation Establishment Pill. Gates and sects have them.`;
   const info = breakthroughInfo(c); let p = info.p;
   const ward = major && c.inv.trib_talisman; if (ward) addItem(c, 'trib_talisman', -1);
-  if (major) { const bp = Object.entries(ITEMS).find(([id, it]) => it.bt?.realm === next.id && c.inv[id]); if (bp) addItem(c, bp[0], -1); }
+  if (major) { const bp = Object.entries(ITEMS).find(([id, it]) => it.bt?.realm === next.id && c.inv[id]); if (bp) addItem(c, bp[0], -1, 'best'); }
   c.flags.incense = false;
-  if (major && next.req?.pill) addItem(c, next.req.pill, -1);
+  if (major && next.req?.pill) addItem(c, next.req.pill, -1, 'best');
   if (major && next.trib) {
     ui.log(`Clouds gather. The Heavens send a Tribulation to judge my ascent to ${next.name}.`, 'qi');
     const t = ENEMIES.find(e => e.id === 'tribulation');

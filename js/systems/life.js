@@ -92,7 +92,33 @@ export function money(c, d) {
   if (d >= Math.max(10000 * country(c).econ, Math.abs(c.money) * 0.5) && d > 0) ui.fx('cash'); // big windfalls get a sound
   c.money = Math.round(c.money + d); return c.money;
 }
-export function addItem(c, id, n = 1) { c.inv[id] = (c.inv[id] || 0) + n; if (c.inv[id] <= 0) delete c.inv[id]; }
+// v0.8.0 item quality: gear and pills come in Low / Mid / High grade. c.inv keeps the total; c.invQ keeps how many
+// of those are Low or High (the rest are Mid). Effects scale by the grade's multiplier.
+export const QUALITY = {
+  lo: { id: 'lo', name: 'Low-grade', short: 'Low', mult: 0.8, color: '#9aa3ad' },
+  mid: { id: 'mid', name: 'Mid-grade', short: 'Mid', mult: 1, color: '#e7d7b0' },
+  hi: { id: 'hi', name: 'High-grade', short: 'High', mult: 1.2, color: '#ffd36f' },
+};
+export const tiered = id => ITEMS[id]?.type === 'gear' || /_pill$/.test(id);
+export function qCounts(c, id) { const e = c.invQ?.[id] || {}, n = c.inv[id] || 0, lo = Math.min(n, e.lo || 0), hi = Math.min(n - lo, e.hi || 0); return { lo, mid: n - lo - hi, hi }; }
+// q when adding: the grade gained (default Mid). q when removing: which grade goes first —
+// default Low first (so ingredients and costs eat your worst), 'best' = High first (for using a pill).
+export function addItem(c, id, n = 1, q) {
+  const tq = tiered(id), before = tq ? qCounts(c, id) : null; let took = null;
+  c.inv[id] = (c.inv[id] || 0) + n;
+  if (tq) {
+    const cnt = { ...before };
+    if (n > 0) cnt[QUALITY[q] ? q : 'mid'] += n;
+    else { let k = -n; const order = q === 'best' ? ['hi', 'mid', 'lo'] : QUALITY[q] ? [q, 'lo', 'mid', 'hi'] : ['lo', 'mid', 'hi'];
+      for (const t of order) { const x = Math.min(k, cnt[t]); if (x > 0) { cnt[t] -= x; k -= x; took = t; } if (!k) break; } }
+    c.invQ ||= {}; if (cnt.lo || cnt.hi) c.invQ[id] = { lo: cnt.lo, hi: cnt.hi }; else delete c.invQ[id];
+  }
+  if (c.inv[id] <= 0) { delete c.inv[id]; if (c.invQ) delete c.invQ[id]; }
+  return took || 'mid';
+}
+// the grade a looted item rolls: mostly Mid, some Low, a few High. luck helps a little
+export const rollQuality = (c, bonus = 0) => { const r = Math.random(), hi = 0.12 + bonus + Math.max(0, (c?.stats?.luck || 50) - 50) / 1000; return r < hi ? 'hi' : r > 0.62 - bonus ? 'lo' : 'mid'; };
+export const bestQ = (c, id) => { const k = qCounts(c, id); return k.hi ? 'hi' : k.mid ? 'mid' : k.lo ? 'lo' : null; };
 
 // ---- new life ----------------------------------------------------------------
 export function newLife(opts = {}) {

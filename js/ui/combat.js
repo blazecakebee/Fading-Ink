@@ -22,6 +22,7 @@ import { MINIS, playMini } from './minigames.js';
 import { GROUPS } from '../data/body.js';
 import { hitBody, combatMods } from '../systems/body.js';
 import { die, statCap } from '../systems/life.js';
+import { myHidden } from '../systems/trainers.js';
 import { PLAYER_HP, ENEMY_HP, ENEMY_DMG, GEAR_DMG, SEVERED_EDGE, realmScale, enemyScale, enemyPct, playerPct, qiStat, enemyQiStat } from '../systems/combatcore.js';
 
 const bkLabel = v => v >= 80 ? 'Master' : v >= 60 ? 'Veteran' : v >= 40 ? 'Seasoned' : v >= 20 ? 'Trained' : 'Novice';
@@ -77,7 +78,7 @@ export function fight(enemyDef, opts = {}) {
       h('div', { class: 'finfo' }, h('a', { onclick: () => { infoBox.style.display = infoBox.style.display === 'none' ? 'block' : 'none'; } }, 'Move info')));
     const m = openModal(box, { cls: 'fight', dismiss: false });
 
-    const myMoves = onBodyPath(c) ? [...BASE_MOVES, ...Object.keys(BODY_MOVES).filter(k => (c.bodyPath.tier || 0) >= BODY_MOVES[k].tier)] : [...BASE_MOVES, ...(c.qi.realm >= 1 ? ['qi_palm'] : []), ...c.qi.techs];
+    const myMoves = [...(onBodyPath(c) ? [...BASE_MOVES, ...Object.keys(BODY_MOVES).filter(k => (c.bodyPath.tier || 0) >= BODY_MOVES[k].tier)] : [...BASE_MOVES, ...(c.qi.realm >= 1 ? ['qi_palm'] : []), ...c.qi.techs]), ...myHidden(c).filter(k => !MOVES[k].qi || c.qi.realm >= 1)];
     infoBox.append(...myMoves.map(k => h('div', {}, icon(MOVES[k].icon, 'sm'), ' ', h('b', {}, MOVES[k].name + ': '), MOVES[k].info, MOVES[k].qi ? ` (${MOVES[k].qi} Qi)` : '')));
     const mini = enemyDef.mini && MINIS[enemyDef.mini] ? enemyDef.mini : null; let miniUsed = false;
     if (mini) myMoves.push('special');

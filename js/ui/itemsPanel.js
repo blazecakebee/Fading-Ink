@@ -10,9 +10,9 @@ import { render, runActivity, logLine } from './render.js';
 import { ITEMS, RECIPES, SLOTS } from '../data/items.js';
 import { MANUALS } from '../data/realms.js';
 import { COND_BY_ID } from '../data/conditions.js';
-import { known, hasInputs, craftChance, craft, experiment, gearStats, equip, unequip, useItem, itemName } from '../systems/crafting.js';
+import { known, hasInputs, craftChance, craft, experiment, gearStats, equip, unequip, useItem, itemName, craftLvl, craftRank, craftQuality, CRAFT_MAX, qStats, gearQ } from '../systems/crafting.js';
 import { treatOptions, treat, moodFace } from '../systems/health.js';
-import { country, fmtMoney, money, addItem, priceFor, discount } from '../systems/life.js';
+import { country, fmtMoney, money, addItem, priceFor, discount, QUALITY, tiered, qCounts } from '../systems/life.js';
 import { PARTS, INJURIES, CAPACITIES, PROSTHETICS } from '../data/body.js';
 import { bodyDiagram } from './bodyDiagram.js';
 import { META } from '../core/state.js';
@@ -26,24 +26,25 @@ const TYPE_ORDER = [['gear', 'Gear'], ['consumable', 'Consumables & medicine'], 
 export function inventoryTab() {
   const c = G.char; c.gear ||= {};
   const items = Object.entries(c.inv).filter(([, n]) => n > 0);
-  const card = (id, n) => { const it = ITEMS[id] || { name: id, icon: 'chest', desc: '' };
-    return h('div', { class: 'card item' }, h('div', { class: 'row' }, it.type === 'gear' ? gearSprite(id, 40) : icon(it.icon, 'lg'), h('div', { style: { flex: 1 } }, h('b', {}, it.name), h('span', { class: 'qty' }, `×${n}`), h('div', { class: 'muted small' }, it.desc || statLine(it.stats)))),
+  const gradeTag = q => h('span', { class: 'grade', style: { background: QUALITY[q].color } }, QUALITY[q].short);
+  const card = (id, n, q) => { const it = ITEMS[id] || { name: id, icon: 'chest', desc: '' }; const m = q ? QUALITY[q].mult : 1;
+    return h('div', { class: 'card item' + (q ? ' q-' + q : '') }, h('div', { class: 'row' }, it.type === 'gear' ? gearSprite(id, 40) : icon(it.icon, 'lg'), h('div', { style: { flex: 1 } }, q ? gradeTag(q) : null, h('b', {}, it.name), h('span', { class: 'qty' }, `×${n}`), h('div', { class: 'muted small' }, it.type === 'gear' ? statLine(qStats(it.stats, q)) : it.desc || statLine(it.stats)), q && it.type !== 'gear' && q !== 'mid' ? h('div', { class: 'small', style: { color: QUALITY[q].color } }, `${q === 'hi' ? '+20%' : '-20%'} effect`) : null)),
       h('div', { class: 'row', style: { marginTop: '6px' } },
-        it.type === 'gear' ? h('button', { class: 'btn', onclick: () => { equip(c, id); fx('action'); render(); } }, `Equip (${SLOTS[it.slot]})`) : null,
+        it.type === 'gear' ? h('button', { class: 'btn', onclick: () => { equip(c, id, q); fx('action'); render(); } }, `Equip (${SLOTS[it.slot]})`) : null,
         ['heal', 'marrow', 'incense', 'ink', 'recipe'].includes(it.use) ? h('button', { class: 'btn', onclick: () => { const t = useItem(c, id); if (t) { logLine(t, 'good'); fx('action'); } render(); } }, 'Use') : null,
         it.use === 'qi' ? h('span', { class: 'muted small' }, 'Use from the Cultivation tab') : null,
         it.use === 'med' ? h('span', { class: 'muted small' }, 'Use from the Health tab') : null,
         it.use === 'devour' ? h('span', { class: 'muted small' }, 'Devour from Cultivation, or craft with it') : null,
-        it.sell ? h('button', { class: 'btn ghost', onclick: () => { addItem(c, id, -1); const g = Math.round(it.sell * country(c).econ); money(c, g); fx('coin'); logLine(`Sold a ${it.name} for ${fmtMoney(c, g)}.`); render(); } }, `Sell ${fmtMoney(c, it.sell * country(c).econ)}`) : null)); };
+        it.sell ? h('button', { class: 'btn ghost', onclick: () => { addItem(c, id, -1, q); const g = Math.round(it.sell * m * country(c).econ); money(c, g); fx('coin'); logLine(`Sold a ${it.name} for ${fmtMoney(c, g)}.`); render(); } }, `Sell ${fmtMoney(c, it.sell * m * country(c).econ)}`) : null)); };
   const gs = gearStats(c);
   return [h('h2', { class: 'display' }, 'Inventory'),
     h('div', { class: 'grid3', style: { marginTop: '10px' } },
       h('div', { class: 'box' }, h('h3', {}, 'Wallet'), h('table', { class: 'kv' }, [['Cash', fmtMoney(c, c.money)], ['Investments', fmtMoney(c, c.stocks)], ['Net worth', fmtMoney(c, c.money + c.stocks + c.assets.reduce((s, a) => s + a.value, 0))]].map(([a, b]) => h('tr', {}, h('td', {}, a), h('td', {}, b))))),
       h('div', { class: 'box' }, h('h3', {}, 'Equipped'), Object.entries(SLOTS).map(([slot, label]) => { const id = c.gear[slot];
-        return h('div', { class: 'row', style: { margin: '4px 0' } }, h('span', { class: 'muted', style: { width: '70px' } }, label), id ? [gearSprite(id, 22), h('b', {}, ITEMS[id].name), h('button', { class: 'btn ghost mini', onclick: () => { unequip(c, slot); render(); } }, 'Remove')] : h('span', { class: 'muted' }, '—')); }),
+        return h('div', { class: 'row', style: { margin: '4px 0' } }, h('span', { class: 'muted', style: { width: '70px' } }, label), id ? [gearSprite(id, 22), gradeTag(gearQ(c, slot)), h('b', {}, ITEMS[id].name), h('button', { class: 'btn ghost mini', onclick: () => { unequip(c, slot); render(); } }, 'Remove')] : h('span', { class: 'muted' }, '—')); }),
         h('div', { class: 'muted small', style: { marginTop: '6px' } }, statLine(gs) ? 'In combat: ' + statLine(Object.fromEntries(Object.entries(gs).filter(([, v]) => v))) : 'No gear bonuses.'))),
     ...TYPE_ORDER.map(([type, label]) => { const list = items.filter(([id]) => (ITEMS[id]?.type || 'material') === type); if (!list.length) return null;
-      return [h('h3', { class: 'display', style: { margin: '18px 0 8px' } }, label), h('div', { class: 'grid2' }, list.map(([id, n]) => card(id, n)))]; }),
+      return [h('h3', { class: 'display', style: { margin: '18px 0 8px' } }, label), h('div', { class: 'grid2' }, list.flatMap(([id, n]) => tiered(id) ? Object.entries(qCounts(c, id)).filter(([, k]) => k > 0).reverse().map(([q, k]) => card(id, k, q)) : [card(id, n)]))]; }),
     !items.length ? h('p', { class: 'muted' }, 'Your bag is empty. Gather materials, clear Gates, or buy from the Market.') : null,
     h('h3', { class: 'display', style: { margin: '18px 0 8px' } }, 'Property, vehicles & pets'),
     c.assets.length ? h('div', { class: 'grid2' }, c.assets.map(a => h('div', { class: 'card row' }, icon(a.type === 'pet' ? 'pet' : a.type), h('div', {}, h('b', {}, a.name), h('div', { class: 'muted small' }, a.type === 'pet' ? 'Pet' : fmtMoney(c, a.value) + (a.tenant ? ' · rented out' : '')))))) : h('p', { class: 'muted' }, 'Nothing yet — see Assets & Market.'),
@@ -68,7 +69,11 @@ export function craftingTab() {
   const counts = {}; pickedMats.forEach(id => counts[id] = (counts[id] || 0) + 1);
   pickedMats = pickedMats.filter(id => (c.inv[id] || 0) >= counts[id]);
   return [h('h2', { class: 'display' }, 'Crafting & Gear'),
-    h('p', { class: 'muted' }, 'Craft pills, Qi medicine, weapons, armour and charms. Each craft costs 1 Action. Success depends on Smarts, crafting traits and your best friend. Experiment by throwing ingredients together to discover hidden recipes.'),
+    h('p', { class: 'muted' }, 'Craft pills, Qi medicine, weapons, armour and charms. Each craft costs 1 Action. Success depends on Craftsmanship, Smarts, crafting traits and your best friend — and nothing is ever certain. Experiment by throwing ingredients together to discover hidden recipes.'),
+    h('div', { class: 'box', style: { marginTop: '10px' } }, h('h3', {}, icon('hammer', 'sm'), ` Craftsmanship ${craftLvl(c)} / 100 · ${craftRank(c)}`),
+      h('div', { class: 'bar' }, h('i', { style: { width: (c.craftsman || 0) + '%', '--c': '#ffb02e' } })),
+      h('div', { class: 'muted small', style: { marginTop: '6px' } }, `Grows every time you craft (a little even when you fail). Raises success chances (max ${Math.round(CRAFT_MAX * 100)}%) and the grade of what you make.`),
+      h('div', { class: 'small', style: { marginTop: '4px' } }, 'Gear and pills you craft come out: ', ...['hi', 'mid', 'lo'].map(q => h('span', { class: 'grade', style: { background: QUALITY[q].color } }, `${QUALITY[q].short} ${Math.round(craftQuality(c)[q] * 100)}%`)))),
     h('div', { class: 'box', style: { marginTop: '10px' } }, h('h3', {}, '⚗️ Experiment'),
       h('div', { class: 'muted small' }, 'Pick 2–4 ingredients. A match teaches you the recipe; a miss costs one ingredient but may give a hint.'),
       h('div', { class: 'row', style: { margin: '8px 0' } }, owned.length ? owned.map(([id, n]) => h('button', { class: 'btn ghost mini', disabled: pickedMats.length >= 4 || (counts[id] || 0) >= n, onclick: () => { pickedMats.push(id); render(); } }, icon(ITEMS[id]?.icon || 'chest', 'sm'), ` ${itemName(id)} (${n - (counts[id] || 0)})`)) : h('span', { class: 'muted' }, 'You have no ingredients.')),
