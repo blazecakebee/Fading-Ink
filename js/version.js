@@ -1,7 +1,12 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.17';
+export const VERSION = '0.9.18';
 export const CHANGELOG = [
+  { v: '0.9.18', date: '2026-11-16', title: 'Little Moments', notes: [
+    'Your life story now shows a fitting icon next to each line: a basketball when you play basketball, a fishing rod when you fish, a thermometer when you get sick, a ring at a wedding, a speech bubble when someone talks to you, and dozens more.',
+    'Small moment alerts: when something notable happens — you fall ill, get hurt, lose someone, get married, have a baby, break through, get promoted, gain a trait — the screen edge briefly glows (red for bad, green for good, gold for big) and a little banner tells you what happened. Tap it to dismiss. They never cover cinematics, fights or minigames, and at most a few show per year. Turn them off in Settings ("Small alerts for good & bad moments").',
+    'Fixed: training summaries could show a stat going down (e.g. "Charisma -2") when the drop actually came from your realm\'s stat cap. Only real gains are listed now.',
+  ] },
   { v: '0.9.17', date: '2026-11-16', title: 'A Name of Your Own', notes: [
     'Much bigger name pools: every one of the 30 countries now has around 40–50 male and female first names and 30–45 surnames, so names repeat far less.',
     'Region-specific names: 22 cities have their own local names, so people born there usually get them — Marathi names in Mumbai, Punjabi in Delhi, Tamil/Kannada in Bengaluru, Yoruba in Lagos and Ibadan, Hausa in Kano, Tatar in Kazan, Pashtun in Peshawar, Sundanese in Bandung, Javanese in Yogyakarta, Luo in Kisumu, Kikuyu in Nairobi, Kalenjin in Nakuru, Swahili in Mombasa, Québécois in Montreal, Afrikaans and Cape names in Cape Town, Zulu and Indian-South African in Durban, Paisa in Medellín, Bavarian in Munich, Frisian in Hamburg, Newar in Kathmandu, Gurung in Pokhara, Tuareg and Songhai in Timbuktu and Gao, and more.',

@@ -114,7 +114,7 @@ export function applyPractice(c, id, snap, roll) {
   if (tier === 'peak' && chance(0.12)) { const k = P.cat === 'qi' ? null : pick(TRACK.slice(0, 3)); if (k) { stat(c, k, 2); deltas.push([k, 2]); } }
   // net result per stat (what the session really gave), shown once
   const net = [...TRACK.map(k => [k, c.stats[k] - snap[k]]), ['qi', P.cat === 'qi' ? Math.round(c.qi.qi - snap.qi) : 0], ['grades', snap.grades != null && c.edu ? c.edu.grades - snap.grades : 0], ['perf', snap.perf != null && c.job ? c.job.perf - snap.perf : 0]];
-  const sum = net.filter(([, v]) => v).map(([k, v]) => `${LBL[k]} ${v > 0 ? '+' : ''}${v.toLocaleString()}`).join(', ');
+  const sum = net.filter(([, v]) => v > 0).map(([k, v]) => `${LBL[k]} ${v > 0 ? '+' : ''}${v.toLocaleString()}`).join(', ');
   const prose = pick(PROSE[P.cat][tier]);
   const tag = TIER_NAME[tier];
   const tired = fat < 0.999 ? ` Repeating it this year: gains ×${fat.toFixed(2)}.` : '';

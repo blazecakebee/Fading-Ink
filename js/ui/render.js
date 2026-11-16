@@ -12,6 +12,7 @@ import { moodFace, TRAINABLE, decayRate } from '../systems/health.js';
 import { COND_BY_ID, condTip } from '../data/conditions.js';
 import * as LIC from '../systems/license.js';
 import * as PRX from '../systems/practice.js';
+import { lineIcon, moment } from './lineFx.js';
 import { emblemSvg } from './sectEmblem.js';
 import { playTrain } from './trainGame.js';
 import { ITEMS } from '../data/items.js';
@@ -62,6 +63,7 @@ export function logLine(text, cls = '') {
   if (cls === 'world' && META.settings.showWorldNews === false) return;
   if (!c.log.length) c.log.push({ age: c.age, year: G.world.year, lines: [] });
   c.log[c.log.length - 1].lines.push({ t: text, c: cls });
+  if (c.age > 0) moment(text, cls); // v0.9.18 small alert for notable good/bad moments
 }
 
 // ---------- action runner: spends budget, handles repeat-FX rule
@@ -281,7 +283,7 @@ export const TABS = {
     const years = c.log.slice(-7).map((y, yi, arr) => { const now = yi === arr.length - 1;
       return h('div', { class: 'st-year' + (now ? ' now' : '') }, h('div', { class: 'st-age' }, h('span', {}, `Age ${y.age}`)),
         ...(y.lines.length ? y.lines : [{ t: now ? (c.age === 0 ? 'A new story begins in faded ink.' : 'The year is still unwritten.') : 'A quiet year.', c: 'ambient' }]).map((l, li) =>
-          h('p', { class: 'st-line ' + (l.c || '') + (KEY.some(k => (l.c || '').includes(k)) ? ' key' : '') + (now && li >= fresh ? ' fresh' : '') }, l.t))); });
+          h('p', { class: 'st-line ' + (l.c || '') + (KEY.some(k => (l.c || '').includes(k)) ? ' key' : '') + (now && li >= fresh ? ' fresh' : '') }, (() => { const ic = META.settings.showIcons !== false && lineIcon(l.t, l.c); return ic ? [h('span', { class: 'st-ic' }, ic), l.t] : l.t; })()))); });
     const stage = h('div', { class: 'story-stage' }, ...years);
     // Keep the reader's place on re-renders (dock chips etc.); only jump to the end when new lines arrive. Instant, no smooth sweep.
     const sig = c.log.length + ':' + cur.lines.length, prev = G.ui.stage || {};
