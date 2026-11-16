@@ -955,3 +955,4 @@ body.mo-shake #center { animation: brShake .35s; }
 .ed-chart { display: flex; align-items: flex-end; gap: 8px; height: 120px; padding: 8px 10px 0; border-radius: 12px; background: var(--panel2); border: 1px solid var(--border-soft); }
 .ed-bar { flex: 1; max-width: 46px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; cursor: help; } .ed-bar i { width: 100%; border-radius: 6px 6px 0 0; background: var(--gc); opacity: .85; } .ed-bar small { font-size: .7rem; color: var(--muted); padding: 2px 0; }
 .ed-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 4px 14px; margin-top: 10px; }
+.nav-btn.nav-menu { border-style: dashed; opacity: .9; }

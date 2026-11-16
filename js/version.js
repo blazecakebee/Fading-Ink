@@ -1,7 +1,10 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.19';
+export const VERSION = '0.9.20';
 export const CHANGELOG = [
+  { v: '0.9.20', date: '2026-11-16', title: 'Way home', notes: [
+    'A "Main Menu" button now sits at the bottom of the Game section in the side menu. It saves your life and returns you to the main menu.',
+  ] },
   { v: '0.9.19', date: '2026-11-16', title: 'Too Much on My Plate', notes: [
     'WORKLOAD: everything you commit to adds up — a full-time job, side gigs, school or university, running a sect, sect and Guild duties, raising young children, teaching disciples, an ongoing Hunt, an addiction — plus how hard you push your actions each year. Rest (walks, journaling, fishing, hiking, a vacation) takes load off.',
     'Past what a person can carry, every year ends with stress and lost happiness; a Crushing load also costs Health. It gets worse the more hard years you string together, and a light year lets you recover. A workload meter (Light / Steady / Busy / Overloaded / Crushing) above your actions shows exactly what is weighing on you and how much stress is coming.',

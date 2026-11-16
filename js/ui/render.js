@@ -173,7 +173,8 @@ function sidebar() {
     const b = its.reduce((n, [id]) => n + (badge(id) ? 1 : 0), 0);
     return [h('button', { class: 'nav-group' + (closed ? ' shut' : ''), onclick: () => { fx('click'); shut[g] = !shut[g]; save(); render(); } }, h('span', {}, g), closed && b ? h('span', { class: 'badge' }, b) : null, h('span', { class: 'chev' }, closed ? '▸' : '▾')),
     ...(closed ? [] : its.filter(([id]) => (id !== 'cultivation' || (!onBodyPath(c) && (c.qi.known || META.bestRealm > 0))) && (id !== 'severed' || canSeeSevered(c)) && (id !== 'fables' || (c.fame || 0) >= 1e5 || !!c.fables || !!c.fableRun)).map(([id, label, ic]) => h('button', { class: 'nav-btn' + (G.ui.tab === id ? ' active' : ''), title: label, onclick: () => { fx('click'); G.ui.tab = id; G.ui.navOpen = false; render(); window.innerWidth <= 760 && document.getElementById('center').scrollIntoView({ behavior: 'smooth' }); } },
-      icon(ic), h('span', { class: 'lbl' }, label), badge(id) ? h('span', { class: 'badge' }, badge(id)) : null)))]; }));
+      icon(ic), h('span', { class: 'lbl' }, label), badge(id) ? h('span', { class: 'badge' }, badge(id)) : null))),
+    ...(g === 'Game' && !closed ? [h('button', { class: 'nav-btn nav-menu', title: 'Save & return to the main menu', onclick: () => { fx('click'); G.ui.navOpen = false; ui.toMenu?.(); } }, icon('life'), h('span', { class: 'lbl' }, 'Main Menu'))] : [])]; }));
 }
 
 // ---------- right column
