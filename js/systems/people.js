@@ -21,9 +21,10 @@ export function makePerson(c, o = {}) { const p = makePerson0(c, o); p.dna ||= n
 function makePerson0(c, o = {}) {
   const cty = COUNTRIES.find(x => x.id === (o.country || c.country)) || COUNTRIES[0];
   const gender = o.gender || (chance(0.5) ? 'F' : 'M');
-  let last = o.last || pick(cty.last); if (gender === 'F' && cty.fem && !o.last) last = cty.fem(last);
+  const RP = (o.country || c.country) === c.country && cty.regional?.[c.city] && chance(0.6) ? cty.regional[c.city] : cty; // locals mostly have local names
+  let last = o.last || pick(RP.last); if (gender === 'F' && cty.fem && !o.last) last = cty.fem(last);
   return {
-    id: uid(), first: o.first || pick(gender === 'F' ? cty.f : cty.m), last, gender,
+    id: uid(), first: o.first || pick(gender === 'F' ? RP.f : RP.m), last, gender,
     age: o.age ?? ri(c.age - 2, c.age + 2), role: o.role || 'Acquaintance', alive: true,
     close: o.close ?? ri(20, 60), genes: o.genes || randomGenes(gender), job: o.job || null,
     stats: { smarts: ri(20, 90), strength: ri(15, 80), agility: ri(15, 80), charisma: ri(20, 90), luck: ri(20, 80), looks: 0 },

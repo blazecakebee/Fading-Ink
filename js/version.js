@@ -1,7 +1,12 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.16';
+export const VERSION = '0.9.17';
 export const CHANGELOG = [
+  { v: '0.9.17', date: '2026-11-16', title: 'A Name of Your Own', notes: [
+    'Much bigger name pools: every one of the 30 countries now has around 40–50 male and female first names and 30–45 surnames, so names repeat far less.',
+    'Region-specific names: 22 cities have their own local names, so people born there usually get them — Marathi names in Mumbai, Punjabi in Delhi, Tamil/Kannada in Bengaluru, Yoruba in Lagos and Ibadan, Hausa in Kano, Tatar in Kazan, Pashtun in Peshawar, Sundanese in Bandung, Javanese in Yogyakarta, Luo in Kisumu, Kikuyu in Nairobi, Kalenjin in Nakuru, Swahili in Mombasa, Québécois in Montreal, Afrikaans and Cape names in Cape Town, Zulu and Indian-South African in Durban, Paisa in Medellín, Bavarian in Munich, Frisian in Hamburg, Newar in Kathmandu, Gurung in Pokhara, Tuareg and Songhai in Timbuktu and Gao, and more.',
+    'Russian women\'s surnames now use the correct feminine form (-ova, -ina, -skaya).',
+  ] },
   { v: '0.9.16', date: '2026-11-16', title: 'A Wider World', notes: [
     '18 new countries, each with its own flag, cities on the World map, currency, names, weather and Qi density: Vietnam, the Philippines, Indonesia, Thailand, Pakistan, Bangladesh, Ethiopia, Kenya, DR Congo, Haiti, Nepal, Mali, Germany, Canada, Turkey, South Africa, Argentina and Colombia (30 in total).',
     'New "Least developed" tier (Bangladesh, Ethiopia, DR Congo, Haiti, Nepal, Mali): very few schools and universities, frequent hunger, weak policing — and Legacy ×1.8 for a life lived there.',

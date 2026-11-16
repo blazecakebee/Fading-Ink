@@ -50,9 +50,12 @@ export function lifeStage(age) {
 }
 export function fullName(p) { return `${p.first} ${p.last}`; }
 
-export function makeName(cty, gender) {
-  const first = pick(gender === 'F' ? cty.f : cty.m);
-  let last = pick(cty.last);
+// v0.9.17 city-aware: someone born in a city with a regional pool usually gets a local name
+export function namePool(cty, city) { const R = city && cty.regional?.[city]; return R && Math.random() < 0.65 ? R : cty; }
+export function makeName(cty, gender, city) {
+  const P = namePool(cty, city), L = namePool(cty, city);
+  const first = pick(gender === 'F' ? P.f : P.m);
+  let last = pick(L.last);
   if (gender === 'F' && cty.fem) last = cty.fem(last);
   return { first, last };
 }
@@ -126,11 +129,12 @@ export function newLife(opts = {}) {
   const cty = opts.country || weighted(COUNTRIES, () => 1);
   const gender = opts.gender || (chance(0.5) ? 'F' : 'M');
   const wealth = opts.wealth || weighted(WEALTH.map(w => ({ ...w, weight: w.weight * (w.id === 'royal' ? 1 + perk('f3') * 1.5 : 1) * (perk('f2') && ['destitute', 'poor'].includes(w.id) ? 0.35 : 1) })));
-  const nm = opts.name || makeName(cty, gender);
+  const city0 = opts.city && cty.city.includes(opts.city) ? opts.city : pick(cty.city);
+  const nm = opts.name || makeName(cty, gender, city0);
   const genes = opts.genes || randomGenes(gender);
   const base = () => ri(20, 80);
   const c = {
-    id: opts.id || uid(), first: nm.first, last: nm.last, gender, country: cty.id, city: pick(cty.city), wealth: wealth.id,
+    id: opts.id || uid(), first: nm.first, last: nm.last, gender, country: cty.id, city: city0, wealth: wealth.id,
     age: 0, alive: true, birthYear: G.world.year, generation: opts.generation || 1,
     money: 0, fame: 0, genes, hair: null,
     stats: { health: ri(60, 100), happiness: ri(60, 95), stress: ri(0, 15), smarts: base(), looks: genes.looks, battle: ri(0, 8),

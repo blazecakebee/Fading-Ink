@@ -66,7 +66,7 @@ const LIFE_CUM = [0, 2, 7, 19, 44, 79, 124, 179, 244, 319, 404, 504, 654, 774, 9
 export function fertileUntil(x) { if (ID.eternalYouth(x)) return 100000; const r = x.qi?.realm ?? x.realm ?? 0; return (ID.birthSex(x) === 'F' ? 45 : 75) + Math.round((LIFE_CUM[Math.min(r, LIFE_CUM.length - 1)] || 0) * 0.6); }
 export function fertile(a, b) { return ID.canConceive(a, b) && [a, b].every(x => x.age >= 16 && x.age <= fertileUntil(x)); }
 export function uniqueFirst(c, gender) {
-  const cty = COUNTRIES.find(x => x.id === c.country) || COUNTRIES[0]; const pool = gender === 'F' ? cty.f : cty.m;
+  const cty = COUNTRIES.find(x => x.id === c.country) || COUNTRIES[0]; const R = cty.regional?.[c.city], src = R && chance(0.6) ? R : cty; const pool = gender === 'F' ? src.f : src.m;
   const used = new Set([c.first, ...c.people.map(p => p.first)]);
   const free = pool.filter(n => !used.has(n)); return pick(free.length ? free : pool);
 }

@@ -19,7 +19,7 @@ import { factionsYear } from './factions.js';
 import { newsYear, ensureMatchingGate, spawnGate, birthAnomaly, BIRTH_EVENTS, newsMult } from './world.js';
 import { FAMILY_SOCIAL, disputeYear, trainedHeir, MOVE_IN, birthYear } from './family.js';
 import { haveChild } from '../data/activities.js';
-import { MORE_NAMES } from '../data/names2.js';
+import { MORE_NAMES, NAMES3, REGIONAL } from '../data/names2.js';
 import { MARTIAL, SWITCH_ART, PRIVATE, MIGRATE, schoolYear, CHILDHOOD, cloudBonus, DOCTOR } from './schooling.js';
 import { portfolioYear, migrateStocks } from './market.js';
 import { ownSectYear } from './factions.js';
@@ -55,6 +55,9 @@ SOCIAL.push(...FAMILY_SOCIAL, MOVE_IN, ...TRAINER_SOCIAL, ...AGENT_SOCIAL);
 for (const s of SOCIAL) s.run = withTaste(s.id, withFlavor(s.id, s.run), gainCloseP); // what you did, and whether THEY enjoyed it
 // ---- more names (fewer repeats)
 for (const cty of COUNTRIES) { const x = MORE_NAMES[cty.id]; if (x && !cty._more) { cty._more = 1; cty.m = [...new Set([...cty.m, ...x.m.split(' ')])]; cty.f = [...new Set([...cty.f, ...x.f.split(' ')])]; } }
+// v0.9.17 much bigger pools + city-specific names
+for (const cty of COUNTRIES) { const x = NAMES3[cty.id]; if (x && !cty._more3) { cty._more3 = 1; const sp = v => (v || '').split('|').map(t => t.trim()).filter(Boolean); cty.m = [...new Set([...cty.m, ...sp(x.m)])]; cty.f = [...new Set([...cty.f, ...sp(x.f)])]; cty.last = [...new Set([...cty.last, ...sp(x.last)])]; }
+  const R = REGIONAL[cty.id]; if (R && !cty.regional) cty.regional = Object.fromEntries(Object.entries(R).map(([city, v]) => [city, { m: v.m.split('|'), f: v.f.split('|'), last: v.last.split('|') }])); }
 // ---- martial arts schools replace the old all-you-can-eat class; private school, migration
 { const i = ACTIVITIES.findIndex(a => a.id === 'martial'); if (i >= 0) ACTIVITIES[i] = MARTIAL; else ACTIVITIES.push(MARTIAL); }
 { const i = ACTIVITIES.findIndex(a => a.id === 'doctor'); if (i >= 0) ACTIVITIES[i] = DOCTOR; else ACTIVITIES.push(DOCTOR); }

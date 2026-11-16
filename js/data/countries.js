@@ -27,7 +27,7 @@ export const COUNTRIES = [
     last: ['Sharma', 'Patel', 'Singh', 'Gupta', 'Iyer', 'Reddy', 'Nair', 'Das', 'Mehta'] },
   { id: 'ru', flag: '🇷🇺', tier: 'emerging', biome: 'continental', name: 'Russia', city: ['Moscow', 'Saint Petersburg', 'Kazan', 'Novosibirsk'], econ: 0.75, danger: 0.45, qi: 0.9, currency: '₽',
     m: ['Alexei', 'Dmitri', 'Ivan', 'Mikhail', 'Nikolai', 'Sergei', 'Artyom'], f: ['Anastasia', 'Sofia', 'Daria', 'Polina', 'Yelena', 'Katya'],
-    last: ['Ivanov', 'Smirnov', 'Kuznetsov', 'Popov', 'Volkov', 'Morozov', 'Sokolov'] , fem: s => s + 'a' },
+    last: ['Ivanov', 'Smirnov', 'Kuznetsov', 'Popov', 'Volkov', 'Morozov', 'Sokolov'] , fem: s => /(sky|skiy|iy)$/.test(s) ? s.replace(/(skiy|sky|iy)$/, m => m.startsWith('sk') ? 'skaya' : 'aya') : /(ov|ev|in|yn|yov)$/.test(s) ? s + 'a' : s },
   { id: 'mx', flag: '🇲🇽', tier: 'emerging', biome: 'arid', name: 'Mexico', city: ['Mexico City', 'Guadalajara', 'Monterrey', 'Oaxaca'], econ: 0.6, danger: 0.5, qi: 1.05, currency: '$',
     m: ['Santiago', 'Mateo', 'Diego', 'Emiliano', 'Leonardo', 'Alejandro'], f: ['Sofía', 'Valeria', 'Ximena', 'Camila', 'Regina', 'Lucía'],
     last: ['Hernández', 'García', 'Martínez', 'López', 'González', 'Pérez', 'Ramírez', 'Flores'] },
