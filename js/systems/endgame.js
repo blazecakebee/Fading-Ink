@@ -9,6 +9,7 @@ import { effRealm } from './path.js';
 import { gainHeirloom } from './heirlooms.js';
 import { ensureDna } from './genetics.js';
 import { power } from './cultivation.js';
+import { perk } from '../data/legacyTree.js';
 
 // ---------------- Hunts: one stage per year, each a brutal fight. Finish them all for a huge payout.
 export const HUNTS = [
@@ -41,14 +42,14 @@ export async function huntStage(c) {
   if (r === 'flee') return { text: `I pulled back from ${H.stages[i].toLowerCase()} to fight another year.`, cls: '' };
   if (r !== 'win') {
     stat(c, 'health', -ri(20, 35)); stat(c, 'stress', 20);
-    if (chance(0.22 + i * 0.04) && c.alive) { die(c, `torn apart hunting the ${H.boss}`); return { text: `The ${H.boss} killed me.`, cls: 'death' }; }
+    if (chance(0.22 + i * 0.04 - (perk('d4') ? 0.05 : 0)) && c.alive) { die(c, `torn apart hunting the ${H.boss}`); return { text: `The ${H.boss} killed me.`, cls: 'death' }; }
     return { text: `The ${H.boss} nearly killed me at ${H.stages[i].toLowerCase()}. I crawled back to try again next year.`, cls: 'bad' };
   }
   c.wins++; c.hunt.stage++;
-  const part = Math.round(H.pay * 0.08 * wage(c)); money(c, part); addItem(c, pick(Object.keys(H.items)), 1, rollQuality(c, 0.1));
+  const part = Math.round(H.pay * 0.08 * wage(c) * (perk('d4') ? 1.1 : 1)); money(c, part); addItem(c, pick(Object.keys(H.items)), 1, rollQuality(c, 0.1));
   if (!last) return { text: `Hunt stage cleared: ${H.stages[i]}. Spoils worth ${fmtMoney(c, part)}. The ${H.boss} retreats deeper — next year I follow.`, cls: 'good', big: true };
   // final payout
-  const pay = Math.round(H.pay * wage(c)); money(c, pay);
+  const pay = Math.round(H.pay * wage(c) * (perk('d4') ? 1.1 : 1)); money(c, pay);
   for (const [id, n] of Object.entries(H.items)) for (let k = 0; k < n; k++) addItem(c, id, 1, rollQuality(c, 0.2));
   if (H.heir === 'mythicChance') gainHeirloom(c, `the ${H.boss}`, chance(0.25) ? 'mythic' : 'legendary'); else gainHeirloom(c, `the ${H.boss}`, H.heir);
   ensureDna(c).points += 2; META.legacy += 20 + H.realm * 3; if (c.guild) c.guild.merit += 500 + H.realm * 100;
@@ -73,7 +74,7 @@ function bless(c, g) {
   ui.cinematic?.({ motif: g.motif, color: g.color, lines: [`${g.name} looks at you — truly looks — and smiles.`, 'Something of heaven settles into your bones.'], title: 'Divine Blessing', sub: g.title, sound: 'ascend', hold: 2.4 });
   ui.log(`${g.name}, ${g.title}, blessed me. (${g.blessTxt})`, 'big');
 }
-export const GOD_EVENT = { id: 'god', cond: c => c.age >= 16 && !c.flags.metGod, w: 0.04, run: async c => {
+export const GOD_EVENT = { id: 'god', cond: c => c.age >= 16 && !c.flags.metGod, get w() { return 0.04 * (perk('d3') ? 2 : 1); }, run: async c => {
   c.flags.metGod = true; const g = pick(GODS);
   await ui.cinematic?.({ motif: g.motif, color: g.color, threads: 9, lines: ['The world goes silent. Birds stop mid-flight.', `${g.name} — ${g.title} — walks the mortal world today.`], title: g.name, sub: 'A god appears', sound: 'heavy', hold: 1.8 });
   if (chance(0.08 + Math.max(0, c.stats.luck - 50) / 1000)) return bless(c, g); // really rare: an unasked-for blessing

@@ -117,7 +117,7 @@ export function addItem(c, id, n = 1, q) {
   return took || 'mid';
 }
 // the grade a looted item rolls: mostly Mid, some Low, a few High. luck helps a little
-export const rollQuality = (c, bonus = 0) => { const r = Math.random(), hi = 0.12 + bonus + Math.max(0, (c?.stats?.luck || 50) - 50) / 1000; return r < hi ? 'hi' : r > 0.62 - bonus ? 'lo' : 'mid'; };
+export const rollQuality = (c, bonus = 0) => { const r = Math.random(), hi = 0.12 + bonus + (perk('d5') ? 0.05 : 0) + Math.max(0, (c?.stats?.luck || 50) - 50) / 1000; return r < hi ? 'hi' : r > 0.62 - bonus ? 'lo' : 'mid'; };
 export const bestQ = (c, id) => { const k = qCounts(c, id); return k.hi ? 'hi' : k.mid ? 'mid' : k.lo ? 'lo' : null; };
 
 // ---- new life ----------------------------------------------------------------

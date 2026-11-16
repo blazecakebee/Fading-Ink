@@ -2,6 +2,7 @@
 import { ui } from '../core/bus.js';
 import { ri, pick, chance } from '../core/rng.js';
 import { stat, money, addItem, fmtMoney, wage } from './life.js';
+import { perk } from '../data/legacyTree.js';
 
 const ev = (id, w, cond, run) => ({ id, w, cond, run });
 export const FORTUNE_EVENTS = [
@@ -23,7 +24,7 @@ export const FORTUNE_EVENTS = [
 ];
 // Once per life, fate may turn a sudden death aside. (Never old age — nobody lives forever.)
 export function spared(c, cause) {
-  if (c.flags.spared || !cause || /old age|gave out/.test(cause) || !chance(0.3)) return false;
+  if (c.flags.spared || !cause || /old age|gave out/.test(cause) || !chance(0.3 + 0.15 * perk('d1'))) return false;
   c.flags.spared = true; stat(c, 'health', -ri(10, 20)); stat(c, 'happiness', -5);
   ui.log(`It should have killed me — ${cause.replace(/^I /, '')}. By some miracle I walked away with only scars.`, 'big');
   return true;

@@ -5,6 +5,7 @@ import { ri, chance, clamp, pick, weighted } from '../core/rng.js';
 import { REALMS } from '../data/realms.js';
 import { COUNTRIES } from '../data/countries.js';
 import { effRealm } from './path.js';
+import { perk } from '../data/legacyTree.js';
 
 const HEIGHTS = { cn: [172, 160], kr: [175, 163], jp: [171, 158], us: [177, 163], gb: [177, 164], br: [173, 161], ng: [171, 160], in: [166, 153], ru: [176, 164], mx: [170, 157], fr: [176, 163], eg: [170, 159] };
 const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5; // ~ -1..1, bell-ish
@@ -27,7 +28,7 @@ export function ensureBody(c) {
   c.body = { parts, muscle: ri(8, 25), adultHeight: c.body?.adultHeight || adultHeight(c.country, c.gender) };
   return c.body;
 }
-export const maxHp = (c, p) => Math.round(PART_BY_ID[p].hp * (1 + (c.qi ? effRealm(c) : 0) * 0.3));
+export const maxHp = (c, p) => Math.round(PART_BY_ID[p].hp * (1 + (c.qi ? effRealm(c) : 0) * 0.3) * (perk('b6') ? 1.15 : 1));
 // when your realm (or Severed tier) rises, every part's max HP rises too: keep its current HP in proportion
 export function syncPart(c, id) {
   const s = c.body.parts[id], mx = maxHp(c, id);

@@ -5,6 +5,7 @@ import { ri, pick, chance, clamp, weighted } from '../core/rng.js';
 import { QI, QI_TYPES, RARITY, compatible, fusedName, SECOND_REALM, FUSE_REALM, PERM_REALMS } from '../data/qitypes.js';
 import { REALMS } from '../data/realms.js';
 import { onBodyPath } from './path.js';
+import { perk } from '../data/legacyTree.js';
 
 const K = r => RARITY[r]?.k || 1;
 export const FX_SCALE = 0.4;
@@ -61,7 +62,7 @@ export function awakenQi(c, quiet) {
   add('ghost', (c.grief ? 4 : 0) + (c.flags?.rescued ? 6 : 0) + (has('melancholic') ? 5 : 0));
   add('yang', has('hotheaded') || has('brave') ? 4 : 0); add('yin', has('cold') || has('melancholic') ? 4 : 0);
   add('normal', n('meditate') * 0.2);
-  const luck = (c.stats.luck || 50) / 50; for (const id in W) if (['rare', 'epic'].includes(QI[id].rarity)) W[id] *= luck;
+  const luck = (c.stats.luck || 50) / 50 * (1 + 0.6 * perk('c6')); for (const id in W) if (['rare', 'epic'].includes(QI[id].rarity)) W[id] *= luck;
   const id = weighted(Object.keys(W), k => Math.max(0.01, W[k]));
   c.qiType = { primary: { type: id, perm: 0 }, secondary: null, fused: false, tries: {} };
   if (!quiet) { qiSfx(QI[id].snd); ui.log(`My Qi awakened as ${QI[id].name} (${RARITY[QI[id].rarity].name}). ${QI[id].desc}`, 'qi'); }
@@ -83,7 +84,7 @@ export function refineQi(c) {
 // ---- a second Qi (Void Refinement+): may be a conceptual Qi — Sword, Stars, Space, Time, even Chaos
 export function awakenSecond(c) {
   const q = qiOf(c); if (!q || q.secondary || c.qi.realm < SECOND_REALM) return null; if (!once(c, 'second')) return { text: 'The second Qi will not come twice in one year.', cls: '' };
-  if (!chance(clamp(0.3 + c.qi.affinity / 400 + (c.stats.luck - 50) / 400, 0.1, 0.6))) { c.qi.qi = Math.round(c.qi.qi * 0.6); return { text: 'I reached for a second Qi and found nothing but silence. (Try again next year.)', cls: 'bad' }; }
+  if (!chance(clamp(0.3 + c.qi.affinity / 400 + (c.stats.luck - 50) / 400 + (perk('c8') ? 0.1 : 0), 0.1, 0.7))) { c.qi.qi = Math.round(c.qi.qi * 0.6); return { text: 'I reached for a second Qi and found nothing but silence. (Try again next year.)', cls: 'bad' }; }
   const luck = (c.stats.luck || 50) / 50;
   const pool = QI_TYPES.filter(T => T.id !== q.primary.type && (T.id !== 'chaos' || c.qi.realm >= 11));
   const id = weighted(pool, T => ({ common: 6, uncommon: 4, rare: 3, epic: 1.6 * luck, legendary: 0.7 * luck, mythic: 0.12 * luck }[T.rarity])).id;
@@ -93,7 +94,7 @@ export function awakenSecond(c) {
 }
 // ---- fusion (Body Integration+), compatible pairs only
 export const fuseInfo = c => { const q = qiOf(c); if (!q?.secondary || q.fused) return null; const ok = compatible(q.primary.type, q.secondary.type);
-  return { ok, realmOk: c.qi.realm >= FUSE_REALM, name: fusedName(q.primary.type, q.secondary.type), p: clamp(0.25 + c.qi.affinity / 400 + (q.primary.perm + q.secondary.perm) * 0.05, 0.1, 0.65) }; };
+  return { ok, realmOk: c.qi.realm >= FUSE_REALM, name: fusedName(q.primary.type, q.secondary.type), p: clamp(0.25 + c.qi.affinity / 400 + (q.primary.perm + q.secondary.perm) * 0.05 + (perk('c8') ? 0.1 : 0), 0.1, 0.7) }; };
 export function fuseQi(c) {
   const F = fuseInfo(c); if (!F || !F.ok || !F.realmOk) return null;
   const q = c.qiType; if ((q.fuseCd || 0) > G.world.year) return { text: `My meridians are still scarred from the last fusion. (Again in ${q.fuseCd - G.world.year} years)`, cls: '' };

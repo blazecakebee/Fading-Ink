@@ -7,6 +7,7 @@ import { CAREERS } from '../data/careers.js';
 import { money, fmtMoney, wage, country, priceFor } from './life.js';
 import { makePerson, gainClose } from './people.js';
 import { eff } from './body.js';
+import { perk } from '../data/legacyTree.js';
 
 export const AGENTS = {
   rookie: { name: 'Rookie job agent', fee: 600, leads: 1, hire: 0.08, open: 0.08, desc: 'Eager, cheap, knows a few people.' },
@@ -14,7 +15,7 @@ export const AGENTS = {
   elite: { name: 'Elite headhunter', fee: 9000, leads: 3, hire: 0.22, open: 0.25, desc: 'Gets you into rooms you didn\'t know existed.' },
 };
 export const agentOf = c => c.people.find(p => p.alive && p.agent);
-export const agentFee = (c, tier) => priceFor(c, Math.round(AGENTS[tier].fee * wage(c) / 0.32));
+export const agentFee = (c, tier) => priceFor(c, Math.round(AGENTS[tier].fee * wage(c) / 0.32 * (perk('f8') ? 0.8 : 1)));
 
 export function eligible(c, j) {
   return c.age >= j.minAge && c.age <= (j.maxAge || 99) && c.edu.level >= j.edu && (!j.major || j.major.includes(c.edu.major)) && (c.edu.school !== 'University' || j.part)
@@ -30,7 +31,7 @@ export function jobBoard(c) {
   return c.jobBoard;
 }
 export const listed = c => { const b = jobBoard(c); return CAREERS.filter(j => b.ids.includes(j.id) || b.leads.includes(j.id)); };
-export const hireChance = (c, j) => clamp(0.2 + c.stats.charisma / 300 + c.stats.smarts / 500 + (agentOf(c) ? AGENTS[agentOf(c).agent.tier].hire : 0) - (j.pay >= 150000 ? 0.15 : j.pay >= 90000 ? 0.08 : 0), 0.05, 0.8);
+export const hireChance = (c, j) => clamp(0.2 + c.stats.charisma / 300 + c.stats.smarts / 500 + (agentOf(c) ? AGENTS[agentOf(c).agent.tier].hire : 0) + (perk('f8') ? 0.06 : 0) - (j.pay >= 150000 ? 0.15 : j.pay >= 90000 ? 0.08 : 0), 0.05, 0.8);
 
 export function hireAgent(c, tier) {
   const fee = agentFee(c, tier); if (c.money < fee) return null;

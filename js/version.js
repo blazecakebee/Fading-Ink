@@ -1,7 +1,11 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.8.5';
+export const VERSION = '0.8.6';
 export const CHANGELOG = [
+  { v: '0.8.6', date: '2026-11-16', title: 'A bigger Legacy shop', notes: [
+    '17 new Legacy upgrades, including a whole new branch, Destiny: Fate\'s Mercy, Gate Sense, Divine Notice, Hunter\'s Blood and Fortune\'s Favourite. New in the other branches: Family Heirloom Car, Trust Fund, Connections, Ancestral Qi, Meridian Map, Second Root, Thick Bones, Severed Heritage, Iron Stomach, Crafter\'s Line, Old Soul and Teacher\'s Favour.',
+    'Blessings for your next life: one-time gifts that your next life (new life or heir) uses up, up to 3 at a time. The 8 blessings are Born in the Storm, Prodigy, Silver Spoon, Ancestor\'s Gift (a Rare heirloom), Spirit-Touched, Good Heart, Survival Kit and Born Strong. Change your mind before your next life starts and you get a full refund.',
+  ] },
   { v: '0.8.5', date: '2026-11-16', title: 'Qi Types & the first OST', notes: [
     'New OST: "Forgive", the game\'s first real soundtrack. It plays on the title screen, is in the music rotation, and can be picked in Settings.',
     'Qi Types: when you reach Qi Refining, your Qi awakens as one of 21 types, from Common to Mythic. What you get depends on how you lived: forging and alchemy lean Fire or Magma; herbs and medicine Wood or Poison; killing and forbidden arts Demonic; study and an honest heart Righteous; a storm at your birth Lightning; grief or a brush with death Ghost; and your birth element tips the scale.',

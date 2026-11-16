@@ -9,6 +9,7 @@ import { MOVES } from '../data/combat.js';
 import { ARTS, beltOf } from './schooling.js';
 import { onBodyPath } from './path.js';
 import { sectName } from './cultivation.js';
+import { perk } from '../data/legacyTree.js';
 
 // Hidden techniques. Martial ones are physical (they fade against high-realm foes, like any punch);
 // the Severed one scales with the body; the sect one needs Qi. Each is ~1.5x a Kick — strong, not broken.
@@ -35,7 +36,7 @@ export const trainerOf = (c, kind, art) => c.people.find(p => p.alive && p.train
 export function ensureTrainer(c, kind, art) {
   let p = trainerOf(c, kind, art); if (p) return p;
   const old = c.people.find(q => !q.alive && q.trainer?.kind === kind && (art == null || q.trainer.art === art));
-  p = makePerson(c, { role: TITLE[kind](art), age: ri(48, 74), close: kind === 'severed' ? 35 : 25, realm: kind === 'sect' ? Math.max(3, (c.qi?.realm || 0) + 2) : 0,
+  p = makePerson(c, { role: TITLE[kind](art), age: ri(48, 74), close: (kind === 'severed' ? 35 : 25) + (perk('m8') ? 25 : 0), realm: kind === 'sect' ? Math.max(3, (c.qi?.realm || 0) + 2) : 0,
     extra: { trainer: { kind, art: art ?? null, since: G.world.year } } });
   p.stats.strength = ri(60, 95); p.stats.agility = ri(55, 90);
   c.people.push(p);
