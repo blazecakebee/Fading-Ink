@@ -870,3 +870,6 @@ details.chron:not([open]) > summary h3::after { content: ' ▸'; }
 @media (max-width: 480px) { .tg-info { font-size: .8rem; } .tg-head b { font-size: 1rem; } .br-card { min-width: 0; flex: 1 1 30%; } .br-card .n { font-size: .7rem; } }
 .tg-pad { position: relative; } .tg-key { position: absolute; right: 4px; bottom: 2px; font-size: .6rem; opacity: .5; }
 @media (pointer: coarse) { .tg-key { display: none; } }
+/* v0.9.11 birth omens */
+.omen-chip.blessing { --tc: #ffd36f; } .omen-chip.curse { --tc: #b04a6a; }
+.card.omen.blessing b { color: #ffd36f; } .card.omen.curse b { color: #d0607e; }

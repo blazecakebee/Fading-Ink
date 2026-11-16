@@ -8,7 +8,7 @@ import { fullName, continueAs, newLife, willInfo, fmtMoney } from '../systems/li
 import { realmName } from '../systems/cultivation.js';
 import { REALMS } from '../data/realms.js';
 import { render, traitChip } from './render.js';
-import { TREE, BRANCHES, NODE, perk, nodeCost, canBuy, BLESSINGS } from '../data/legacyTree.js';
+import { TREE, BRANCHES, NODE, perk, nodeCost, canBuy, refundBlessings, OMENS, OMEN_CHANCE } from '../data/legacyTree.js';
 import { icon as ic } from './dom.js';
 
 export const PERKS = [
@@ -52,15 +52,13 @@ export function deathScreen() {
   ], { dismiss: false });
 }
 
-// One-time blessings for the next life (a new life or your heir). Up to 3 at once.
+// v0.9.11 the blessing shop is gone; omens are rolled at birth (read-only list here)
 function blessingShop() {
-  META.nextLife ||= []; const full = META.nextLife.length >= 3;
-  return h('div', { class: 'box', style: { marginTop: '14px' } }, h('h3', {}, ic('gift', 'sm'), ' Blessings for your next life'),
-    h('div', { class: 'muted small' }, `One-time gifts, used up by the next life you start (a new life or an heir). Up to 3 at once. Queued: ${META.nextLife.length ? META.nextLife.map(id => BLESSINGS.find(b => b.id === id)?.name).join(', ') : 'none'}.`),
-    h('div', { class: 'grid2', style: { marginTop: '8px' } }, BLESSINGS.map(b => { const have = META.nextLife.includes(b.id);
-      return h('div', { class: 'card' }, h('b', {}, b.name), h('div', { class: 'small muted' }, b.desc),
-        have ? h('button', { class: 'btn mini ghost', onclick: () => { META.nextLife = META.nextLife.filter(x => x !== b.id); META.legacy += b.cost; save(); render(); } }, `Queued · refund ${b.cost}`)
-          : h('button', { class: 'btn mini', disabled: full || META.legacy < b.cost, onclick: () => { META.legacy -= b.cost; META.nextLife.push(b.id); fx('milestone'); save(); render(); } }, `Bless · ${b.cost} pts`)); })));
+  const back = refundBlessings(); if (back) save();
+  const list = kind => Object.values(OMENS).filter(o => o.kind === kind);
+  return h('details', { class: 'box', style: { marginTop: '14px' } }, h('summary', {}, h('h3', { style: { display: 'inline' } }, ic('gift', 'sm'), ' Birth omens')),
+    h('div', { class: 'muted small' }, `Can't be bought. Every new life or heir has a ${Math.round(OMEN_CHANCE * 100)}% chance to be born with a blessing, and a separate ${Math.round(OMEN_CHANCE * 100)}% chance of a curse.`),
+    h('div', { class: 'grid2', style: { marginTop: '8px' } }, [...list('blessing'), ...list('curse')].map(o => h('div', { class: 'card omen ' + o.kind }, h('b', {}, (o.kind === 'blessing' ? '✦ ' : '✖ ') + o.name), h('div', { class: 'small muted' }, o.desc)))));
 }
 
 // Skill tree: one column per branch, nodes indented under their parent with connecting lines

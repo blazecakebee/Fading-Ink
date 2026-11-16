@@ -1,4 +1,5 @@
 // Boot: load saves & icons, wire UI hooks into the game systems, start the first life.
+import { achPts } from './data/achievements.js';
 import { G, META, SLOTS, loadMeta, loadSlot, newSlotId, startSlot, save, onSave } from './core/state.js';
 import { showMenu } from './ui/menu.js';
 import { migratePerks } from './data/legacyTree.js';
@@ -28,7 +29,7 @@ import { resumeRoom } from './net/coop.js';
 const achQueue = []; let achBusy = false;
 function showAch() {
   if (achBusy || !achQueue.length) return; achBusy = true; const a = achQueue.shift();
-  const el = h('div', { class: 'ach-pop' }, h('span', { class: 'trophy' }, '🏆'), h('div', {}, h('small', {}, 'Achievement unlocked'), h('div', {}, h('b', {}, a.name)), h('div', { class: 'muted small' }, `${a.desc} · +${a.pts} Legacy`)));
+  const el = h('div', { class: 'ach-pop' }, h('span', { class: 'trophy' }, '🏆'), h('div', {}, h('small', {}, 'Achievement unlocked'), h('div', {}, h('b', {}, a.name)), h('div', { class: 'muted small' }, `${a.desc} · +${achPts(a)} Legacy`)));
   document.body.append(el); sfx('trait'); setTimeout(() => { el.remove(); achBusy = false; showAch(); }, 4300);
 }
 Object.assign(ui, {

@@ -1,7 +1,12 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.10';
+export const VERSION = '0.9.11';
 export const CHANGELOG = [
+  { v: '0.9.11', date: '2026-11-16', title: 'Omens', notes: [
+    'The next-life blessing shop is gone. Anything you had queued is refunded in Legacy points.',
+    'BIRTH OMENS: every new life or heir has a 5% chance to be born with a blessing, and a separate 5% chance of a curse. 18 blessings (the 8 old ones plus Lucky Star, Moon-Kissed, Long-Lived Line, Iron Bones, Old Soul\'s Memory, Born on a Ley Line, Silver Tongue, Still Waters, Swift Feet and Fated Teacher) and 10 curses (Frail Birth, Jinxed, Short Thread, Clouded Mind, Knotted Dantian, Restless Spirit, Mark of Ill Omen, Fallen House, Weak Limbs and Haunted). Yours show in the right column with hover text; the full list is on the Legacy tab.',
+    'Legacy points nerfed: a life pays 60% of what it used to, achievements pay 70% of their old value (the Achievements tab shows the new numbers), and Hunts pay 60%.',
+  ] },
   { v: '0.9.10', date: '2026-11-16', title: 'WASD', notes: [
     'Fight drills (read the strike) can now be played with W A S D as well as the arrow keys. The direction buttons show their key on PC.',
   ] },

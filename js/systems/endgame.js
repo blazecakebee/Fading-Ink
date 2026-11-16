@@ -67,7 +67,7 @@ export async function huntStage(c) {
   const pay = Math.round(H.pay * wage(c) * (perk('d4') ? 1.1 : 1)); money(c, pay);
   for (const [id, n] of Object.entries(H.items)) for (let k = 0; k < n; k++) addItem(c, id, 1, rollQuality(c, 0.2));
   if (H.heir === 'mythicChance') gainHeirloom(c, `the ${H.boss}`, chance(0.25) ? 'mythic' : 'legendary'); else gainHeirloom(c, `the ${H.boss}`, H.heir);
-  ensureDna(c).points += 2; META.legacy += 20 + H.realm * 3; if (c.guild) c.guild.merit += 500 + H.realm * 100;
+  ensureDna(c).points += 2; META.legacy += Math.round((20 + H.realm * 3) * 0.6); if (c.guild) c.guild.merit += 500 + H.realm * 100;
   (c.huntsDone ||= []).push(H.id); c.hunt = null; const relic = dropRelic(c); addFame(c, (H.minEq + 1) * (H.minEq + 1) * 1500);
   ui.cinematic?.({ motif: 'triangle', color: H.color, lines: [`The ${H.boss} falls, and the ground shakes for a day and a night.`, 'Your name will be told for a hundred years.'], title: `${H.boss} Slain`, sub: 'Hunt complete', sound: 'ascend', hold: 2.4 });
   return { text: `THE HUNT IS OVER. I slew the ${H.boss}! Reward: ${fmtMoney(c, pay)}, ${Object.keys(H.items).length} treasures, an heirloom, a Rare Relic (${relic}), 2 Awakening points and lasting fame.`, cls: 'big', big: true };

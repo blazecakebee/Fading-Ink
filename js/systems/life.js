@@ -309,6 +309,7 @@ function checkDeath(c) {
   if (cause && !(cause !== 'my body finally gave out' && !/old age/.test(cause) && spared(c, cause))) die(c, cause);
 }
 
+export const LEGACY_RATE = 0.6;
 export function die(c, cause) {
   if (!c.alive) return;
   c.alive = false; c.cause = cause;
@@ -316,7 +317,7 @@ export function die(c, cause) {
   if (c.age >= 100 && !c.qi.realm) earnTrait(c, 'centenarian');
   // legacy points
   let pts = Math.round(c.age / 5 + c.qi.realm * 15 + c.gatesCleared * 2 + c.wins / 2 + (c.edu.level * 3) + Math.log10(Math.max(1, c.money + c.stocks)) * 2 + c.traits.length);
-  pts = Math.round(pts * tierOf(c).legacy);
+  pts = Math.round(pts * tierOf(c).legacy * LEGACY_RATE); // v0.9.11 nerf: lives pay 60% of what they used to
   c.legacyEarned = pts; META.legacy += pts; META.bestRealm = Math.max(META.bestRealm, c.qi.realm);
   c.traits.forEach(t => META.unlockedTraits[t] = true);
   checkEarned(c);

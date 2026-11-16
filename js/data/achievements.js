@@ -95,3 +95,6 @@ export const ACHIEVEMENTS = [
   { id: 'divine', name: 'Chosen', desc: 'Have a God-tier trait.', pts: 20, check: (c, T) => c.traits.some(id => T[id]?.tier === 'god') },
 ];
 export const ACH_BY_ID = Object.fromEntries(ACHIEVEMENTS.map(a => [a.id, a]));
+
+// v0.9.11 nerf: achievements pay 70% of their listed value (rounded, at least 1)
+export const achPts = a => Math.max(1, Math.round(a.pts * 0.7));

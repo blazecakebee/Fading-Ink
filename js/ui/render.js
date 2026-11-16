@@ -40,7 +40,8 @@ import { ri, pick, chance, weighted } from '../core/rng.js';
 import { renderSettings } from './settingsPanel.js';
 import { renderLegacy } from './legacyPanel.js';
 import { VERSION, CHANGELOG } from '../version.js';
-import { ACHIEVEMENTS } from '../data/achievements.js';
+import { ACHIEVEMENTS, achPts } from '../data/achievements.js';
+import { OMENS } from '../data/legacyTree.js';
 import { flagEl } from './flags.js';
 import { svgMap, osmLink } from './worldMap.js';
 import { net, hostRoom, joinRoom, leave, sendChat, doCoopAction, COOP_ACTIONS, coopTick, voteInfo, voteAgeUp, inCoopRoom, resonance } from '../net/coop.js';
@@ -188,6 +189,7 @@ function rightCol() {
     (c.conditions || []).length ? h('div', { class: 'box' }, h('h3', {}, 'Conditions'), c.conditions.map(x => h('span', { class: 'chip', ...condTip(x), style: { '--tc': 'var(--bad)', cursor: 'pointer' }, onclick: () => { G.ui.tab = 'health'; render(); } }, COND_BY_ID[x.id].name))) : null,
     h('div', { class: 'box' }, h('h3', {}, 'Traits'), c.traits.length ? c.traits.map(traitChip) : h('span', { class: 'muted' }, 'None yet.')),
     h('div', { class: 'box' }, h('h3', {}, 'Personality'), (c.temper || []).length ? (c.temper || []).map(temperChip) : h('span', { class: 'muted' }, 'Not yet formed.')),
+    (c.omens || []).length ? h('div', { class: 'box' }, h('h3', {}, 'Birth omens'), c.omens.map(id => { const O = OMENS[id]; if (!O) return null; const el = h('span', { class: 'chip omen-chip ' + O.kind, tabindex: 0, 'data-tip-title': O.name, 'data-tip-sub': O.kind === 'blessing' ? 'Birth blessing' : 'Birth curse', 'data-tip': O.desc }, (O.kind === 'blessing' ? '✦ ' : '✖ ') + O.name); return el; })) : null,
   ];
   $('#right').replaceChildren(...out.filter(Boolean));
 }
@@ -530,7 +532,7 @@ export const TABS = {
   achievements() {
     const done = META.achievements || {}; const n = ACHIEVEMENTS.filter(a => done[a.id]).length;
     return [h('h2', { class: 'display' }, 'Achievements'), h('p', { class: 'muted' }, `${n} / ${ACHIEVEMENTS.length} unlocked across all your lives · each one pays Legacy Points the first time. Locked achievements stay a mystery until you earn them.`),
-      h('div', { class: 'ach-grid' }, ACHIEVEMENTS.map(a => h('div', { class: 'ach' + (done[a.id] ? ' done' : '') }, h('b', {}, done[a.id] ? '🏆 ' + a.name : '🔒 ??? ' + '▮'.repeat(Math.min(7, Math.ceil(a.name.length / 2)))), h('div', { class: 'small muted' }, done[a.id] ? a.desc : h('i', {}, 'Undiscovered — do something new to find out.')), h('div', { class: 'small', style: { color: 'var(--legend)' } }, `+${a.pts} Legacy`))))];
+      h('div', { class: 'ach-grid' }, ACHIEVEMENTS.map(a => h('div', { class: 'ach' + (done[a.id] ? ' done' : '') }, h('b', {}, done[a.id] ? '🏆 ' + a.name : '🔒 ??? ' + '▮'.repeat(Math.min(7, Math.ceil(a.name.length / 2)))), h('div', { class: 'small muted' }, done[a.id] ? a.desc : h('i', {}, 'Undiscovered — do something new to find out.')), h('div', { class: 'small', style: { color: 'var(--legend)' } }, `+${achPts(a)} Legacy`))))];
   },
   updates() {
     return [h('h2', { class: 'display' }, 'Update Log'), h('p', { class: 'muted' }, `You're playing version ${VERSION}. When a new version goes live, the game lets you know and refreshes itself.`), changelogBody(CHANGELOG)];

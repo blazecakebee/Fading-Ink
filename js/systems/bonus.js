@@ -6,7 +6,7 @@ import { G } from '../core/state.js';
 import { outfitStyle } from '../data/clothing.js';
 import { TEMPER } from '../data/temper.js';
 import { qiPassives } from './qitype.js';
-import { legacyMods } from '../data/legacyTree.js';
+import { legacyMods, omenMods } from '../data/legacyTree.js';
 import { transmigratorMods, relicQi } from './renown.js';
 import { fableMods } from './fables.js';
 
@@ -24,7 +24,8 @@ export function sources(c) {
   out.push(legacyMods()); // Legacy tree
   const tm = transmigratorMods(c); if (tm) out.push(tm); if ((c.relics || []).length) out.push({ qi: relicQi(c) }); // Transmigrator, enshrined relics
   if (c.flags?.stormBorn) out.push({ breakthrough: 0.03 });
-  if (c.fables) out.push(...fableMods(c)); // Fable titles (all stack) and what the Fables did to you
+  if (c.fables) out.push(...fableMods(c));
+  if (c.omens?.length) out.push(...omenMods(c)); // v0.9.11 birth blessings & curses // Fable titles (all stack) and what the Fables did to you
   const st = outfitStyle(c); if (st) out.push({ social: 1 + Math.min(15, st) / 100 });
   const lib = c.ownSect?.halls?.library; if (lib) out.push({ qi: 1 + lib * 0.04 });
   const n = G.world?.news; if (n && n.year === G.world.year && n.mods) out.push(n.mods);

@@ -56,6 +56,7 @@ export const TREE = [
 // passive bonuses from the tree (fed into the bonus system)
 export const legacyMods = () => ({ healRate: 1 + 0.1 * perk('b8'), loot: 1 + 0.08 * perk('d2') });
 // v0.8.6 one-time blessings: bought now, used up by your next life (a new life or an heir)
+// v0.9.11 the old next-life blessing shop is gone. Kept only so queued blessings can be refunded.
 export const BLESSINGS = [
   { id: 'nl_storm', name: 'Born in the Storm', desc: 'Lightning strikes at your birth: +3% breakthroughs and a strong pull toward Lightning Qi.', cost: 35 },
   { id: 'nl_prodigy', name: 'Prodigy', desc: '+12 Smarts and +5 Charisma at birth.', cost: 25 },
@@ -67,6 +68,45 @@ export const BLESSINGS = [
   { id: 'nl_body', name: 'Born Strong', desc: '+8 Strength, +8 Agility, +10 Health at birth.', cost: 25 },
 ];
 export const BLESSING = Object.fromEntries(BLESSINGS.map(b => [b.id, b]));
+export function refundBlessings() { const q = META.nextLife || []; if (!q.length) return 0; const pts = q.reduce((s, id) => s + (BLESSING[id]?.cost || 0), 0); META.legacy += pts; META.nextLife = []; return pts; }
+
+// v0.9.11 Birth omens: every new life (or heir) has a 5% chance of a blessing and a separate 5% chance of a curse.
+// stat: changed once at birth; mods: permanent, read by bonus.js (same field names as traits).
+export const OMEN_CHANCE = 0.05;
+export const OMENS = {
+  // blessings
+  nl_storm:    { kind: 'blessing', name: 'Born in the Storm', desc: 'Lightning struck at your birth: +3% breakthroughs, a strong pull toward Lightning Qi.' },
+  nl_prodigy:  { kind: 'blessing', name: 'Prodigy', desc: '+12 Smarts and +5 Charisma at birth.', stat: { smarts: 12, charisma: 5 } },
+  nl_spoon:    { kind: 'blessing', name: 'Silver Spoon', desc: 'Born at least middle class, with extra family savings.' },
+  nl_heirloom: { kind: 'blessing', name: "Ancestor's Gift", desc: 'Born holding a random Rare heirloom.' },
+  nl_awaken:   { kind: 'blessing', name: 'Spirit-Touched', desc: 'Born knowing Qi is real, +20 Qi affinity.' },
+  nl_virtue:   { kind: 'blessing', name: 'Good Heart', desc: 'Born with an extra virtue in your personality.' },
+  nl_kit:      { kind: 'blessing', name: 'Swaddled in Medicine', desc: 'A wandering healer left 3 Healing Pills and 2 Qi Pills (High grade) with your family.' },
+  nl_body:     { kind: 'blessing', name: 'Born Strong', desc: '+8 Strength, +8 Agility, +10 Health at birth.', stat: { strength: 8, agility: 8, health: 10 } },
+  nl_star:     { kind: 'blessing', name: 'Lucky Star', desc: 'A falling star on your first night. +12 Luck, +5% Gate loot.', stat: { luck: 12 }, mods: { loot: 1.05 } },
+  nl_moon:     { kind: 'blessing', name: 'Moon-Kissed', desc: '+12 Looks, +5% closeness gains.', stat: { looks: 12 }, mods: { social: 1.05 } },
+  nl_long:     { kind: 'blessing', name: 'Long-Lived Line', desc: 'Your bloodline runs long. +4 years of life.', mods: { life: 4 } },
+  nl_bones:    { kind: 'blessing', name: 'Iron Bones', desc: '+5 Health, and you heal 10% faster.', stat: { health: 5 }, mods: { healRate: 1.1 } },
+  nl_memory:   { kind: 'blessing', name: "Old Soul's Memory", desc: 'Echoes of a past life. +8% study gains.', mods: { study: 1.08 } },
+  nl_ley:      { kind: 'blessing', name: 'Born on a Ley Line', desc: 'Your cradle sat on a vein of Qi. +6% Qi gains.', mods: { qi: 1.06 } },
+  nl_tongue:   { kind: 'blessing', name: 'Silver Tongue', desc: '+10 Charisma, +4% salary.', stat: { charisma: 10 }, mods: { pay: 1.04 } },
+  nl_still:    { kind: 'blessing', name: 'Still Waters', desc: 'A calm baby, a calm soul. Stress builds 12% slower.', mods: { stressMult: 0.88 } },
+  nl_swift:    { kind: 'blessing', name: 'Swift Feet', desc: '+10 Agility, +3% combat power.', stat: { agility: 10 }, mods: { power: 1.03 } },
+  nl_teacher:  { kind: 'blessing', name: 'Fated Teacher', desc: 'An old master watched over your childhood. +10 Battle Knowledge, +4% training.', stat: { battle: 10 }, mods: { train: 1.04 } },
+  // curses
+  cu_frail:    { kind: 'curse', name: 'Frail Birth', desc: 'A hard, early birth. -12 Health, and you heal 10% slower.', stat: { health: -12 }, mods: { healRate: 0.9 } },
+  cu_jinx:     { kind: 'curse', name: 'Jinxed', desc: 'A black cat crossed the cradle. -12 Luck, -5% Gate loot.', stat: { luck: -12 }, mods: { loot: 0.95 } },
+  cu_thread:   { kind: 'curse', name: 'Short Thread', desc: 'A fortune teller went pale at your birth. -4 years of life.', mods: { life: -4 } },
+  cu_fog:      { kind: 'curse', name: 'Clouded Mind', desc: '-10 Smarts, -6% study gains.', stat: { smarts: -10 }, mods: { study: 0.94 } },
+  cu_dantian:  { kind: 'curse', name: 'Knotted Dantian', desc: 'Your Qi centre formed crooked. -7% Qi gains.', mods: { qi: 0.93 } },
+  cu_restless: { kind: 'curse', name: 'Restless Spirit', desc: 'You never quite settle. Stress builds 12% faster.', mods: { stressMult: 1.12 } },
+  cu_mark:     { kind: 'curse', name: 'Mark of Ill Omen', desc: 'A dark birthmark people whisper about. -10 Looks, -6% closeness gains.', stat: { looks: -10 }, mods: { social: 0.94 } },
+  cu_fallen:   { kind: 'curse', name: 'Fallen House', desc: 'Your family lost everything the year you were born. One wealth class lower, half the savings.' },
+  cu_limbs:    { kind: 'curse', name: 'Weak Limbs', desc: '-8 Strength, -8 Agility.', stat: { strength: -8, agility: -8 } },
+  cu_haunted:  { kind: 'curse', name: 'Haunted', desc: 'Something followed you into the world. Spirits hit you harder, stress builds 5% faster.', mods: { spiritBane: 0.9, stressMult: 1.05 } },
+};
+export const omenMods = c => (c?.omens || []).map(id => OMENS[id]?.mods).filter(Boolean);
+
 export const NODE = Object.fromEntries(TREE.map(n => [n.id, n]));
 export const perk = id => META.tree?.[id] || 0;
 export const nodeCost = n => n.cost * ((META.tree?.[n.id] || 0) + 1);
