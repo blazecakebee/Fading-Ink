@@ -460,6 +460,18 @@ async function coopPersonModal(p) {
 }
 
 const gateType = g => { if (!g.type) Object.assign(g, makeGate(g.rank), { years: g.years }); return GATE_TYPES.find(t => t.id === g.type); };
+// Before a big boss's turn-based fight: an action phase. Land hits to wear it down; get hit and you start hurt.
+export async function bossPhase(c, def, e, awakened) {
+  if (!ui.arenaOn?.() || !ui.arena) return def;
+  const style = ['demonic', 'blood_cultist', 'heavenly_demon', 'ghost_king'].includes(e.id) ? 'demon' : e.kind === 'beast' || e.kind === 'construct' ? 'beast' : e.kind === 'spirit' ? 'spirit' : 'blade';
+  const ar = await ui.arena({ title: def.name, style, color: { demon: '#ff3a4a', beast: '#ffb02e', spirit: '#7fe3ff', blade: '#e0e6ff' }[style], phases: awakened ? ['Opening Moves', 'Fury', 'Last Stand'] : ['Opening Moves', 'Fury'],
+    difficulty: 0.3 + (awakened ? 0.35 : 0) + Math.max(0, (def.realm || 0) - effRealm(c)) * 0.1, lives: 3 + Math.floor(c.stats.health / 40), autoChance: Math.min(0.85, 0.3 + power(c) / (power(c) + (REALMS[def.realm || 0]?.power || 1)) * 0.6),
+    lines: { intro: `${e.name} looms over you. Read its attacks.`, stagger: `${e.name} staggers.`, opening: `${e.name} leaves itself open.`, win: 'You have the upper hand.', lose: 'You are thrown back, bleeding.' } });
+  const out = { ...def, hp: Math.round(def.hp * (0.35 + 0.65 * ar.bossLeft)) };
+  if (ar.result !== 'win') { stat(c, 'health', -12); out.str = Math.round(out.str * 1.15); }
+  logLine(ar.result === 'win' ? `I outfought ${e.name} in the opening exchange — it's badly hurt.` : `${e.name} battered me before the real fight even began.`, ar.result === 'win' ? 'good' : 'bad');
+  return out;
+}
 // Outlevelled gates give sharply less: 2 realms above → 55%, 3 → 30%, 4+ → 15%.
 export const gateYield = (c, R) => { const gap = effRealm(c) - R.realm; return gap >= 4 ? 0.15 : gap === 3 ? 0.3 : gap === 2 ? 0.55 : 1; };
 async function enterGate(i, sweep) {
@@ -474,8 +486,10 @@ async function enterGate(i, sweep) {
       // bosses of C-rank and up may be AWAKENED: much tougher, much richer. Big bosses get an entrance.
       if (boss && GATE_RANKS.indexOf(R) >= 2 && chance(0.25)) awakened = true;
       if (boss && (awakened || GATE_RANKS.indexOf(R) >= 4)) await ui.cinematic?.({ motif: awakened ? 'crack' : 'seal', color: awakened ? '#ff3a4a' : R.color, threads: 9, lines: [awakened ? 'The air in the Gate turns to iron.' : 'The deepest chamber of the Gate.', `${e.name} rises${awakened ? ', eyes burning — AWAKENED' : ''}.`], title: e.name, sub: awakened ? 'Awakened Boss' : `${g.rank}-rank Boss`, sound: 'heavy', hold: 1.6 });
-      const def = boss ? { ...e, realm: er, hp: Math.round(e.hp * (awakened ? 2.1 : 1.3)), str: Math.round(e.str * (awakened ? 1.4 : 1.1)), name: `${awakened ? 'AWAKENED' : 'BOSS'} · ${e.name}` } : { ...e, realm: Math.max(e.realm || 0, R.realm), name: `${e.name} (${f + 1}/${R.fights})` };
+      let def = boss ? { ...e, realm: er, hp: Math.round(e.hp * (awakened ? 2.1 : 1.3)), str: Math.round(e.str * (awakened ? 1.4 : 1.1)), name: `${awakened ? 'AWAKENED' : 'BOSS'} · ${e.name}` } : { ...e, realm: Math.max(e.realm || 0, R.realm), name: `${e.name} (${f + 1}/${R.fights})` };
+      if (boss && (awakened || GATE_RANKS.indexOf(R) >= 4)) def = await bossPhase(cc, def, e, awakened);
       const r = await import('./combat.js').then(m => m.fight(def));
+      if (r === 'win' && boss && (awakened || GATE_RANKS.indexOf(R) >= 4)) await ui.cinematic?.({ motif: 'triangle', color: awakened ? '#ff3a4a' : R.color, threads: 0, lines: [`${e.name} drops to one knee.`, awakened ? 'The burning light in its eyes gutters out.' : 'The Gate begins to close around you.'], title: 'Victory', sub: `${g.rank}-rank ${T.name}`, sound: 'milestone', hold: 1.6 });
       if (r === 'win' && e.id === 'ghost_king') cc.flags.ghostKing = true;
       if (r !== 'win') return { text: r === 'flee' ? `I fled the ${T.name}.` : `I was beaten inside the ${g.rank}-rank ${T.name} and dragged myself out.`, cls: 'bad' };
       cc.wins++;

@@ -164,3 +164,11 @@ export const workMult = c => 0.4 + 0.6 * Math.min(1, (capacity(c, 'manipulation'
 export const socialMult = c => 0.4 + 0.6 * capacity(c, 'talking');
 export const studyMult = c => (0.3 + 0.7 * capacity(c, 'consciousness')) * (0.7 + 0.3 * capacity(c, 'sight'));
 export const qiFlowMult = c => 0.3 + 0.7 * capacity(c, 'qi');
+// Doctors fit prosthetics for missing limbs (or upgrade old ones). Never as good as the real thing.
+export function prostheticOffers(c) {
+  ensureBody(c); const out = [];
+  for (const p of PARTS) { const s = c.body.parts[p.id]; if (!s?.missing) continue;
+    const cur = s.prosthetic ? PROSTHETICS[s.prosthetic].eff : -1;
+    for (const o of prostheticOptions(c, p.id)) if (o.eff > cur) out.push({ part: p, ...o }); }
+  return out;
+}

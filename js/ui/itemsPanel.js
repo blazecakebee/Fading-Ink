@@ -1,3 +1,5 @@
+import { heirloomsOf } from '../systems/heirlooms.js';
+import { HEIRLOOMS, HEIRLOOM_TIERS } from '../data/heirlooms.js';
 import { gearSprite } from './gearSprites.js';
 // Inventory, Crafting & Gear, and Health tabs.
 import { G } from '../core/state.js';
@@ -49,7 +51,7 @@ export function inventoryTab() {
     h('div', { class: 'grid2' },
       h('div', { class: 'card' }, h('h4', {}, 'Manuals'), c.qi.manuals.length ? c.qi.manuals.map(m => h('div', {}, icon('manual', 'sm'), ' ', MANUALS.find(x => x.id === m)?.name)) : h('span', { class: 'muted' }, 'None')),
       h('div', { class: 'card' }, h('h4', {}, `Recipes (${known(c).length}/${RECIPES.length})`), known(c).map(r => h('div', { class: 'small' }, '📜 ', itemName(RECIPES.find(x => x.id === r).out)))),
-      h('div', { class: 'card' }, h('h4', {}, 'Heirlooms'), c.heirlooms.length ? c.heirlooms.map(x => h('div', {}, '🏺 ', x)) : h('span', { class: 'muted' }, 'None'))),
+      h('div', { class: 'card' }, h('h4', {}, 'Heirlooms'), heirloomsOf(c).length ? heirloomsOf(c).map(x => h('div', { title: HEIRLOOMS[x.id].desc }, '🏺 ', h('b', { style: { color: HEIRLOOM_TIERS[HEIRLOOMS[x.id].tier].color } }, HEIRLOOMS[x.id].name), h('span', { class: 'muted small' }, ' · ' + HEIRLOOMS[x.id].desc))) : h('span', { class: 'muted' }, 'None'))),
   ];
 }
 

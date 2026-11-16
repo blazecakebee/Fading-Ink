@@ -44,7 +44,9 @@ export const BODY_ACTS = [
       const next = BODY_TIERS[T(c) + 1];
       const e = ENEMIES.find(x => x.id === ['stone_golem', 'tiger_beast', 'yaoguai', 'yaoguai', 'young_dragon', 'sword_saint', 'void_wraith', 'heavenly_demon', 'ancient_qilin', 'fallen_immortal'][T(c)]) || ENEMIES[1];
       ui.log(`My body screams that it is ready. I seek out a ${e.name} to test it.`, 'qi');
-      const r = await ui.fight({ ...e, realm: next.eq, name: `Trial · ${e.name}` }, { noFlee: true });
+      let def = { ...e, realm: next.eq, name: `Trial · ${e.name}` };
+      if (ui.bossPhase) def = await ui.bossPhase(c, def, e, T(c) >= 5);
+      const r = await ui.fight(def, { noFlee: true });
       if (r !== 'win') { c.bodyPath.prog = Math.round(c.bodyPath.prog * 0.7); stat(c, 'health', -20); return { text: `I failed my Body Trial. My body is not yet ${next.name}.`, cls: 'bad' }; }
       c.wins++; c.bodyPath.tier++; c.bodyPath.prog = 0;
       stat(c, 'strength', 6); stat(c, 'agility', 4); stat(c, 'battle', 3); stat(c, 'health', 25); addMuscle(c, 4);

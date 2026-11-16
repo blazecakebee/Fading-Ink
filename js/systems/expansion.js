@@ -108,6 +108,15 @@ HOOKS.yearEnd.push(async c => {
   if (c.alive) await disputeYear(c);
   ensureMatchingGate(c);
   for (const t of TRAITS2) if (t.earnIf && !c.traits.includes(t.id) && t.earnIf(c)) earnTrait(c, t.id);
+  // special occasions get their own scenes (once per life)
+  const once = (k, cond, o) => { if (!c.flags['cine_' + k] && cond) { c.flags['cine_' + k] = 1; ui.cinematic?.(o); } };
+  once('qi', c.qi.known, { motif: 'enso', color: '#7fe3ff', lines: ['For the first time, you see it: the air breathing.', 'Qi. It was always there.'], title: 'Awakening', sub: `${c.first} ${c.last}`, sound: 'trait' });
+  once('gate', c.gatesCleared >= 1, { motif: 'seal', color: '#ffb02e', lines: ['The Gate collapses behind you like a held breath let go.', 'You walked into the dark — and walked out.'], title: 'First Gate Cleared', sub: 'Gate hunter', sound: 'milestone' });
+  once('grad', c.edu.level >= 2, { motif: 'lotus', color: '#ffd36f', lines: ['Caps in the air. A rolled paper with your name on it.', c.edu.major ? `A degree in ${c.edu.major}.` : 'Four years, finally done.'], title: 'Graduation', sub: 'University', sound: 'milestone' });
+  once('sect', !!c.ownSect, { motif: 'seal', color: '#ffd36f', lines: ['A plaque is hung above a gate that did not exist last year.', `The ${c.ownSect?.name || 'sect'} is born. The ${c.ownSect?.clan || c.last} clan begins.`], title: c.ownSect?.name || 'A New Sect', sub: 'Founded', sound: 'ascend' });
+  once('guildS', (c.guild?.rank || 0) >= 5, { motif: 'sword', color: '#ff4f4f', lines: ['Your name goes up on the top board of the Guild hall.', 'Children whisper it in the streets.'], title: 'S-Rank Hunter', sub: 'Hunter Guild', sound: 'ascend' });
+  once('century', c.age >= 100, { motif: 'tree', color: '#7fe3a0', lines: ['A hundred winters.', 'Most of the faces you knew are portraits now.'], title: 'One Hundred Years', sub: `${c.first} ${c.last}`, sound: 'milestone' });
+  once('elder', (c.sectRank || 0) === 3, { motif: 'seal', color: '#c39bff', lines: ['They give you a seat at the long table.', 'Younger disciples bow when you pass.'], title: 'Elder', sub: 'Sect promotion', sound: 'milestone' });
 });
 HOOKS.death.push(c => {
   const born = G.world.year - c.age;
@@ -118,6 +127,9 @@ HOOKS.death.push(c => {
 export async function installExpansion() {
   const [{ cinematic }, { TABS, render, runActivity }, P] = await Promise.all([import('../ui/cinematic.js'), import('../ui/render.js'), import('../ui/expansionPanels.js')]);
   ui.cinematic = o => cinematic(o);
+  const AR = await import('../ui/arena.js'); const { S } = await import('../settings.js');
+  ui.arena = o => AR.arena(o); ui.arenaOn = () => S().arenaFights !== false;
+  ui.bossPhase = (await import('../ui/render.js')).bossPhase;
   TABS.bloodline = P.bloodlineTab; TABS.factions = P.factionsTab;
   P.bindPanels(render, runActivity);
   const P2 = await import('../ui/panels2.js'); const { NAV } = await import('../ui/render.js');

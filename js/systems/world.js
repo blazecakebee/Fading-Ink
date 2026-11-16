@@ -1,3 +1,4 @@
+import { eff } from './body.js';
 // Living world: each year rolls world conditions that are reported in the news AND actually change the world.
 // news.mods feed straight into the bonus system (pay, qi, price…); flags change spawn rates and events.
 import { effRealm } from './path.js';
@@ -74,7 +75,7 @@ export const BIRTH_EVENTS = [
   { id: 'cache', w: 2, title: 'A Forgotten Inheritance', motif: 'seal', line: 'A sealed box arrived addressed to a child who did not exist yet.', run: c => { const x = gainHeirloom(c, 'birth', null); return x ? 'An heirloom waited for you.' : ''; } },
   { id: 'storm', w: 2, title: 'Born in the Storm', motif: 'crack', line: 'Lightning struck the hospital roof at the moment of your first cry.', run: c => { c.qi.elem = 'lightning'; c.flags.stormBorn = true; return 'Lightning element. +3% breakthrough.'; } },
   { id: 'marked', w: 2, title: 'The Bloodline Mark', motif: 'helix', line: 'A red mark on your wrist, shaped like no word anyone could read.', run: c => { ensureDna(c).points += 1; return '+1 Awakening point.'; } },
-  { id: 'gate_born', w: 1, title: 'Born Beside a Gate', motif: 'crack', line: 'A Gate opened two streets away as you were born. You did not cry.', run: c => { c.stats.battle = (c.stats.battle || 0) + 8; c.qi.known = c.qi.known || chance(0.5); return '+8 Battle Knowledge.'; } },
+  { id: 'gate_born', w: 1, title: 'Born Beside a Gate', motif: 'crack', line: 'A Gate opened two streets away as you were born. You did not cry.', run: c => { c.stats.battle = eff(c, 'battle') + 8; c.qi.known = c.qi.known || chance(0.5); return '+8 Battle Knowledge.'; } },
   { id: 'benefactor', w: 2, title: 'A Nameless Benefactor', motif: 'lotus', line: 'An envelope of money appeared in your crib. No one saw who left it.', run: c => { const m = Math.round(ri(2000, 9000) * country(c).econ); money(c, m); return `${fmtMoney(c, m)} in an envelope.`; } },
 ];
 export const BIRTH_ANOMALY_CHANCE = 0.06;

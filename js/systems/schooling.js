@@ -100,3 +100,19 @@ export const CHILDHOOD = [
 ];
 // Watching the clouds slowly attunes a child to Qi (+1 affinity, up to +6), and may reveal it outright.
 export function cloudBonus(c) { c.flags.cloudAff ||= 0; if (c.flags.cloudAff < 6 && chance(0.5)) { c.flags.cloudAff++; c.qi.affinity = clamp(c.qi.affinity + 1); return ' The wind felt alive, somehow. (Qi affinity +1)'; } return ''; }
+
+// ---- the doctor: a check-up, or prosthetics for missing limbs
+import { prostheticOffers, fitProsthetic } from './body.js';
+export const DOCTOR = { id: 'doctor', cat: 'mind', name: 'Visit the doctor', icon: 'doctor', minAge: 0, run: async c => {
+  const k = country(c).econ, cost = priceFor(c, Math.round(120 * k));
+  const offers = prostheticOffers(c).map(o => ({ ...o, price: priceFor(c, Math.round(o.price * k)) }));
+  let v = 'checkup';
+  if (offers.length && c.age >= 6) v = await ui.choice({ title: 'The doctor', icon: 'doctor', text: `"Let's see what we can do."\n\nProsthetics restore part of a lost limb's function — never all of it.${c.age < 18 ? '\n(Your parents would have to pay.)' : ''}`,
+    options: [{ label: `General check-up — ${fmtMoney(c, cost)}`, value: 'checkup', disabled: c.age >= 18 && c.money < cost },
+      ...offers.map((o, i) => ({ label: `${o.name} for my ${o.part.name.toLowerCase()} — ${Math.round(o.eff * 100)}% function · ${fmtMoney(c, o.price)}`, value: i, disabled: c.money < o.price })),
+      { label: 'Leave', value: null, ghost: true }] });
+  if (v == null) return null;
+  if (v === 'checkup') { if (c.age >= 18) { if (c.money < cost) return null; money(c, -cost); } const g = ri(5, 15); stat(c, 'health', g); return `The doctor patched me up. Health +${g}.`; }
+  const o = offers[v]; const r = fitProsthetic(c, o.part.id, o.id, o.price); if (!r) return null;
+  stat(c, 'happiness', o.eff >= 0.8 ? 8 : 3); return { ...r, text: `${r.text} It works at about ${Math.round(o.eff * 100)}% of the real thing.` };
+} };

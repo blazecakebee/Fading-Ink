@@ -1,7 +1,14 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.7.3';
+export const VERSION = '0.7.4';
 export const CHANGELOG = [
+  { v: '0.7.4', date: '2026-11-15', title: 'Action phases & more cinematics', notes: [
+    'Heavenly Tribulations are now played: steer a glowing orb (mouse, finger or WASD) through lightning strikes and storms, and touch the bright marks to strike back at the heart of the storm. Each phase has a name, a timer and openings where you choose to press the attack or catch your breath.',
+    'Big Gate bosses (A-rank and up, and every Awakened boss) and Severed Body Trials open with an action phase too: the better you dodge and strike, the more hurt the enemy is when the real fight starts — do badly and you start bleeding.',
+    'Each enemy type attacks differently: blades slash in telegraphed lines, beasts charge and close the walls, spirits send rings and sweeping beams, demons do all of it.',
+    'New scenes: Heavenly Tribulation openings, boss defeats, your first Qi awakening, first Gate cleared, graduation, founding your sect, becoming an Elder or S-rank hunter, and your 100th birthday.',
+    'Prefer turn-based only? Turn off "Action phases" in Settings, or press Auto-resolve during any phase.',
+  ] },
   { v: '0.7.3', date: '2026-11-15', title: 'Harder to get rich', notes: [
     'Wages now follow each country\'s real economy: a lawyer earns far more in the US or UK than in Egypt or Nigeria (always shown in your local currency). All salaries were lowered, and raises are now 2% a year (max +60%).',
     'Stock market: smaller average returns and calmer swings, world news moves prices less, and every buy and sell costs a 2% broker fee.',

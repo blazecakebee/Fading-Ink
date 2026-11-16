@@ -87,6 +87,15 @@ const MOTIFS = {
   },
 };
 MOTIFS.glyph = MOTIFS.enso;
+// a bowed figure's peak under rain (final blows, endings)
+MOTIFS.triangle = () => { const paths = [], dots = []; const top = [CX, CY - 150], l = [CX - 230, CY + 220], r = [CX + 230, CY + 220];
+  paths.push({ d: `M${P(...l)}L${P(...top)}L${P(...r)}`, w: 2.4, t: 1, dur: 1.6 }, { d: `M${P(CX - 120, CY + 220)}L${P(...top)}L${P(CX + 120, CY + 220)}`, w: 1, t: 1.6, dur: 1.2 });
+  for (let i = 0; i < 14; i++) { const x = rnd(120, 880), y = rnd(-40, 300); paths.push({ d: `M${P(x, y)}L${P(x - 6, y + 40)}`, w: 0.8, t: 2 + i * 0.08, dur: 0.4 }); }
+  for (let i = 0; i < 8; i++) dots.push([CX + rnd(-140, 140), CY + rnd(40, 200)]); return { paths, dots }; };
+// lightning from the sky (Heavenly Tribulations)
+MOTIFS.bolt = () => { const paths = [], dots = [];
+  for (let k = 0; k < 5; k++) { let x = rnd(200, 800), y = -60, d = `M${P(x, y)}`; while (y < CY + 160) { x += rnd(-40, 40); y += rnd(30, 60); d += `L${P(x, y)}`; if (Math.random() < 0.2) dots.push([x, y]); } paths.push({ d, w: k ? 1.4 : 3, t: 0.8 + k * 0.35, dur: 0.5 }); }
+  paths.push({ d: `M${P(CX - 300, CY + 170)}Q${P(CX, CY + 120)} ${P(CX + 300, CY + 170)}`, w: 1.4, t: 2.4, dur: 0.8 }); return { paths, dots }; };
 
 const queue = []; let busy = false;
 export function cinematic(o) {

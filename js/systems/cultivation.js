@@ -103,7 +103,15 @@ export async function breakthrough(c) {
     const t = ENEMIES.find(e => e.id === 'tribulation');
     const lvl = next.trib;
     const soft = ward ? 0.7 : 1;
-    const res = await ui.fight({ ...t, hp: Math.round((80 * lvl * lvl + 60) * soft), str: Math.round((50 + lvl * 25) * soft), agi: 50 + lvl * 15, realm: c.qi.realm, name: `Heavenly Tribulation (${lvl} bolts)` }, { noFlee: true, tribulation: true });
+    let res;
+    if (ui.arenaOn?.()) { // dodge the lightning yourself
+      await ui.cinematic?.({ motif: 'bolt', color: '#b18cff', threads: 3, lines: ['Clouds pile up like ink poured into water.', `The Heavens judge your ascent to ${next.name}.`], title: 'Heavenly Tribulation', sub: `${lvl} bolt${lvl > 1 ? 's' : ''}`, sound: 'heavy', hold: 1.4 });
+      const names = ['First Bolt', 'Rolling Thunder', "Heaven's Wrath", 'Nine Skies Judgement'];
+      const ar = await ui.arena({ title: `Heavenly Tribulation — ${next.name}`, style: 'heaven', color: '#b18cff', phases: names.slice(0, Math.min(4, 1 + Math.ceil(lvl / 2))), difficulty: 0.15 + lvl * 0.12 - (ward ? 0.15 : 0),
+        lives: 3 + Math.floor(c.stats.health / 35) + (ward ? 1 : 0), hitsPerPhase: 3, autoChance: clamp(0.35 + c.stats.health / 400 + power(c) / (40 + lvl * 25) + (ward ? 0.15 : 0), 0.1, 0.9),
+        lines: { intro: 'The sky splits open. Survive — and strike back at the heart of the storm.', stagger: 'The clouds recoil.', opening: 'A gap in the storm.', openingTitle: 'The clouds thin', win: 'The last bolt fades. You are still standing.', lose: 'The lightning finds you.' } });
+      res = ar.result; c.lastFightHpPct = ar.lives / ar.livesMax;
+    } else res = await ui.fight({ ...t, hp: Math.round((80 * lvl * lvl + 60) * soft), str: Math.round((50 + lvl * 25) * soft), agi: 50 + lvl * 15, realm: c.qi.realm, name: `Heavenly Tribulation (${lvl} bolts)` }, { noFlee: true, tribulation: true });
     if (res !== 'win') { c.qi.qi = Math.round(c.qi.qi * 0.3); stat(c, 'health', -40); if (c.stats.health <= 0) die(c, 'struck down by Heavenly Tribulation'); return 'The lightning tore through me. The breakthrough failed.'; }
     c.flags.tribSurvived = true;
     if (c.lastFightHpPct < 0.15) earnTrait(c, 'heaven_defier');
