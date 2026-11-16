@@ -1,7 +1,10 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.9';
+export const VERSION = '0.9.10';
 export const CHANGELOG = [
+  { v: '0.9.10', date: '2026-11-16', title: 'WASD', notes: [
+    'Fight drills (read the strike) can now be played with W A S D as well as the arrow keys. The direction buttons show their key on PC.',
+  ] },
   { v: '0.9.9', date: '2026-11-16', title: 'A Game for Every Action', notes: [
     'Every training-type action now has its own minigame: gym (power bar), running (left/right stride on the beat), sports (tap the bouncing ball), martial arts (repeat the kata), fight drills (read the strike), meditation (breathing ring), opening meridians (tap glowing acupoints), library (tap 1–6 in order), school study (hold your focus), working harder (stack the blocks), hiking (keep your balance in the wind) and crafting (pour molten metal to the line).',
     'Crime and the outdoors have games too: shoplifting (creep while the eye is shut), pickpocketing (grab wallets, never cops), burglary (set the lock pins), gathering (remember where things sparkled) and fishing (strike on the real bite, not the twitches). Your score changes your odds of getting caught, what you find, and what you catch.',

@@ -868,3 +868,5 @@ details.chron:not([open]) > summary h3::after { content: ' ▸'; }
 .tg-bdot { position: absolute; top: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; background: #e05555; box-shadow: 0 0 10px #e05555; z-index: 1; } .tg-bdot.in { background: #5fd38a; box-shadow: 0 0 10px #5fd38a; }
 .tg-sides { position: absolute; bottom: 10px; left: 14px; right: 14px; display: flex; justify-content: space-between; color: var(--muted); font-size: .8rem; pointer-events: none; }
 @media (max-width: 480px) { .tg-info { font-size: .8rem; } .tg-head b { font-size: 1rem; } .br-card { min-width: 0; flex: 1 1 30%; } .br-card .n { font-size: .7rem; } }
+.tg-pad { position: relative; } .tg-key { position: absolute; right: 4px; bottom: 2px; font-size: .6rem; opacity: .5; }
+@media (pointer: coarse) { .tg-key { display: none; } }

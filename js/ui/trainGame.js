@@ -9,7 +9,7 @@ export const GAMES = {
   aim:     { title: 'Take the shot',     how: 'Tap the ball as it moves. 3 shots — closer to the centre is better.' },
   stride:  { title: 'Find your stride',  how: 'Tap LEFT and RIGHT alternately, in time with the pulse.' },
   kata:    { title: 'Follow the kata',   how: 'Watch the stances, then repeat them in order.' },
-  react:   { title: 'Read the strike',   how: 'Tap the matching direction before the strike lands. 4 strikes.' },
+  react:   { title: 'Read the strike',   how: 'Tap the matching direction (or press WASD / arrow keys) before the strike lands. 4 strikes.' },
   breath:  { title: 'Breathe with the Qi', how: 'Tap when the pulsing ring matches the gold circle. 3 breaths.' },
   trace:   { title: 'Trace the meridian', how: 'Tap each acupoint while it glows.' },
   order:   { title: 'Speed reading',     how: 'Tap the numbers in order, 1 to 6, as fast as you can.' },
@@ -93,12 +93,14 @@ const GAMEFNS = {
     const ARR = [['ArrowLeft', '←'], ['ArrowUp', '↑'], ['ArrowRight', '→'], ['ArrowDown', '↓']], total = 4, win = 1.3 - diff * 0.5, mark = pips(total);
     let i = 0, sc = 0, cur = null, timer = null;
     const big = el('tg-arrow'), bar = el('tg-timer'); bar.append(h('i'));
-    const pads = h('div', { class: 'tg-pads' }, ARR.map(([k, g]) => { const b = h('button', { class: 'tg-pad' }, g); on(b, 'pointerdown', e => { e.preventDefault(); hit(k); }); return b; })); stage.append(pads);
+    const KEY = { ArrowLeft: 'A', ArrowUp: 'W', ArrowRight: 'D', ArrowDown: 'S' };
+    const pads = h('div', { class: 'tg-pads' }, ARR.map(([k, g]) => { const b = h('button', { class: 'tg-pad' }, g, h('small', { class: 'tg-key' }, KEY[k])); on(b, 'pointerdown', e => { e.preventDefault(); hit(k); }); return b; })); stage.append(pads);
     const next = () => { if (i >= total) return done(sc / total); cur = ARR[Math.floor(Math.random() * 4)]; big.textContent = cur[1]; big.classList.remove('pop'); void big.offsetWidth; big.classList.add('pop');
       const b = bar.firstChild; b.style.transition = 'none'; b.style.width = '100%'; void b.offsetWidth; b.style.transition = `width ${win}s linear`; b.style.width = '0%';
       cur.t0 = performance.now(); clearTimeout(timer); timer = later(() => { mark(i, 0); flash(false); i++; cur = null; next(); }, win * 1000); };
     const hit = k => { if (!cur) return; clearTimeout(timer); const ok = k === cur[0], s = ok ? 0.7 + 0.3 * clamp01(1 - (performance.now() - cur.t0) / (win * 1000)) : 0; sc += s; mark(i, s); flash(ok); i++; cur = null; later(next, 220); };
-    on(window, 'keydown', e => { if (e.key.startsWith('Arrow')) { e.preventDefault(); hit(e.key); } });
+    const WASD = { w: 'ArrowUp', a: 'ArrowLeft', s: 'ArrowDown', d: 'ArrowRight' };
+    on(window, 'keydown', e => { if (e.repeat) return; const k = e.key.startsWith('Arrow') ? e.key : WASD[e.key.toLowerCase()]; if (k) { e.preventDefault(); hit(k); } });
     later(next, 450);
   },
   // meditation: a ring breathes in and out; tap when it matches the gold circle
