@@ -1,7 +1,17 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.7';
+export const VERSION = '0.9.8';
 export const CHANGELOG = [
+  { v: '0.9.8', date: '2026-11-16', title: 'Every Session Counts', notes: [
+    'TRAINING MINIGAMES: training, studying, meditating, opening meridians, working harder and crafting now play a short 3–5 second minigame. Timing bars for the gym and sports, a pace bar for running, a breathing ring for Qi, strike-reading arrows for martial arts and drills, a focus band for study and work, and a furnace you keep in the gold heat band for crafting. Keyboard (Space or arrows) or tap.',
+    'Every session rolls an outcome: Peak flow (big bonus, sometimes extra stats), Solid, Sloppy (half gains) or Mishap (real injuries on your body, Qi backlash or Qi Deviation, or stress). Each tier has its own pool of descriptions.',
+    'Playing well raises your gains and your chance of Peak flow, and lowers the injury risk. Each action shows its injury risk %, which rises if you repeat the same thing in one year or train while hurt, stressed or sick.',
+    'Mastery: the more you do something over your life, the easier its minigame gets and the safer it is (Novice → Practised → Adept → Mastered). It never becomes trivial.',
+    'Repeating the same action within a year gives less each time — mix things up. Use "Quick train" (button above the action chips) to skip minigames for safe average results. Repeat routine and batch always use Quick train.',
+    'CO-OP: the Co-op tab now shows a card for every player: online light, realm, element, health, ailments, what they last did and how many actions they have left, with one-tap Train together, Qi resonance, Spar and Hang out buttons.',
+    'Joint sessions: you play the minigame and you both share the result. Qi resonance depends on your elements: same element (+30%), feeding elements (+50%), clashing elements risk a shared backlash unless you play well, which tames it (+60%). Doing the same thing with the same person repeatedly gives less.',
+    'Spars now give Battle Knowledge (more when you lose) and their own descriptions. Partners get a notification when you train with them.',
+  ] },
   { v: '0.9.7', date: '2026-11-16', title: 'Licensed & Interviewed', notes: [
     'DRIVER\'S LICENSES (Assets tab): pass a 3-question theory test (age 15+, 2 right) for a learner\'s permit, take up to 4 driving lessons, then the driving test (age 16+). The test opens with a road situation — the wrong call is an instant fail — then the examiner judges you on Agility, Smarts and lessons.',
     'You now need a license to buy a car. Drunk-driving crashes suspend it for 3 years, and prison suspends it for your sentence.',

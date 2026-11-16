@@ -11,6 +11,8 @@ import { statusTab } from './statusPanel.js';
 import { moodFace, TRAINABLE, decayRate } from '../systems/health.js';
 import { COND_BY_ID, condTip } from '../data/conditions.js';
 import * as LIC from '../systems/license.js';
+import * as PRX from '../systems/practice.js';
+import { playTrain } from './trainGame.js';
 import { ITEMS } from '../data/items.js';
 import { METHODS } from '../data/realms.js';
 import { wage, rollQuality, tiered, QUALITY } from '../systems/life.js';
@@ -41,7 +43,7 @@ import { VERSION, CHANGELOG } from '../version.js';
 import { ACHIEVEMENTS } from '../data/achievements.js';
 import { flagEl } from './flags.js';
 import { svgMap, osmLink } from './worldMap.js';
-import { net, hostRoom, joinRoom, leave, sendChat, doCoopAction, COOP_ACTIONS, coopTick, voteInfo, voteAgeUp, inCoopRoom } from '../net/coop.js';
+import { net, hostRoom, joinRoom, leave, sendChat, doCoopAction, COOP_ACTIONS, coopTick, voteInfo, voteAgeUp, inCoopRoom, resonance } from '../net/coop.js';
 
 // v0.9.0 grouped, collapsible drawers (Life stays on top, always visible)
 export const NAV = [
@@ -61,7 +63,7 @@ export function logLine(text, cls = '') {
 }
 
 // ---------- action runner: spends budget, handles repeat-FX rule
-export async function runActivity(a, el) {
+export async function runActivity(a, el, opt = {}) {
   const c = G.char; if (!c.alive) return;
   const snap = { ...c.stats, qi: c.qi.qi, money: c.money }, at = el?.getBoundingClientRect?.(); if (el) { el.classList.remove('act-pop'); void el.offsetWidth; el.classList.add('act-pop'); }
   const cost = a.cost === 's' ? 'social' : 'actions';
@@ -70,9 +72,16 @@ export async function runActivity(a, el) {
   if (!free && c[cost] <= 0) return toast('No actions left this year. Age up!');
   if (c.prison && a.cat !== 'mind' && a.cat !== 'training' && a.cat !== 'prison') return toast('You are in prison.');
   fx('click');
+  // v0.9.8 practice: optional micro-minigame, then a 4-tier outcome (peak / solid / sloppy / mishap)
+  const PR = !free && (!a.canPractice || a.canPractice(c)) && PRX.practiceFor(a.practice || a.id); let roll = null, psnap = null;
+  if (PR) { const manual = !opt.auto && META.settings.trainGames !== false;
+    const score = manual ? await playTrain(PR.kind, PRX.difficulty(c, a.practice || a.id), a.name) : null;
+    roll = PRX.rollTier(c, a.practice || a.id, score); a._roll = roll; psnap = { ...c.stats, qi: c.qi.qi, grades: c.edu?.grades, perf: c.job?.perf }; }
   const res = await a.run(c);
   if (res == null) { render(); return; } // cancelled / couldn't afford → no cost
   const r = typeof res === 'string' ? { text: res } : res;
+  if (a.name && !free) c.doing = { t: a.name, at: Date.now() };
+  if (PR && roll) { const o = PRX.applyPractice(c, a.practice || a.id, psnap, roll); r.text = r.text.replace(/\s*(Strength|Agility|Battle Knowledge|Battle|Smarts|Charisma) \+\d+\.?/g, '').replace(/\s*\+[\d,]+ Qi\.?/g, '') + ' ' + o.text; if (o.cls && r.cls !== 'qi') r.cls = o.cls; if (o.big) r.big = true; if (o.tier === 'peak') fx('milestone'); else if (o.tier === 'mishap') fx('heavy'); }
   if (!free) { c[cost]--; c.usedThisYear = (c.usedThisYear || 0) + 1; }
   if (!free && traitVal(c, 'refund') && chance(traitVal(c, 'refund'))) { c[cost]++; r.text += ' (D̷U̷P̷L̷I̷C̷A̷T̷E̷D̷ — action refunded)'; }
   c.counts[a.id] = (c.counts[a.id] || 0) + 1; const n = c.counts[a.id];
@@ -223,13 +232,13 @@ const availActs = c => ACTIVITIES.filter(a => c.age >= (a.minAge ?? 0) && c.age 
 function actBtn(a) {
   const c = G.char, pins = (META.settings.pins ||= []), pinned = pins.includes(a.id);
   return h('button', { class: 'act' + (RISKY.includes(a.cat) ? ' risky' : ''), disabled: (a.cost === 's' ? c.social : c.actions) <= 0, onclick: e => runActivity(a, e.currentTarget) },
-    icon(a.icon), h('span', {}, a.name, c.counts[a.id] ? h('span', { class: 'meta' }, `done ${c.counts[a.id]}×`) : null),
+    icon(a.icon), h('span', {}, a.name, PRX.practiceFor(a.id) ? h('span', { class: 'meta' }, `${PRX.masteryLabel(PRX.mastery(c, a.id))} · `, h('b', { class: 'risk' + (PRX.risk(c, a.id) >= 0.12 ? ' hi' : ''), 'data-tip': 'Chance this goes wrong (injury, backlash or strain). Rises when you repeat it in one year, or train hurt, stressed or sick. Mastery lowers it.' }, `${Math.round(PRX.risk(c, a.id) * 100)}% risk`), PRX.reps(c, a.id) >= 2 ? h('span', { class: 'tired', 'data-tip': 'You\'ve done this a lot this year: each extra session gives less.' }, ' · tired') : null) : c.counts[a.id] ? h('span', { class: 'meta' }, `done ${c.counts[a.id]}×`) : null),
     h('span', { class: 'pin' + (pinned ? ' on' : ''), title: pinned ? 'Unpin' : 'Pin to the top', onclick: e => { e.stopPropagation(); if (pinned) META.settings.pins = pins.filter(x => x !== a.id); else if (pins.length < 4) pins.push(a.id); else return toast('You can pin up to 4 actions.'); save(); render(); } }, pinned ? '★' : '☆'),
     h('span', { class: 'cost' }, a.cost === 's' ? '💬1' : '⚡1'));
 }
 async function runMany(list, el) { // runs a list of activities in order while actions last, with one combined popup
   const c = G.char, snap = { ...c.stats, qi: c.qi.qi, money: c.money }, at = el?.getBoundingClientRect?.(); let done = 0;
-  for (const a of list) { if (c.actions <= 0 || !c.alive) break; if (a.need && !a.need(c)) continue; await runActivity(a); done++; }
+  for (const a of list) { if (c.actions <= 0 || !c.alive) break; if (a.need && !a.need(c)) continue; await runActivity(a, null, { auto: true }); done++; }
   gainPopups(c, snap, at); if (done) toast(`Did ${done} action${done > 1 ? 's' : ''}.`);
 }
 function quickBar(c) {
@@ -240,6 +249,7 @@ function quickBar(c) {
   return h('div', { class: 'quickbar' },
     pins.length ? h('div', { class: 'acts pinned' }, pins.slice(0, 4).map(actBtn)) : h('div', { class: 'muted small' }, 'Tap ☆ on any action to pin it here (up to 4).'),
     h('div', { class: 'qb-row' },
+      h('button', { class: 'btn ghost mini tg-toggle' + (META.settings.trainGames !== false ? ' on' : ''), 'data-tip': 'On: training plays a 3–5 second minigame. Good play means bigger gains, rare breakthroughs and fewer injuries. Off (Quick train): no minigame, safe average results with a lower ceiling. Repeat routine and batch always use Quick train.', onclick: () => { META.settings.trainGames = META.settings.trainGames === false; save(); render(); } }, META.settings.trainGames !== false ? '🎯 Minigames: on' : '⏩ Quick train'),
       top.length ? h('button', { class: 'btn ghost mini', disabled: c.actions <= 0, title: top.map(a => a.name).join(', '), onclick: e => { const seq = []; while (seq.length < c.actions) seq.push(...top); runMany(seq.slice(0, c.actions), e.currentTarget); } }, `↻ Repeat routine: ${top.map(a => a.name.replace(/ \(.*\)$/, '')).join(', ')}`) : null,
       rep.length ? h('span', { class: 'batch' }, h('select', { onchange: e => { G.ui.batch = { id: e.target.value, n }; render(); } }, rep.map(a => h('option', { value: a.id, selected: a.id === G.ui.batch.id }, a.name))),
         h('input', { type: 'range', class: 'range', style: { '--p': `${c.actions > 1 ? (n - 1) / (c.actions - 1) * 100 : 100}%` }, min: 1, max: Math.max(1, c.actions), value: n, disabled: c.actions <= 1, oninput: e => { G.ui.batch.n = +e.target.value; e.target.style.setProperty('--p', `${(e.target.value - 1) / Math.max(1, c.actions - 1) * 100}%`); e.target.nextSibling.textContent = `×${e.target.value}`; } }), h('b', { class: 'batch-n' }, `×${n}`),
@@ -508,10 +518,8 @@ export const TABS = {
         h('span', { class: 'room-code' }, net.code), h('button', { class: 'btn ghost', onclick: () => { navigator.clipboard?.writeText(net.code); toast('Code copied'); } }, 'Copy'),
         h('button', { class: 'btn ghost', style: { marginLeft: 'auto' }, onclick: () => leave() }, 'Leave room'))),
       h('h3', { class: 'display', style: { margin: '16px 0 8px' } }, `Players (${players.length + 1})`),
-      h('div', { class: 'grid2' }, h('div', { class: 'card person' }, h('div', { class: 'pframe' }, portraitFor(c, 52)), h('div', {}, h('b', {}, fullName(c) + ' (you)'), h('div', { class: 'rel' }, `Age ${c.age} · ${c.qi.realm ? realmName(c) : 'Mortal'}`))),
-        players.map(([pid, pr]) => { const person = c.people.find(x => x.coop === pr.charId);
-          return h('div', { class: 'card person', onclick: () => person && personModal(person) }, h('div', { class: 'pframe' }, portraitFor({ ...pr, qi: null, realm: pr.realm }, 52)),
-            h('div', {}, h('b', {}, `${pr.first} ${pr.last}`), h('div', { class: 'rel' }, `Age ${pr.age}${pr.alive ? '' : ' · deceased'} · ${person?.role || ''}`))); })),
+      h('p', { class: 'muted small' }, `Each joint action costs 1 Social (you have ${c.social}). Train together and Qi resonance play a quick minigame, and you both share the result: a peak session for both, or an injury for both. Elements matter for Qi resonance: matching or feeding elements amplify, clashing ones can backfire unless you keep control. Doing the same thing with the same person over and over gives less each time.`),
+      h('div', { class: 'grid2 co-grid' }, coopCard(c, null, null, true), players.map(([pid, pr]) => coopCard(c, pr, c.people.find(x => x.coop === pr.charId), false))),
       h('h3', { class: 'display', style: { margin: '16px 0 8px' } }, 'Chat'), log, h('div', { class: 'row', style: { marginTop: '8px' } }, msg, h('button', { class: 'btn', onclick: send }, 'Send'))];
   },
   status: () => statusTab(),
@@ -544,6 +552,28 @@ async function personModal(p) {
   await runActivity({ id: 'soc_' + s.id, cost: 's', person: p, run: cc => s.run(cc, p) });
 }
 
+// v0.9.8 co-op: one entry point so joint sessions get the minigame and shared outcome
+async function coopDo(p, v, el) { const act = { id: 'coop_' + v, name: (COOP_ACTIONS.find(a => a.id === v)?.name || v), cost: 's', run: () => doCoopAction(p, v, act._roll) }; await runActivity(act, el); }
+const ELEM_COL = { fire: '#ff6a3d', water: '#4fb3ff', wood: '#6fd36f', metal: '#d0d6e0', earth: '#c69a5b', lightning: '#b18cff' };
+const ago = t => { const s = Math.round((Date.now() - t) / 1000); return s < 60 ? 'just now' : s < 3600 ? `${Math.round(s / 60)}m ago` : `${Math.round(s / 3600)}h ago`; };
+function coopCard(c, pr, person, me) {
+  const p = person || {}, online = me || (p.online && net.peers.has(p.peerId)), R = !me && c.qi.known && pr.elem ? resonance(c.qi.elem, pr.elem) : null;
+  const hp = me ? c.stats.health : pr.health ?? p.hp ?? 0, elem = me ? (c.qi.known ? c.qi.elem : null) : pr.elem, doing = me ? c.doing : pr.doing;
+  const quick = me || !person ? [] : [['gym', '🏋️', 'Train together'], ['train', '🌀', 'Qi resonance'], ['spar', '⚔️', 'Spar'], ['hangout', '🍵', 'Hang out']]
+    .map(([id, em, label]) => { const A = COOP_ACTIONS.find(a => a.id === id); if (!A || (A.age && c.age < A.age) || (A.need && !A.need(c, person))) return null;
+      return h('button', { class: 'btn mini co-act', disabled: !online || c.social <= 0 || !c.alive, 'data-tip': id === 'train' && R ? `${R.label}: ${R.note}` : id === 'gym' ? 'A joint workout. You play the minigame; you both share the outcome.' : id === 'spar' ? 'A real fight against their build. Bruises happen. You learn more from losing.' : 'Relax together: closeness up, stress down.', onclick: e => coopDo(person, id, e.currentTarget) }, `${em} ${label}`); }).filter(Boolean);
+  const card = h('div', { class: 'card co-card' + (online ? ' on' : ''), style: elem ? { '--ec': ELEM_COL[elem] } : {} },
+    h('div', { class: 'row', style: { gap: '10px', alignItems: 'center' } }, h('div', { class: 'pframe' }, me ? portraitFor(c, 52) : portraitFor({ ...pr, qi: null, realm: pr.realm }, 52)),
+      h('div', { style: { flex: 1, minWidth: 0 } }, h('div', {}, h('i', { class: 'co-dot' + (online ? ' on' : '') }), h('b', {}, me ? fullName(c) + ' (you)' : `${pr.first} ${pr.last}`)),
+        h('div', { class: 'rel' }, `Age ${me ? c.age : pr.age} · ${me ? (c.qi.realm ? realmName(c) : 'Mortal') : pr.realmName || (pr.realm ? 'Cultivator' : 'Mortal')}${!me && person ? ` · ${person.role} ${person.close}%` : ''}${!me && pr.alive === false ? ' · deceased' : ''}`),
+        h('div', { class: 'co-chips' }, elem ? h('span', { class: 'co-chip elem' }, elem[0].toUpperCase() + elem.slice(1)) : h('span', { class: 'co-chip' }, 'No element yet'),
+          h('span', { class: 'co-chip hp', 'data-tip': `Health ${Math.round(hp)}/100` }, h('i', { style: { width: Math.max(0, Math.min(100, hp)) + '%' } })),
+          (me ? (c.conditions || []).length : pr.hurt) ? h('span', { class: 'co-chip bad' }, `${me ? c.conditions.length : pr.hurt} ailment${(me ? c.conditions.length : pr.hurt) > 1 ? 's' : ''}`) : null,
+          R ? h('span', { class: 'co-chip res ' + R.label.toLowerCase(), 'data-tip': R.note }, R.label) : null))),
+    h('div', { class: 'co-doing muted small' }, doing ? `Last: ${doing.t} · ${ago(doing.at)}` : 'Hasn\'t done anything yet this session.', !me && pr.actions != null ? ` · ${pr.actions} actions, ${pr.social} social left` : ''),
+    quick.length ? h('div', { class: 'co-acts' }, quick, h('button', { class: 'btn ghost mini', onclick: () => coopPersonModal(person) }, '⋯ More')) : null);
+  return card;
+}
 const traitVal0 = c => c.traits.reduce((m, id) => m * (TRAIT_BY_ID[id]?.loot || 1), 1) * bonusMult(c, 'loot');
 
 async function coopPersonModal(p) {
@@ -554,7 +584,7 @@ async function coopPersonModal(p) {
     text: `Player · ${p.role} · Age ${p.age}${p.sectName ? ' · ' + p.sectName : ''}${p.pregnant ? ' · expecting a baby' : ''}${p.livesWith ? ' · lives with you' : ''}\n${p.online ? 'Online now' : 'Offline — they need to be in your co-op room'}\nRelationship: ${relLabel(p)} (${p.close}%)\nSocial actions left: ${c.social}`,
     options: [...acts.map(a => ({ label: `${a.emoji || '•'}  ${a.name}   · 1 social`, value: a.id, disabled: c.social <= 0 || !p.online })), { label: 'Open chat', value: '_chat', ghost: true }, { label: 'Close', value: null, ghost: true }] });
   if (!v) return; if (v === '_chat') { G.ui.tab = 'coop'; return render(); }
-  await runActivity({ id: 'coop_' + v, cost: 's', run: () => doCoopAction(p, v) });
+  await coopDo(p, v);
 }
 
 const gateType = g => { if (!g.type) Object.assign(g, makeGate(g.rank), { years: g.years }); return GATE_TYPES.find(t => t.id === g.type); };

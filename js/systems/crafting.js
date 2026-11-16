@@ -1,7 +1,7 @@
 // Crafting, experimentation and gear.
 import { ITEMS, RECIPES } from '../data/items.js';
 import { ui } from '../core/bus.js';
-import { clamp, chance, pick } from '../core/rng.js';
+import { clamp, chance, pick, ri } from '../core/rng.js';
 import { traitVal, traitMult, earnTrait, has } from './traits.js';
 import { bondBonus } from './people.js';
 import { addItem, stat, QUALITY, tiered, bestQ, qCounts } from './life.js';
@@ -29,12 +29,15 @@ function craftXp(c, r, ok) {
 const consume = (c, inputs) => Object.entries(inputs).forEach(([id, n]) => addItem(c, id, -n));
 const recipeText = r => Object.entries(r.inputs).map(([id, n]) => `${n}× ${itemName(id)}`).join(' + ');
 
-export function craft(c, r) {
+// v0.9.8 score = the furnace minigame (0..1) or null for a quick craft: good heat control lifts the odds and the grade
+export function craft(c, r, score = null) {
   if (!hasInputs(c, r)) return null;
-  const p = craftChance(c, r); consume(c, r.inputs);
+  const heat = score == null ? 0 : (score - 0.5) * 0.2;
+  const p = clamp(craftChance(c, r) + heat, 0.03, 0.97); consume(c, r.inputs);
+  if (score != null && score < 0.15 && chance(0.25)) { stat(c, 'health', -ri(3, 7)); const up = craftXp(c, r, false); return { text: `The furnace flared out of control. The ${itemName(r.out)} was ruined and I burned my hands.${up}`, cls: 'bad' }; }
   c.counts.crafted = (c.counts.crafted || 0) + 1;
   if (chance(p)) {
-    const Q = craftQuality(c), roll = Math.random(), q = !tiered(r.out) ? 'mid' : roll < Q.hi ? 'hi' : roll < Q.hi + Q.lo ? 'lo' : 'mid';
+    const Q = craftQuality(c), roll = Math.random() - (score != null && score >= 0.85 ? 0.1 : 0), q = !tiered(r.out) ? 'mid' : roll < Q.hi ? 'hi' : roll < Q.hi + Q.lo ? 'lo' : 'mid';
     addItem(c, r.out, r.n || 1, q); const up = craftXp(c, r, true);
     return { text: `Crafted ${r.n > 1 ? r.n + '× ' : ''}${tiered(r.out) ? QUALITY[q].name + ' ' : ''}${itemName(r.out)}! (${Math.round(p * 100)}%)${up}`, cls: 'good', big: q === 'hi' }; }
   const up = craftXp(c, r, false);

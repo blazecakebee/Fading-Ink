@@ -12,7 +12,8 @@ export const weddingCine = (c, p) => ui.cinematic?.({ motif: 'lotus', color: '#f
 export const sectCine = (c, name) => ui.cinematic?.({ motif: 'seal', color: '#9ad0ff', lines: ['The gate opens. Incense, bells, a long stair.', 'You kneel, and are given a name in the register.'], title: name, sub: 'You joined', sound: 'milestone' });
 import { learnManual, sectName } from '../systems/cultivation.js';
 import { gainClose } from '../systems/people.js';
-import { SECTS } from '../data/realms.js';
+import { SECTS, REALMS as REALMS_ } from '../data/realms.js';
+import { applyPractice } from '../systems/practice.js';
 
 const PREFIX = 'fadingink-v1-';
 export const net = { peer: null, role: null, code: null, myId: null, conns: new Map(), peers: new Map(), chat: [], pending: new Map(), status: 'offline' };
@@ -35,7 +36,8 @@ export function myProfile() {
   const c = G.char; if (!c) return null;
   return { charId: c.id, first: c.first, last: c.last, gender: c.gender, age: c.age, genes: c.genes, hair: c.hair, face: c.face, alive: c.alive,
     stats: { smarts: c.stats.smarts, strength: c.stats.strength, agility: c.stats.agility, charisma: c.stats.charisma, luck: c.stats.luck, looks: c.stats.looks, health: c.stats.health },
-    realm: c.qi.realm, stage: c.qi.stage, techs: c.qi.techs, sect: c.sect, sectName: sectName(c), traits: c.traits, pregnant: !!c.expecting, city: c.city, partnerCharId: c.people.find(p => p.id === c.partnerId)?.coop || null, parentIds: c.people.filter(p => ['Father', 'Mother'].includes(p.role)).map(p => p.coop || p.id) };
+    realm: c.qi.realm, stage: c.qi.stage, techs: c.qi.techs, sect: c.sect, sectName: sectName(c), traits: c.traits, pregnant: !!c.expecting, city: c.city, partnerCharId: c.people.find(p => p.id === c.partnerId)?.coop || null, parentIds: c.people.filter(p => ['Father', 'Mother'].includes(p.role)).map(p => p.coop || p.id),
+    elem: c.qi.known ? c.qi.elem : null, health: c.stats.health, hurt: (c.conditions || []).length, doing: c.doing || null, actions: c.actions, social: c.social, realmName: c.qi.realm ? (REALMS_[c.qi.realm]?.name || '') : 'Mortal' };
 }
 
 // ---------- connecting
@@ -179,10 +181,21 @@ function upsertPerson(peerId, prof) {
     c.people.push(p); ui.log(`I met ${prof.first} ${prof.last} (another player).`, 'good');
   }
   Object.assign(p, { peerId, online: true, first: prof.first, last: prof.last, gender: prof.gender, age: prof.age, genes: prof.genes, hair: prof.hair, face: prof.face,
-    alive: prof.alive, stats: { ...prof.stats }, realm: prof.realm, techs: prof.techs, sect: prof.sect, sectName: prof.sectName, traits: prof.traits, pregnant: prof.pregnant });
+    alive: prof.alive, stats: { ...prof.stats }, elem: prof.elem, hp: prof.health, hurt: prof.hurt, doing: prof.doing, realmName: prof.realmName, realm: prof.realm, techs: prof.techs, sect: prof.sect, sectName: prof.sectName, traits: prof.traits, pregnant: prof.pregnant });
   if (!prof.alive && !p.deathNoted) { p.deathNoted = true; ui.log(`${prof.first} ${prof.last} has died.`, 'death'); if (c.partnerId === p.id) c.partnerId = null; }
 }
 
+// ---------- v0.9.8 Qi resonance between two players' elements (generating cycle = synergy, controlling cycle = clash)
+const GEN = { wood: 'fire', fire: 'earth', earth: 'metal', metal: 'water', water: 'wood', lightning: 'fire' };
+const CTRL = { wood: 'earth', earth: 'water', water: 'fire', fire: 'metal', metal: 'wood', lightning: 'earth' };
+export function resonance(a, b) {
+  if (!a || !b) return { mult: 1, label: 'Unknown', note: 'One of you hasn\'t sensed their element yet.' };
+  if (a === b) return { mult: 1.3, label: 'Resonance', note: 'Same element: your Qi amplifies (+30%).' };
+  if (GEN[a] === b || GEN[b] === a) return { mult: 1.5, label: 'Synergy', note: 'One element feeds the other (+50%).' };
+  if (CTRL[a] === b || CTRL[b] === a) return { mult: 0.9, label: 'Clash', clash: true, note: 'Your elements fight. Risk of backlash — but a well-controlled session tames it for a big bonus.' };
+  return { mult: 1.1, label: 'Neutral', note: 'Your Qi mixes calmly (+10%).' };
+}
+const coopReps = (p) => { if (!p.coopReps || p.coopReps.year !== G.world.year) p.coopReps = { year: G.world.year, n: 0 }; return p.coopReps; };
 // ---------- requests: sender pays a Social action; receiver gets a popup to accept or decline
 export const COOP_ACTIONS = [
   { id: 'hangout', emoji: '🍵', name: 'Hang out', ask: 'wants to hang out.' },
@@ -208,7 +221,7 @@ function request(peerId, kind, data = {}) {
 const respond = (to, id, ok, data = {}) => sendTo(to, { t: 'res', id, ok, data, profile: myProfile() });
 
 // Called from the People popup. Returns chronicle text (or null = cancelled, Social action refunded).
-export async function doCoopAction(p, kind) {
+export async function doCoopAction(p, kind, roll) {
   const c = G.char;
   if (!p.online || !net.peers.has(p.peerId)) { ui.toast(`${p.first} is not online.`); return null; }
   const A = COOP_ACTIONS.find(a => a.id === kind);
@@ -225,6 +238,11 @@ export async function doCoopAction(p, kind) {
   let data = {};
   if (kind === 'sect') { data.sect = c.sect; data.name = sectName(c); }
   if (kind === 'baby') data.kid = makeKid(c, p);
+  if ((kind === 'gym' || kind === 'train') && roll) { // a joint session: both players share one outcome
+    const R = kind === 'train' ? resonance(c.qi.elem, p.elem) : null;
+    if (R?.clash) { if (roll.s != null && roll.s >= 0.75) { roll.tamed = true; } else if (roll.tier !== 'mishap' && chance(roll.s == null ? 0.2 : 0.35)) roll.tier = 'mishap'; }
+    data.roll = { tier: roll.tier, s: roll.s, tamed: !!roll.tamed }; data.mult = (R ? (roll.tamed ? 1.6 : R.mult) : 1) * Math.pow(0.8, Math.max(0, coopReps(p).n - 1)); data.res = R?.label || null;
+  }
   ui.toast(`Waiting for ${p.first} to answer…`);
   const r = await request(p.peerId, kind, data);
   if (!r) { ui.toast(`${p.first} didn't answer.`); return null; }
@@ -261,15 +279,22 @@ function applyAccepted(c, p, kind, data, resData, iAmSender) {
   switch (kind) {
     case 'hangout': gainClose(c, p, ri(8, 15)); stat(c, 'happiness', 6); stat(c, 'stress', -6);
       return logRet(c, iAmSender, `I hung out with ${p.first} ${pick(['at the night market', 'on the rooftop', 'at the arcade', 'by the river'])}.`, 'good');
-    case 'gym': { const g = ri(3, 6); stat(c, 'strength', g); stat(c, 'health', 3); gainClose(c, p, 6); return logRet(c, iAmSender, `${p.first} and I hit the gym together. Strength +${g}.`, 'good'); }
-    case 'train': { const g = Math.round(15 + (c.qi.affinity + 50) / 4); c.qi.qi += g; gainClose(c, p, 6); return logRet(c, iAmSender, `${p.first} and I circulated Qi in harmony. +${g} Qi.`, 'qi'); }
+    case 'gym': { coopReps(p).n++; const g = Math.max(1, Math.round(ri(3, 6) * (data.mult || 1))); const before = { ...c.stats, qi: c.qi.qi }; stat(c, 'strength', g); stat(c, 'agility', ri(0, 2)); stat(c, 'health', 2); gainClose(c, p, ri(4, 8));
+      const line = pick([`${p.first} and I hit the gym together.`, `${p.first} spotted me through a brutal set.`, `${p.first} and I turned our workout into a contest.`, `${p.first} dragged me to the gym at dawn.`, `${p.first} and I traded routines.`, `${p.first} pushed me harder than I'd push myself.`]);
+      return coopOut(c, p, iAmSender, `${line} Strength +${g}.`, 'coop_gym', before, data); }
+    case 'train': { coopReps(p).n++; const before = { ...c.stats, qi: c.qi.qi }; const g = Math.round((15 + (c.qi.affinity + 50) / 4) * (1 + c.qi.realm * 0.6) * (data.mult || 1)); c.qi.qi += g; gainClose(c, p, ri(4, 8));
+      const res = data.res ? ` ${data.res}${data.roll?.tamed ? ' — tamed!' : ''}.` : '';
+      const line = pick([`${p.first} and I circulated Qi together, palm to palm.`, `${p.first} and I sat back to back and let our Qi flow as one.`, `${p.first} guided my Qi through a stubborn meridian.`, `${p.first} and I breathed in rhythm until our Qi met in the middle.`, `${p.first} and I traded Qi around a single incense stick.`]);
+      return coopOut(c, p, iAmSender, `${line}${res} +${g.toLocaleString()} Qi.`, 'coop_train', before, data, 'qi'); }
     case 'spar': {
       if (!iAmSender) { ui.log(`I accepted ${p.first}'s spar challenge.`); return; }
       return ui.fight({ id: 'player', kind: 'human', name: `${p.first} ${p.last}`, genes: p.genes, gender: p.gender, age: p.age, hair: p.hair, realm: p.realm || 0, hp: 30 + (p.stats.health || 50) * 0.5, str: p.stats.strength, agi: p.stats.agility,
         moves: ['jab', 'punch', 'kick', 'guard', ...(p.realm >= 1 ? ['qi_palm'] : []), ...(p.techs || [])], sparring: true }).then(r => {
         const txt = r === 'win' ? 'VICTORY' : r === 'flee' ? 'I yielded' : 'DEFEAT'; gainClose(c, p, 3); if (r === 'win') c.wins++;
+        const learn = r === 'win' ? ri(1, 3) : ri(2, 4); stat(c, 'battle', learn); // you learn more from losing
+        const flavor = r === 'win' ? pick([`${p.first} tapped out with a grin.`, `I found the gap in ${p.first}'s guard.`, `${p.first} demanded a rematch immediately.`]) : r === 'flee' ? pick(['I bowed out before it got ugly.', 'I called it — no shame in that.']) : pick([`${p.first} read me like a book.`, `${p.first} put me on the floor, then helped me up.`, `I'll be studying that last move of ${p.first}'s for weeks.`]);
         sendTo(p.peerId, { t: 'note', kind: 'spar_result', text: r === 'win' ? 'they won.' : 'I won.', profile: myProfile() });
-        return { text: `Spar vs ${p.first} (player): ${txt}.`, cls: r === 'win' ? 'good' : '' }; });
+        return { text: `Spar vs ${p.first} (player): ${txt}. ${flavor} Battle +${learn}.`, cls: r === 'win' ? 'good' : '' }; });
     }
     case 'sect': {
       if (iAmSender) return { text: `${p.first} joined my ${data.name}.`, cls: 'good', big: true };
@@ -283,6 +308,13 @@ function applyAccepted(c, p, kind, data, resData, iAmSender) {
     case 'baby': return logRet(c, iAmSender, conceive(c, p, { ...data.kid }), 'good', true);
     case 'movein': p.livesWith = true; gainClose(c, p, 8); stat(c, 'happiness', 6); return logRet(c, iAmSender, `${p.first} and I moved in together.`, 'good', true);
   }
+}
+// the sender's outcome is applied by runActivity (same roll); the partner applies the shared roll here
+function coopOut(c, p, iAmSender, text, id, before, data, cls = 'good') {
+  if (iAmSender) return { text, cls };
+  if (data.roll) { const o = applyPractice(c, id, before, data.roll); text += ' ' + o.text; if (o.cls) cls = o.cls; ui.toast(`${p.first} trained with you${o.tier === 'peak' ? ' — Peak flow!' : o.tier === 'mishap' ? ' — it went wrong.' : '.'}`); if (o.tier === 'peak') ui.fx('milestone'); else if (o.tier === 'mishap') ui.fx('heavy'); }
+  else ui.toast(`${p.first} trained with you.`);
+  ui.log(text, cls);
 }
 function logRet(c, iAmSender, text, cls, big) { if (iAmSender) return { text, cls, big }; ui.log(text, cls); if (big) ui.fx('milestone'); }
 

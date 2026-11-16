@@ -16,7 +16,9 @@ export const BELTS = ['White', 'Yellow', 'Orange', 'Green', 'Blue', 'Brown', 'Bl
 const NEED = [0, 4, 9, 15, 22, 30, 40, 55, 75];
 export const beltOf = xp => BELTS[NEED.filter(n => xp >= n).length - 1];
 // Classes cost money, are limited to 2 a year, and gains are modest — belts are the long game.
-export const MARTIAL = { id: 'martial', cat: 'training', name: 'Martial arts class', icon: 'fist', minAge: 5, run: async c => {
+export const MARTIAL = { id: 'martial', cat: 'training', name: 'Martial arts class', icon: 'fist', minAge: 5,
+  canPractice: c => !!c.martialStyle && (c.flags.martialYear?.[G.world.year] || 0) < 2 && c.money >= priceFor(c, Math.round(25 * country(c).econ)), // v0.9.8 only play the minigame if the class will happen
+  run: async c => {
   c.martial ||= {};
   const fee = priceFor(c, Math.round(25 * country(c).econ));
   if ((c.flags.martialYear?.[G.world.year] || 0) >= 2) { ui.toast?.('The dojo only has room for you twice a year.'); return null; }

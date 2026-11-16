@@ -9,6 +9,7 @@ import { fx } from './fx.js';
 import { choice, toast } from './modal.js';
 import { render, runActivity, logLine } from './render.js';
 import { ITEMS, RECIPES, SLOTS, canPawn, pawnValue, marketValue } from '../data/items.js';
+import { playTrain } from './trainGame.js';
 import { MANUALS } from '../data/realms.js';
 import { COND_BY_ID, condTip } from '../data/conditions.js';
 import { known, hasInputs, craftChance, craft, experiment, gearStats, equip, unequip, useItem, itemName, craftLvl, craftRank, craftQuality, CRAFT_MAX, qStats, gearQ } from '../systems/crafting.js';
@@ -69,7 +70,7 @@ export function craftingTab() {
     return h('div', { class: 'card' }, h('div', { class: 'row' }, icon(out.icon, 'lg'), h('div', { style: { flex: 1 } }, h('b', {}, out.name, r.n > 1 ? ` ×${r.n}` : ''), h('div', { class: 'muted small' }, out.desc))),
       h('div', { class: 'small', style: { margin: '6px 0' } }, Object.entries(r.inputs).map(([id, n]) => h('span', { class: 'ing ' + ((c.inv[id] || 0) >= n ? 'have' : 'need') }, `${n}× ${itemName(id)} (${c.inv[id] || 0})`))),
       h('div', { class: 'row' }, h('span', { class: 'muted small' }, `Success ${pct(craftChance(c, r))}`),
-        h('button', { class: 'btn', style: { marginLeft: 'auto' }, disabled: !ok || c.actions <= 0 || !c.alive, onclick: () => runActivity({ id: 'craft', cat: 'craft', run: cc => craft(cc, r) }) }, 'Craft (⚡1)'))); };
+        h('button', { class: 'btn', style: { marginLeft: 'auto' }, disabled: !ok || c.actions <= 0 || !c.alive, onclick: () => runActivity({ id: 'craft', cat: 'craft', run: async cc => craft(cc, r, META.settings.trainGames !== false ? await playTrain('heat', Math.max(0.45, 1 - (cc.craftsman || 0) / 180), `Forging: ${ITEMS[r.out]?.name || 'craft'}`) : null) }) }, 'Craft (⚡1)'))); };
   const owned = Object.entries(c.inv).filter(([, n]) => n > 0);
   const counts = {}; pickedMats.forEach(id => counts[id] = (counts[id] || 0) + 1);
   pickedMats = pickedMats.filter(id => (c.inv[id] || 0) >= counts[id]);
