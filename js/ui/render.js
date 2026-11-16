@@ -95,7 +95,7 @@ export async function runActivity(a, el, opt = {}) {
   checkEarned(c);
   // subtle feedback only the first time / on milestones / big moments, so grinding stays quiet
   if (r.big || [1, 10, 25, 50, 100].includes(n)) fx(r.big ? 'milestone' : 'action');
-  if (a.person) a.person.talks = (a.person.talks || 0) + 1;
+  if (a.person) { a.person.talks = (a.person.talks || 0) + 1; a.person.lastTalk = G.world.year; }
   gainPopups(c, snap, at);
   save(); render();
   if (!c.alive) import('./legacyPanel.js').then(m => m.deathScreen());

@@ -1,7 +1,13 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.14';
+export const VERSION = '0.9.15';
 export const CHANGELOG = [
+  { v: '0.9.15', date: '2026-11-16', title: 'People Are People', notes: [
+    'The people in your life now react to what you do. New jobs, breakthroughs, prison, crime, killing, injuries, weddings, babies, fame, debt, addiction and more get comments in their own voice: proud, worried, disapproving or jealous, depending on their personality and how close you are. What they think changes how close you stay.',
+    'People come to you with requests: friends invite you out, family asks for loans (lend it, give it, or refuse — and loans may or may not come back), parents ask you to visit, partners want date nights, people need help moving or advice, your kids ask for things. Your choices matter to them.',
+    'They have lives of their own too: friends get married and invite you to the wedding, have babies, get promoted, fall sick, move away, start cultivating, or brag.',
+    'Neglect someone close for 3+ years and they drift away and tell you so. Small talk from parents, partners, kids, siblings and friends now shows up in your life story, in italics.',
+  ] },
   { v: '0.9.14', date: '2026-11-16', title: 'Worth the effort', notes: [
     'Training, studying, meditating, opening meridians, working harder and hiking now give 50% more than before, since every session is a minigame now. Solid sessions also give a little more at average play.',
   ] },

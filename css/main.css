@@ -920,3 +920,6 @@ details.chron:not([open]) > summary h3::after { content: ' ▸'; }
 .clan .sect-emblem { vertical-align: -4px; }
 @media (max-width: 520px) { .se-row { grid-template-columns: 1fr; } .se-lbl { padding-top: 0; } }
 .fac-emblem:has(.sect-emblem) { background: none; border: none; width: auto; height: auto; padding: 0; } .fac-emblem .sect-emblem { width: 64px; height: 64px; filter: drop-shadow(0 4px 10px #0009); }
+/* v0.9.15 people talking to you in the life log */
+.st-line.say { font-style: italic; color: color-mix(in srgb, var(--text) 88%, #9ad0ff); }
+.st-line.say.good { border-left-color: #5fd38a; } .st-line.say.bad { border-left-color: #e0606e; }

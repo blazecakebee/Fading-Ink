@@ -128,6 +128,8 @@ HOOKS.yearStart.push(c => { if (c.alive && Math.random() < 0.7) ui.log(ambientLi
 HOOKS.yearStart.push(c => { newsYear(c); portfolioYear(c); birthYear(c, haveChild); });
 HOOKS.yearEnd.push(async c => { if (c.alive) { trainersYear(c); jobsYear(c); gigYear(c); appearanceYear(c); addictionYear(c); if (!c.alive) return; temperYear(c, ui, stat); legacyYear(c); renownYear(c); await lawYear(c); if (!c.alive) return; if (inOtherworld(c)) await otherworldYear(c); if (!c.alive) return; if (!isFinite(c.qi.qi) || isNaN(c.qi.qi)) c.qi.qi = (await import('./cultivation.js')).qiCap(c); if (c.qi.realm >= 1 && !c.qiType && !onBodyPathQ(c)) awakenQi(c); } });
 HOOKS.birth.push(c => { rollTemper(c); legacyBirth(c); c.birthSex = c.gender; sexualityOf(c); ui.log(`Personality: ${c.temper.map(id => TEMPER[id].name).join(', ')}.`); });
+// v0.9.15 the people in your life react, ask, drift and pay you back (runs after the year's other events)
+HOOKS.yearEnd.push(async c => { if (c.alive) await (await import('./social.js')).socialYear(c); });
 // v0.9.4 Gate breaches: one rupture a year is fought out on the city wall
 HOOKS.yearEnd.push(async c => {
   if (!c.alive || !(c.breaches || []).length || !ui.breach) return;
