@@ -9,7 +9,7 @@ import { qiOf, formName } from '../systems/qitype.js';
 import { qiBadge } from './qiBadge.js';
 import { REALMS, ELEMENTS } from '../data/realms.js';
 import { ITEMS, SLOTS } from '../data/items.js';
-import { COND_BY_ID } from '../data/conditions.js';
+import { COND_BY_ID, condTip } from '../data/conditions.js';
 import { WEALTH } from '../data/countries.js';
 import { traitMult, traitVal } from '../systems/traits.js';
 import { bondBonus, bondList } from '../systems/people.js';
@@ -86,7 +86,7 @@ export function statusTab() {
     h('div', { class: 'grid3', style: { marginTop: '14px' } },
       h('div', { class: 'box' }, h('h3', {}, 'Equipment'), Object.entries(SLOTS).map(([s, label]) => h('div', { class: 'row small', style: { margin: '4px 0' } }, h('span', { class: 'muted', style: { width: '64px' } }, label), c.gear?.[s] ? [icon(ITEMS[c.gear[s]].icon, 'sm'), `${QUALITY[c.gearQ?.[s] || 'mid'].short} · `, ITEMS[c.gear[s]].name] : '—'))),
       h('div', { class: 'box' }, h('h3', {}, 'Bonds'), bondList(c).length ? bondList(c).map(b => h('div', { class: 'small', style: { margin: '4px 0' } }, h('b', {}, `${b.label}: ${b.who.first}`), h('div', { class: 'muted' }, b.perks.join(' · ')))) : h('span', { class: 'muted' }, 'No best friend or partner yet.')),
-      h('div', { class: 'box' }, h('h3', {}, 'Conditions'), (c.conditions || []).length ? c.conditions.map(x => h('div', { class: 'small bad', style: { margin: '3px 0' } }, `${COND_BY_ID[x.id].name}${x.sev > 1 ? ` (severity ${x.sev})` : ''}`)) : h('span', { class: 'good' }, 'Healthy'))),
+      h('div', { class: 'box' }, h('h3', {}, 'Conditions'), (c.conditions || []).length ? c.conditions.map(x => h('div', { class: 'small bad', ...condTip(x), style: { margin: '3px 0', cursor: 'help' } }, `${COND_BY_ID[x.id].name}${x.sev > 1 ? ` (severity ${x.sev})` : ''}`)) : h('span', { class: 'good' }, 'Healthy'))),
     h('div', { class: 'box', style: { marginTop: '14px' } }, h('h3', {}, 'Traits'), c.traits.map(id => traitChip(id))),
     h('div', { class: 'box', style: { marginTop: '14px' } }, h('h3', {}, 'Personality'), (c.temper || []).length ? c.temper.map(id => h('div', { class: 'small', style: { margin: '4px 0' } }, temperChip(id), ' ', h('span', { class: 'muted' }, TEMPER[id]?.desc))) : h('span', { class: 'muted' }, 'Still forming.')),
     bodySection(c),

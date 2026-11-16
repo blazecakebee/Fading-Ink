@@ -38,3 +38,24 @@ export const GENETIC = CONDITIONS.filter(x => x.genetic);
 export const COND_BY_ID = Object.fromEntries(CONDITIONS.map(x => [x.id, x]));
 // Qi medicines (crafted or bought): cure chance per kind.
 export const QI_MEDS = { mending_salve: { body: 0.7, qi: 0.5 }, heart_pill: { mind: 0.7 }, purity_pill: { qi: 0.85, mind: 0.3 } };
+
+// v0.9.5 hover text: exactly what a condition does to you right now
+const STAT_LBL = { health: 'Health', happiness: 'Happiness', stress: 'Stress', smarts: 'Smarts', looks: 'Looks', strength: 'Strength', agility: 'Agility', charisma: 'Charisma', luck: 'Luck', battle: 'Battle' };
+const CURE_LBL = { doctor: 'Doctor', therapy: 'Therapy', qi: 'Qi healing / medicine', rest: 'Rest' };
+const KIND_LBL = { body: 'Body condition', mind: 'Mental health', qi: 'Qi affliction' };
+export function condTip(x) {
+  const C = COND_BY_ID[x.id]; if (!C) return {};
+  const sev = x.sev || 1, L = [C.desc];
+  const eff = Object.entries(C.eff || {}).map(([k, v]) => { const n = Math.round(v * sev); return `${n > 0 ? '+' : '−'}${Math.abs(n)} ${STAT_LBL[k] || k}`; });
+  if (eff.length) L.push(`• Every year: ${eff.join(', ')}`);
+  if (C.qiMult && C.qiMult !== 1) L.push(`• Qi gain ${C.qiMult > 1 ? '+' : '−'}${Math.round(Math.abs(C.qiMult - 1) * 100)}%`);
+  if (C.bleed) L.push(`• You take ${Math.round((C.bleed - 1) * 100)}% more damage in fights`);
+  if (C.sudden) L.push(`• Raises your risk of sudden death (+${Math.round(C.sudden * 100)}% a year)`);
+  if (C.grows) L.push(`• Gets worse every year it goes untreated (severity ${sev.toFixed(1)} / 3) and raises your risk of death`);
+  if (x.id === 'heart') L.push('• Raises your risk of sudden death');
+  L.push(C.dur ? `• Passes on its own in ${Math.max(1, C.dur - (x.years || 0))} year(s)` : '• Chronic: stays until it is treated');
+  const cures = Object.entries(C.cure || {}).filter(([, p]) => p > 0).map(([k, p]) => `${CURE_LBL[k] || k} ${Math.round(p * 100)}%`);
+  L.push(cures.length ? `• Cure chance: ${cures.join(' · ')}` : '• No known cure');
+  if (C.cure && C.cure.doctor === 0) L.push('• Mortal doctors can\'t help with this');
+  return { 'data-tip-title': C.name, 'data-tip-sub': KIND_LBL[C.kind] + (sev > 1 ? ` · severity ${sev.toFixed(1)}` : ''), 'data-tip': L.join('\n'), 'data-tip-color': 'var(--bad)', tabindex: 0 };
+}

@@ -788,3 +788,7 @@ details.chron:not([open]) > summary h3::after { content: ' ▸'; }
 @keyframes brBite { 50% { transform: translateX(-3px) scale(1.06); } }
 @keyframes brBoom { from { transform: scale(.3); opacity: 1; } to { transform: scale(1.2); opacity: 0; } }
 @keyframes brPop { from { transform: translateY(20%); opacity: 1; } to { transform: translateY(-60%); opacity: 0; } }
+/* v0.9.5 condition tooltips */
+.tip div { white-space: pre-line; }
+.cond-eff { margin-top: 6px; color: var(--bad, #e05555); opacity: .9; line-height: 1.5; }
+.tip { max-width: 330px; }

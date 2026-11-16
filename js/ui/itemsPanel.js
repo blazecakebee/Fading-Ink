@@ -10,7 +10,7 @@ import { choice, toast } from './modal.js';
 import { render, runActivity, logLine } from './render.js';
 import { ITEMS, RECIPES, SLOTS } from '../data/items.js';
 import { MANUALS } from '../data/realms.js';
-import { COND_BY_ID } from '../data/conditions.js';
+import { COND_BY_ID, condTip } from '../data/conditions.js';
 import { known, hasInputs, craftChance, craft, experiment, gearStats, equip, unequip, useItem, itemName, craftLvl, craftRank, craftQuality, CRAFT_MAX, qStats, gearQ } from '../systems/crafting.js';
 import { treatOptions, treat, moodFace } from '../systems/health.js';
 import { country, fmtMoney, money, addItem, priceFor, discount, QUALITY, tiered, qCounts } from '../systems/life.js';
@@ -104,7 +104,8 @@ export function healthTab() {
     bodySection(c),
     h('h3', { class: 'display', style: { margin: '18px 0 8px' } }, 'Conditions'),
     conds.length ? h('div', { class: 'grid2' }, conds.map(x => { const C = COND_BY_ID[x.id];
-      return h('div', { class: 'card' }, h('h4', {}, C.name, ' ', h('span', { class: 'muted small' }, kindLabel[C.kind])), h('div', { class: 'muted small' }, `${C.desc} ${C.dur ? `(${C.dur - x.years} year(s) left)` : '(chronic)'}${x.sev > 1 ? ` · severity ${x.sev}` : ''}`),
+      return h('div', { class: 'card' }, h('h4', { ...condTip(x), style: { cursor: 'help' } }, C.name, ' ', h('span', { class: 'muted small' }, kindLabel[C.kind])), h('div', { class: 'muted small' }, `${C.desc} ${C.dur ? `(${C.dur - x.years} year(s) left)` : '(chronic)'}${x.sev > 1 ? ` · severity ${x.sev}` : ''}`),
+        h('div', { class: 'small cond-eff' }, condTip(x)['data-tip'].split('\n').slice(1).filter(l => !l.startsWith('• Cure')).map(l => h('div', {}, l))),
         h('div', { class: 'opts', style: { marginTop: '8px' } }, treatOptions(c, x).map(o => h('button', { class: 'btn ghost', disabled: c.actions <= 0 || (o.cost && c.age >= 18 && c.money < o.cost) || (o.qi && c.qi.qi < o.qi),
           onclick: () => runActivity({ id: 'treat_' + o.id.split(':')[0], cat: 'mind', run: cc => treat(cc, x.id, o.id) }) },
           `${o.label} · ${pct(o.chance)} · ${o.qi ? o.qi + ' Qi' : o.cost && c.age >= 18 ? fmtMoney(c, o.cost) : 'free'} (⚡1)`)))); }))

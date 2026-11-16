@@ -9,7 +9,7 @@ import { choice, openModal, toast, prompt } from './modal.js';
 import { inventoryTab, craftingTab, healthTab } from './itemsPanel.js';
 import { statusTab } from './statusPanel.js';
 import { moodFace, TRAINABLE, decayRate } from '../systems/health.js';
-import { COND_BY_ID } from '../data/conditions.js';
+import { COND_BY_ID, condTip } from '../data/conditions.js';
 import { ITEMS } from '../data/items.js';
 import { METHODS } from '../data/realms.js';
 import { wage, rollQuality, tiered, QUALITY } from '../systems/life.js';
@@ -176,7 +176,7 @@ function rightCol() {
       ...[['fist', 'Strength', effShow(c, 'strength')], ['combat', 'Battle IQ', effShow(c, 'battle')], ['kick', 'Agility', effShow(c, 'agility')], ['people', 'Charisma', effShow(c, 'charisma')], ['star', 'Luck', s.luck],
         ['combat', 'Power', power(c).toFixed(1)], ['trophy', 'Fights won', c.wins], ['gates', 'Gates', c.gatesCleared],
         ['market', 'Gold', fmtMoney(c, c.money)], ['bell', 'Fame', (c.fame || 0).toLocaleString()]].map(([ic, k, v]) => h('div', {}, icon(ic, 'sm'), k, h('b', {}, v))))),
-    (c.conditions || []).length ? h('div', { class: 'box' }, h('h3', {}, 'Conditions'), c.conditions.map(x => h('span', { class: 'chip', style: { '--tc': 'var(--bad)', cursor: 'pointer' }, onclick: () => { G.ui.tab = 'health'; render(); } }, COND_BY_ID[x.id].name))) : null,
+    (c.conditions || []).length ? h('div', { class: 'box' }, h('h3', {}, 'Conditions'), c.conditions.map(x => h('span', { class: 'chip', ...condTip(x), style: { '--tc': 'var(--bad)', cursor: 'pointer' }, onclick: () => { G.ui.tab = 'health'; render(); } }, COND_BY_ID[x.id].name))) : null,
     h('div', { class: 'box' }, h('h3', {}, 'Traits'), c.traits.length ? c.traits.map(traitChip) : h('span', { class: 'muted' }, 'None yet.')),
     h('div', { class: 'box' }, h('h3', {}, 'Personality'), (c.temper || []).length ? (c.temper || []).map(temperChip) : h('span', { class: 'muted' }, 'Not yet formed.')),
   ];

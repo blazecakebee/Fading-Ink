@@ -1,7 +1,11 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.4';
+export const VERSION = '0.9.5';
 export const CHANGELOG = [
+  { v: '0.9.5', date: '2026-11-16', title: 'Know your ailments', notes: [
+    'Hover (or tap) any condition to see exactly what it does to you: yearly stat losses at its current severity, Qi changes, extra damage taken, death risk, how long it lasts and your cure chances.',
+    'Condition cards on the Health tab now list their effects too.',
+  ] },
   { v: '0.9.4', date: '2026-11-16', title: 'Fables & Breaches', notes: [
     'FABLE QUESTS: reach 1,000,000 Fame to open four legendary stories (Fables tab, shown from 100,000 Fame). Inside, time stands still: no aging, no decay, no actions.',
     'Each Fable mixes choices, stat checks (with your odds shown), puzzles and fights. Dying inside one ends your life for good. You can turn back at the start, but it then closes for 3 years.',
