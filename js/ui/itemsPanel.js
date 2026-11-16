@@ -8,7 +8,7 @@ import { h, icon } from './dom.js';
 import { fx } from './fx.js';
 import { choice, toast } from './modal.js';
 import { render, runActivity, logLine } from './render.js';
-import { ITEMS, RECIPES, SLOTS } from '../data/items.js';
+import { ITEMS, RECIPES, SLOTS, canPawn, pawnValue, marketValue } from '../data/items.js';
 import { MANUALS } from '../data/realms.js';
 import { COND_BY_ID, condTip } from '../data/conditions.js';
 import { known, hasInputs, craftChance, craft, experiment, gearStats, equip, unequip, useItem, itemName, craftLvl, craftRank, craftQuality, CRAFT_MAX, qStats, gearQ } from '../systems/crafting.js';
@@ -37,7 +37,9 @@ export function inventoryTab() {
         it.use === 'qi' ? h('span', { class: 'muted small' }, 'Use from the Cultivation tab') : null,
         it.use === 'med' ? h('span', { class: 'muted small' }, 'Use from the Health tab') : null,
         it.use === 'devour' ? h('span', { class: 'muted small' }, 'Devour from Cultivation, or craft with it') : null,
-        it.sell ? h('button', { class: 'btn ghost', onclick: () => { addItem(c, id, -1, q); const g = Math.round(it.sell * m * country(c).econ); money(c, g); fx('coin'); logLine(`Sold a ${it.name} for ${fmtMoney(c, g)}.`); render(); } }, `Sell ${fmtMoney(c, it.sell * m * country(c).econ)}`) : null)); };
+        it.sell ? h('button', { class: 'btn ghost', onclick: () => { addItem(c, id, -1, q); const g = Math.round(it.sell * m * country(c).econ); money(c, g); fx('coin'); logLine(`Sold a ${it.name} for ${fmtMoney(c, g)}.`); render(); } }, `Sell ${fmtMoney(c, it.sell * m * country(c).econ)}`)
+          : canPawn(id) ? [h('button', { class: 'btn ghost', 'data-tip': `A pawn shop pays a quarter of what it's worth (about ${fmtMoney(c, marketValue(id) * m * country(c).econ)}).`, onclick: () => { addItem(c, id, -1, q); const g = Math.round(pawnValue(id, m) * country(c).econ); money(c, g); fx('coin'); logLine(`Pawned a ${q ? QUALITY[q].name + ' ' : ''}${it.name} for ${fmtMoney(c, g)}.`); render(); } }, `Pawn ${fmtMoney(c, pawnValue(id, m) * country(c).econ)}`),
+            n > 1 && !q ? h('button', { class: 'btn ghost', onclick: () => { const g = Math.round(pawnValue(id) * n * country(c).econ); addItem(c, id, -n); money(c, g); fx('coin'); logLine(`Pawned ${n}× ${it.name} for ${fmtMoney(c, g)}.`); render(); } }, `Pawn all ${n}`) : null] : null)); };
   const gs = gearStats(c);
   return [h('h2', { class: 'display' }, 'Inventory'),
     h('div', { class: 'grid3', style: { marginTop: '10px' } },

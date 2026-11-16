@@ -205,7 +205,7 @@ function finish(c, F, tier, endPen, UI) {
   addItem(c, F.gear, 1, 'hi'); const gearName = ITEMS[F.gear].name;
   const H = HEIRLOOMS[F.heir]; if (!(c.heirlooms || []).some(x => x.id === F.heir)) (c.heirlooms ||= []).push({ id: F.heir, tier: H.tier, found: `${c.first} ${c.last}`, year: G.world.year, how: F.name, gens: 0 });
   const got = [`Title: ${TITLES[F.id].name}`, `${gearName} (High grade)`, `${HEIRLOOM_TIERS[H.tier].name} heirloom: ${H.name}`, `Fame +${fame.toLocaleString()}`];
-  if (tier === 'best') { addItem(c, 'dao_pill', 1, 'hi'); addItem(c, 'ascend_pill', 1, 'hi'); got.push('Dao Insight Incense + Ascension Lotus Pill (best ending)'); }
+  if (tier === 'best') { c.flags.fableBest = true; addItem(c, 'dao_pill', 1, 'hi'); addItem(c, 'ascend_pill', 1, 'hi'); got.push('Dao Insight Incense + Ascension Lotus Pill (best ending)'); }
   if (F.id === 'pilgrim') { c.flags.fableSmith = true; ensureBody(c); for (const id of ['arm_l', 'arm_r', 'leg_l', 'leg_r', 'hand_l', 'hand_r', 'foot_l', 'foot_r']) { const s = c.body.parts[id], par = PART_PARENT[id]; if (s?.missing && !(par && c.body.parts[par].missing)) { const k = id.split('_')[0]; s.prosthetic = k + '3'; got.push(`Fablesteel ${k} fitted`); } } got.push('Doctors can now fit you with Fablesteel limbs for free'); }
   if (S.titles.filter(t => FABLE[t]).length === FABLES.length && !S.titles.includes('fabled')) { S.titles.push('fabled'); got.push('Title: The Fabled (every Fable finished)'); }
   if (notes.length) got.push(...notes);

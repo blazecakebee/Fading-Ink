@@ -570,7 +570,7 @@ async function enterGate(i, sweep) {
         if (v) { const { qiGain, qiCap } = await import('../systems/cultivation.js'); const q = cc.qi.realm ? Math.round(qiGain(cc, ri(10, 18)) * mult) : 0; if (q) cc.qi.qi = Math.min(qiCap(cc), cc.qi.qi + q); stat(cc, 'health', ri(3, 8));
           logLine(q ? `I meditated in the Gate's quiet chamber. +${q} Qi.` : 'I rested in a quiet chamber of the Gate.', 'qi'); if (chance(0.2)) logLine('Something smelled me meditating. The next fight came early.', 'bad'); }
       }
-      const e = ENEMIES.find(x => x.id === (boss ? T.boss[g.rank] || pick(T.pool) : pick(T.pool)));
+      const eid = boss ? T.boss[g.rank] || pick(T.pool) : pick(T.pool); const e = ENEMIES.find(x => x.id === eid) || ENEMIES.find(x => x.id === T.pool[0]); // v0.9.6 fix: pick once (picking inside find() could miss every enemy and freeze the Gate)
       // bosses of C-rank and up may be AWAKENED: much tougher, much richer. Big bosses get an entrance.
       if (boss && GATE_RANKS.indexOf(R) >= 2 && chance(0.25)) awakened = true;
       const er = R.realm + (boss && awakened ? 1 : 0); // v0.8.7: Gate foes fight at the Gate's realm (not their native one)

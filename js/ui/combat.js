@@ -187,7 +187,7 @@ export function fight(enemyDef, opts = {}) {
       if (k === 'presence') { c.flags.presenceWin = true; fx('heavy'); return end('win', `You release your aura. ${en.name} collapses, unable to lift a finger.`); }
       if (k === 'flee') {
         if (chance(0.35 + (me.agi - en.agi) / 200)) return end('flee', 'You slipped away.');
-        log.textContent = 'You tried to flee but were cut off!'; await enemyTurn(); busy = false; return draw();
+        log.textContent = 'You tried to flee but were cut off! ' + await enemyTurn(true); if (fatal) me.hp = 0; draw(); if (me.hp <= 0) return end('lose', 'You were cut down as you ran.'); busy = false; return;
       }
       // initiative: faster fighter acts first; momentum shown with chevrons
       const meFirst = me.agi + ri(0, 30) + (traitMult(c, 'initiative') > 1 ? 15 : 0) + (QF.init || 0) >= en.agi + ri(0, 30);

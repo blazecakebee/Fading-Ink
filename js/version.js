@@ -1,7 +1,16 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.5';
+export const VERSION = '0.9.6';
 export const CHANGELOG = [
+  { v: '0.9.6', date: '2026-11-16', title: 'Crafters & Legends', notes: [
+    'FIXED: Gates and Rifts could freeze between fights (no next popup, so you had to start over). The game sometimes failed to pick the next monster; it now always does. The same hidden bug is fixed for otherworld fights and prison breaks.',
+    'FIXED: if a monster killed you while you tried to flee, the fight kept going at 0 HP.',
+    '17 new achievements worth Legacy points: the high realms (Dao Seeking up to Heavenly Venerable), finishing 1, 5 and all 11 Hunts, Fables (first, best ending, bringing something home, all of them), reaching 1,000,000 Fame, and holding Gate breaches.',
+    '10 new earned traits: Monster Slayer, Apex Hunter, Wall Warden, Last Bastion, Fable-Touched, Living Legend, Crowned Immortal, Heaven\'s Throne, Root of the Dao and The Venerable One (God tier).',
+    '20 new crafting recipes, including 13 new pieces of gear: Beast-Bone Club, Jade-Tipped Spear, Void-Silk Needles, Dragonscale Glaive, Herbalist\'s Robe, Beast-Core Lamellar, Demon-Bone Harness, Dragonscale Coat, Herb Sachet, Demon-Eye Charm, Beast-Core Ring, Jade Focus Ring and Dragonscale Amulet. Also new ways to craft healing pills, prayer beads, a silver locket, beast hide, the Jade Spirit Sword, Phoenix Feathers and Storage Rings.',
+    'Pawn shop: sell any gear or material from your Inventory for a quarter of its market value (hover the button to see the full value). Materials have a "Pawn all" button. Fable gear can\'t be sold.',
+    'Gate breaches are much rarer: 8% per ignored SSS+ Gate (was 30%), and never more than once every 6 years.',
+  ] },
   { v: '0.9.5', date: '2026-11-16', title: 'Know your ailments', notes: [
     'Hover (or tap) any condition to see exactly what it does to you: yearly stat losses at its current severity, Qi changes, extra damage taken, death risk, how long it lasts and your cure chances.',
     'Condition cards on the Health tab now list their effects too.',

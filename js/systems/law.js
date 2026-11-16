@@ -60,7 +60,7 @@ export async function lawYear(c) {
   const f = c.fugitive; if (!f || c.prison) return;
   if (G.world.year - f.since >= 6) { c.fugitive = null; ui.log('Six years on the run. The Guild seems to have given up on me — for now.', 'good'); return; }
   if (!chance(0.35)) return;
-  const R = effRealm(c), e = ENEMIES.find(x => x.id === pick(['sword_saint', 'demonic', 'void_wraith']));
+  const R = effRealm(c), e = (oid => ENEMIES.find(x => x.id === oid))(pick(['sword_saint', 'demonic', 'void_wraith']));
   ui.log('A Guild Association hunter found me.', 'bad');
   const r = await ui.fight({ ...e, kind: 'human', realm: clamp(R + 1, 1, REALMS.length - 1), name: `Guild Hunter ${pick(['Han', 'Seo', 'Vale', 'Mirelle', 'Okafor', 'Ito'])}` }, { noFlee: true });
   if (r === 'win') { c.wins++; addHeat(c, 20); ui.log('I beat the Guild\'s hunter. They will send a stronger one.', 'qi'); return; }

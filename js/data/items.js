@@ -56,6 +56,20 @@ export const ITEMS = {
   beast_hide:      { name: 'Beast Hide Armour', icon: 'claw', type: 'gear', slot: 'armor', stats: { hp: 30, agi: 2 }, desc: '+30 HP, +2 Agility.' },
   jade_scale:      { name: 'Jade Scale Armour', icon: 'scalevest', type: 'gear', slot: 'armor', stats: { hp: 60, qi: 0.05 }, desc: '+60 HP, +5% Qi gain.' },
   void_mantle:     { name: 'Void Mantle', icon: 'robe', type: 'gear', slot: 'armor', stats: { hp: 120, agi: 8 }, desc: '+120 HP, +8 Agility.' },
+  // v0.9.6 craftable gear (20 new recipes below)
+  bone_club:     { name: 'Beast-Bone Club', icon: 'hammer', type: 'gear', slot: 'weapon', stats: { dmg: 0.15, agi: -2 }, desc: '+15% damage, -2 Agility. Crude but heavy.' },
+  jade_spear:    { name: 'Jade-Tipped Spear', icon: 'broadsword', type: 'gear', slot: 'weapon', stats: { dmg: 0.34, agi: 3 }, desc: '+34% damage, +3 Agility.' },
+  void_needles:  { name: 'Void-Silk Needles', icon: 'knife', type: 'gear', slot: 'weapon', stats: { dmg: 0.45, agi: 10 }, desc: '+45% damage, +10 Agility.' },
+  scale_glaive:  { name: 'Dragonscale Glaive', icon: 'fire', type: 'gear', slot: 'weapon', stats: { dmg: 0.62, agi: 2 }, desc: '+62% damage, +2 Agility.' },
+  herb_robe:     { name: "Herbalist's Robe", icon: 'robe', type: 'gear', slot: 'armor', stats: { hp: 15, qi: 0.02 }, desc: '+15 HP, +2% Qi gain.' },
+  core_lamellar: { name: 'Beast-Core Lamellar', icon: 'chainmail', type: 'gear', slot: 'armor', stats: { hp: 50, agi: -2 }, desc: '+50 HP, -2 Agility.' },
+  demon_harness: { name: 'Demon-Bone Harness', icon: 'claw', type: 'gear', slot: 'armor', stats: { hp: 70, agi: 6 }, desc: '+70 HP, +6 Agility.' },
+  scale_coat:    { name: 'Dragonscale Coat', icon: 'scalevest', type: 'gear', slot: 'armor', stats: { hp: 95, agi: 4 }, desc: '+95 HP, +4 Agility.' },
+  herb_sachet:   { name: 'Herb Sachet', icon: 'herb', type: 'gear', slot: 'charm', stats: { luck: 3, qi: 0.02 }, desc: '+3 Luck, +2% Qi gain.' },
+  demon_eye:     { name: 'Demon-Eye Charm', icon: 'eye', type: 'gear', slot: 'charm', stats: { dmg: 0.08, luck: -3 }, desc: '+8% damage, -3 Luck.' },
+  core_ring:     { name: 'Beast-Core Ring', icon: 'ring', type: 'gear', slot: 'ring', stats: { hp: 15, agi: 2 }, color: '#c98a4a', desc: '+15 HP, +2 Agility.' },
+  jade_ring:     { name: 'Jade Focus Ring', icon: 'ring', type: 'gear', slot: 'ring', stats: { qi: 0.05 }, color: '#5fd38a', desc: '+5% Qi gain.' },
+  scale_amulet:  { name: 'Dragonscale Amulet', icon: 'amulet', type: 'gear', slot: 'necklace', stats: { hp: 40, dmg: 0.04 }, color: '#ff8a3d', desc: '+40 HP, +4% damage.' },
   // v0.9.4 Fable-only gear: only earned by finishing Fable Quests
   fable_locket: { name: "Bride's Lantern Locket", icon: 'lantern', type: 'gear', slot: 'necklace', fable: true, stats: { qi: 0.14, luck: 8, hp: 30 }, color: '#ff9d5c', desc: 'Fable gear. +14% Qi gain, +8 Luck, +30 HP.' },
   fable_robe:   { name: 'Robe of Drowned Pages', icon: 'robe', type: 'gear', slot: 'armor', fable: true, stats: { hp: 220, agi: 12, qi: 0.1 }, desc: 'Fable gear. +220 HP, +12 Agility, +10% Qi gain.' },
@@ -109,5 +123,40 @@ export const RECIPES = [
   { id: 'r_salve', out: 'mending_salve', inputs: { spirit_herb: 2, cloth: 1 }, base: 0.65 },
   { id: 'r_heart', out: 'heart_pill', inputs: { spirit_herb: 1, calm_incense: 1 }, base: 0.6 },
   { id: 'r_purity', out: 'purity_pill', inputs: { spirit_stone: 2, ginseng: 1 }, base: 0.55 },
+  // v0.9.6 twenty new recipes
+  { id: 'r_club', out: 'bone_club', inputs: { beast_core: 1, iron_ore: 1 }, base: 0.8 },
+  { id: 'r_spear', out: 'jade_spear', inputs: { iron_ore: 3, spirit_stone: 2 }, base: 0.6 },
+  { id: 'r_needles', out: 'void_needles', inputs: { demonic_core: 1, cloth: 2, spirit_stone: 3 }, base: 0.45 },
+  { id: 'r_glaive', out: 'scale_glaive', inputs: { dragon_scale: 2, iron_ore: 3, spirit_stone: 3 }, base: 0.35 },
+  { id: 'r_herbrobe', out: 'herb_robe', inputs: { cloth: 2, spirit_herb: 1 }, base: 0.85 },
+  { id: 'r_lamellar', out: 'core_lamellar', inputs: { beast_core: 2, iron_ore: 3 }, base: 0.6 },
+  { id: 'r_harness', out: 'demon_harness', inputs: { demonic_core: 2, beast_core: 2, cloth: 1 }, base: 0.45 },
+  { id: 'r_scalecoat', out: 'scale_coat', inputs: { dragon_scale: 2, cloth: 2, spirit_stone: 2 }, base: 0.4 },
+  { id: 'r_sachet', out: 'herb_sachet', inputs: { spirit_herb: 2, cloth: 1 }, base: 0.85 },
+  { id: 'r_demoneye', out: 'demon_eye', inputs: { demonic_core: 1, spirit_stone: 1 }, base: 0.55 },
+  { id: 'r_corering', out: 'core_ring', inputs: { beast_core: 1, iron_ore: 1 }, base: 0.75 },
+  { id: 'r_jadering', out: 'jade_ring', inputs: { spirit_stone: 2, iron_ore: 1 }, base: 0.6 },
+  { id: 'r_amulet', out: 'scale_amulet', inputs: { dragon_scale: 1, spirit_stone: 2 }, base: 0.5 },
+  { id: 'r_heal2', out: 'heal_pill', inputs: { ginseng: 1, spirit_herb: 2 }, base: 0.75, n: 3 },
+  { id: 'r_beads', out: 'prayer_beads', inputs: { spirit_stone: 1, cloth: 1 }, base: 0.7 },
+  { id: 'r_locket', out: 'silver_locket', inputs: { iron_ore: 1, spirit_stone: 1 }, base: 0.7 },
+  { id: 'r_hide', out: 'beast_hide', inputs: { beast_core: 2, cloth: 1 }, base: 0.7 },
+  { id: 'r_jadesword', out: 'jade_sword', inputs: { spirit_blade: 1, spirit_stone: 3 }, base: 0.5 },
+  { id: 'r_feather', out: 'phoenix_feather', inputs: { dragon_scale: 1, spirit_herb: 3, ginseng: 1 }, base: 0.4 },
+  { id: 'r_storage', out: 'storage_ring', inputs: { spirit_stone: 4, iron_ore: 2, beast_core: 1 }, base: 0.4 },
   { id: 'r_ink', out: 'ink_of_fading', inputs: { demonic_core: 1, spirit_herb: 1, cloth: 1 }, base: 0.3 },
 ];
+
+// v0.9.6 pawn shop: anything you can carry sells, but for far less than it's worth (a quarter of market value).
+// Items without a shop price get an estimated value from their stats (gear) or rarity (materials).
+const MAT_VALUE = { beast_core: 300, demonic_core: 900, dragon_scale: 2500, recipe_scroll: 600, bloodline_essence: 4000 };
+export const PAWN_RATE = 0.25;
+export function marketValue(id) {
+  const it = ITEMS[id]; if (!it) return 0;
+  if (it.price) return it.price;
+  if (MAT_VALUE[id]) return MAT_VALUE[id];
+  if (it.type === 'gear') { const s = it.stats || {}; return Math.round(300 + Math.max(0, s.dmg || 0) * 6000 + Math.max(0, s.hp || 0) * 50 + Math.max(0, s.agi || 0) * 70 + Math.max(0, s.luck || 0) * 70 + Math.max(0, s.qi || 0) * 8000); }
+  return 0;
+}
+export const canPawn = id => { const it = ITEMS[id]; return !!it && !it.fable && (it.type === 'gear' || it.type === 'material') && marketValue(id) > 0; };
+export const pawnValue = (id, qMult = 1) => Math.max(1, Math.round(marketValue(id) * PAWN_RATE * qMult));

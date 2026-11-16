@@ -11,12 +11,13 @@ import { ensureBody, hitBody } from './body.js';
 import { grieve } from './people.js';
 
 export const BREACH_RANKS = ['SSS', 'X', 'Z'];
-export const BREACH_CHANCE = 0.3;
+export const BREACH_CHANCE = 0.08; // v0.9.6 rarer: 8% per ignored SSS+ Gate, and never twice within 6 years
 export const breachTier = rank => GATE_RANKS.findIndex(r => r.rank === rank);
 
 // called from the yearly Gate countdown for a high Gate that is about to expire
 export function maybeBreach(c, g) {
-  if (!BREACH_RANKS.includes(g.rank) || c.age < 16 || !chance(BREACH_CHANCE)) return false;
+  if (!BREACH_RANKS.includes(g.rank) || c.age < 16 || (c.breaches || []).length || (c.lastBreach != null && c.age - c.lastBreach < 6) || !chance(BREACH_CHANCE)) return false;
+  c.lastBreach = c.age;
   (c.breaches ||= []).push(g.rank);
   ui.log(`Nobody cleared the ${g.rank}-rank Gate near ${c.city}. It didn't close. It ruptured.`, 'bad');
   return true;

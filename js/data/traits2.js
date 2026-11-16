@@ -68,6 +68,17 @@ export const TRAITS2 = [
   T('secret', 'forbidden_scholar', 'Forbidden Scholar', '+30% study, stress builds 20% faster.', { study: 1.3, stressMult: 1.2 }),
   T('secret', 'graveborn', 'Graveborn', 'Spirits fear you (+50%), -10 Health.', { mods: { health: -10 }, spiritBane: 1.5 }),
   T('secret', 'ancient_one', 'Ancient One', 'Earned: live past 300. +10 Smarts, stress builds 20% slower.', { mods: { smarts: 10 }, stressMult: 0.8, birth: 0, earn: 'live past 300', earnIf: c => c.age >= 300 }),
+  // v0.9.6 earned at the very top of the game
+  T('legendary', 'monster_slayer', 'Monster Slayer', 'Earned: finish an end-game Hunt. +5% combat power, +10% Gate loot.', { power: 1.05, loot: 1.1, birth: 0, earn: 'finish a Hunt', earnIf: c => (c.huntsDone || []).length >= 1 }),
+  T('mythical', 'apex_hunter', 'Apex Hunter', 'Earned: finish 5 Hunts. +8% combat power, +8% training.', { power: 1.08, train: 1.08, birth: 0, earn: 'finish 5 Hunts in one life', earnIf: c => (c.huntsDone || []).length >= 5 }),
+  T('legendary', 'wall_warden', 'Wall Warden', 'Earned: hold back a Gate breach. +4% combat power, heal 8% faster.', { power: 1.04, healRate: 1.08, birth: 0, earn: 'hold back a Gate breach', earnIf: c => (c.breachesHeld || 0) >= 1 }),
+  T('mythical', 'last_bastion', 'Last Bastion', 'Earned: hold back 3 Gate breaches. +12% closeness, stress builds 15% slower.', { social: 1.12, stressMult: 0.85, birth: 0, earn: 'hold back 3 Gate breaches', earnIf: c => (c.breachesHeld || 0) >= 3 }),
+  T('legendary', 'fable_touched', 'Fable-Touched', 'Earned: finish a Fable. +8% closeness, stress builds 8% slower.', { social: 1.08, stressMult: 0.92, birth: 0, earn: 'finish a Fable', earnIf: c => (c.fables?.done || []).length >= 1 }),
+  T('secret', 'living_legend', 'Living Legend', 'Earned: finish every Fable. +10% salary, +10% Gate loot, +3 years of life.', { pay: 1.1, loot: 1.1, life: 3, birth: 0, earn: 'finish every Fable in one life', earnIf: c => (c.fables?.titles || []).includes('fabled') }),
+  T('mythical', 'king_of_immortals', 'Crowned Immortal', 'Earned: reach Immortal King. +6% Qi, +4% combat power.', { qi: 1.06, power: 1.04, birth: 0, earn: 'reach Immortal King', earnIf: c => c.qi.realm >= 13 }),
+  T('secret', 'heavens_throne', "Heaven's Throne", 'Earned: reach Immortal Emperor. +10% closeness, +6% combat power.', { social: 1.1, power: 1.06, birth: 0, earn: 'reach Immortal Emperor', earnIf: c => c.qi.realm >= 14 }),
+  T('secret', 'root_of_dao', 'Root of the Dao', 'Earned: reach Dao Ancestor. +15% study, +3% breakthrough.', { study: 1.15, breakthrough: 0.03, birth: 0, earn: 'reach Dao Ancestor', earnIf: c => c.qi.realm >= 15 }),
+  T('god', 'venerable_one', 'The Venerable One', 'Earned: reach Heavenly Venerable. +10% Qi, +5% combat power, stress builds 25% slower.', { qi: 1.1, power: 1.05, stressMult: 0.75, birth: 0, earn: 'reach Heavenly Venerable', earnIf: c => c.qi.realm >= 16 }),
   // GLITCHED
   T('glitched', 'off_by_one', 'OFF_BY_ONE', '+1 action, -1 social action.', { extraAction: 1, extraSocial: -1 }),
   T('glitched', 'stack_overflow', 'STACK_OVERFLOW', '+30% training, stress builds 30% faster.', { train: 1.3, stressMult: 1.3 }),

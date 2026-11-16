@@ -102,6 +102,25 @@ export const GEAR_SPRITES = {
   fang_necklace: P('fang', '#efe8d8', '#ffffff', '#a89a80', '#6a4a2a', '#000', '#fff'),
   lucky_coin: P('coin', '#e0b040', '#fff0a0', '#9a7a1a', '#000', '#000', '#5a3a1a'),
   phoenix_feather: P('feather', '#ff6a3a', '#ffd06a', '#a8320f', '#c9a23a', '#000', '#ffef7a'),
+  // v0.9.6 crafted gear
+  bone_club: P('hammer', '#e8e0c8', '#ffffff', '#a89a78', '#6a4a2a', '#3a2a1a', '#c9b79a'),
+  jade_spear: P('spear', '#5fd38a', '#cfffe0', '#1f7a4a', '#8a6a3a', '#3a2a1a', '#e8fff0'),
+  void_needles: P('twin', '#9a7aff', '#e0d0ff', '#4a2a9a', '#2a1a4a', '#000', '#7fe3ff'),
+  scale_glaive: P('glaive', '#ff8a3d', '#ffd06a', '#a8420f', '#6a4a2a', '#3a2a1a', '#ff4f2a'),
+  herb_robe: P('robe', '#7aa86a', '#bfe0a8', '#3a5a2a', '#c9a23a', '#000', '#e8fff0'),
+  core_lamellar: P('plate', '#c98a4a', '#f0c08a', '#7a4a1a', '#3a2a1a', '#000', '#ffd36f'),
+  demon_harness: P('hide', '#8a1a2a', '#d84a5a', '#4a0a1a', '#2a0a0a', '#000', '#ff4f6a'),
+  scale_coat: P('vest', '#ff8a3d', '#ffd06a', '#a8420f', '#6a2a0a', '#000', '#ffef7a'),
+  herb_sachet: P('amulet', '#7aa86a', '#bfe0a8', '#3a5a2a', '#8a6a3a', '#c9a23a', '#e8fff0'),
+  demon_eye: P('amulet', '#d81b3a', '#ff8a9a', '#5a0a1a', '#2a0a0a', '#000', '#ffd36f'),
+  core_ring: P('ring', '#c98a4a', '#f0c08a', '#7a4a1a', '#000', '#c98a4a', '#ffb02e'),
+  jade_ring: P('ring', '#5fd38a', '#cfffe0', '#1f7a4a', '#000', '#c9a23a', '#8affb0'),
+  scale_amulet: P('fang', '#ff8a3d', '#ffd06a', '#a8420f', '#6a4a2a', '#000', '#ffef7a'),
+  // v0.9.4 Fable gear
+  fable_locket: P('amulet', '#ff9d5c', '#ffe0c0', '#a8420f', '#6a2a0a', '#ffd36f', '#fff4b0'),
+  fable_robe: P('mantle', '#3a7aa8', '#9fd8ff', '#1a3a5a', '#0a1a2a', '#000', '#e0f4ff'),
+  fable_sword: P('sword', '#c0c8d8', '#ffffff', '#6a7383', '#3a2a1a', '#ffd36f', '#e0e6ff'),
+  fable_ring: P('ring', '#d8d0ff', '#ffffff', '#7a70a8', '#000', '#e0d8ff', '#fff4b0'),
 };
 const cache = {};
 export function gearSprite(id, size = 32) {

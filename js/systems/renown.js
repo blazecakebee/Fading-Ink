@@ -73,7 +73,7 @@ export function maybeTransmigrate(c) {
 const OTHER = ['Sky-Eater Wyrm', 'Two-Sun Templar', 'Glass Revenant', 'Hollow Knight of the Other Court', 'Thousand-Eye Archon', 'Rootbound Colossus'];
 export async function otherworldYear(c) {
   const o = c.otherworld; if (!o || !c.alive) return; o.year++; o.left--;
-  const e = ENEMIES.find(x => x.id === pick(['ancient_qilin', 'void_wraith', 'heavenly_demon', 'fallen_immortal'])), r = clamp(effRealm(c) + 1, 1, REALMS.length - 1);
+  const e = (oid => ENEMIES.find(x => x.id === oid))(pick(['ancient_qilin', 'void_wraith', 'heavenly_demon', 'fallen_immortal'])), r = clamp(effRealm(c) + 1, 1, REALMS.length - 1);
   const res = await ui.fight({ ...e, realm: r, hp: Math.round(e.hp * 1.3), str: Math.round(e.str * 1.15), name: `${pick(OTHER)} (otherworld)` }, { noFlee: true });
   if (res !== 'win') { o.deaths++; stat(c, 'health', -25);
     if (o.deaths >= 3) { c.otherworld = null; die(c, 'killed for the third time in another world — there was no coming back'); return; }
