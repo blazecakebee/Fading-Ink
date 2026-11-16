@@ -15,6 +15,7 @@ import { METHODS } from '../data/realms.js';
 import { wage, rollQuality, tiered, QUALITY } from '../systems/life.js';
 import * as J from '../systems/jobs.js';
 import { PERSONAS, ensurePersona } from '../data/personas.js';
+import { TEMPER, MAX_TEMPER } from '../data/temper.js';
 import { comfort, willInfo, giftToChild, wealthLabel, statCap, softCap, gainMult, CAPPED, discount, priceFor, country, lifeStage, fullName, fmtMoney, realm as realmOf, lifespan, ageUp, money, stat, addItem, ACTIONS_PER_YEAR, SOCIAL_PER_YEAR } from '../systems/life.js';
 import { fatigueMult, realmName, qiCap, power, learnManual, breakthroughInfo, meridianInfo, meditateRange, HELPFUL_ITEMS, sectName, foundReq, foundSect, method, learnMethod } from '../systems/cultivation.js';
 import { relLabel, isFamily, bonds, bondList, favor } from '../systems/people.js';
@@ -154,10 +155,12 @@ function rightCol() {
     h('div', { class: 'box' }, h('h3', {}, 'Your Stats'), h('div', { class: 'realm-line' }, icon('cultivation', 'sm'), ' ', h('b', {}, c.qi.known || onBodyPath(c) ? realmName(c) : 'Realm: ???')), h('div', { class: 'stats' },
       ...[['fist', 'Strength', effShow(c, 'strength')], ['combat', 'Battle IQ', effShow(c, 'battle')], ['kick', 'Agility', effShow(c, 'agility')], ['people', 'Charisma', effShow(c, 'charisma')], ['star', 'Luck', s.luck],
         ['combat', 'Power', power(c).toFixed(1)], ['trophy', 'Fights won', c.wins], ['gates', 'Gates', c.gatesCleared],
-        ['market', 'Gold', fmtMoney(c, c.money)], ['star', 'Fame', c.fame || 0]].map(([ic, k, v]) => h('div', {}, icon(ic, 'sm'), k, h('b', {}, v))))),
+        ['market', 'Gold', fmtMoney(c, c.money)], ['bell', 'Fame', c.fame || 0]].map(([ic, k, v]) => h('div', {}, icon(ic, 'sm'), k, h('b', {}, v))))),
     (c.conditions || []).length ? h('div', { class: 'box' }, h('h3', {}, 'Conditions'), c.conditions.map(x => h('span', { class: 'chip', style: { '--tc': 'var(--bad)', cursor: 'pointer' }, onclick: () => { G.ui.tab = 'health'; render(); } }, COND_BY_ID[x.id].name))) : null,
     h('div', { class: 'box' }, h('h3', {}, 'Your Traits ', h('small', { class: 'muted', style: { fontSize: '.8rem' } }, 'hover for details')),
       c.traits.length ? c.traits.map(traitChip) : h('span', { class: 'muted' }, 'None yet.')),
+    h('div', { class: 'box' }, h('h3', {}, 'Personality ', h('small', { class: 'muted', style: { fontSize: '.8rem' } }, `${(c.temper || []).length}/${MAX_TEMPER}`)),
+      (c.temper || []).length ? c.temper.map(temperChip) : h('span', { class: 'muted' }, 'Still forming.')),
   ];
   if (META.settings.showChronicle !== false) {
     const lines = c.log.slice(-6).reverse().flatMap(y => [h('div', { class: 'yr' }, `Age ${y.age}`), ...y.lines.map(l => h('div', { class: l.c }, l.t))]);
@@ -172,6 +175,10 @@ const EARN_HINTS = {
   ascend: 'reach Immortal Ascension', busy20: 'use every Action for 20 years in a row', spar50: 'spar 50 times', found_sect: 'found your own sect', ghost_king: 'defeat a Ghost King in a Gate',
   recipes8: 'discover 8 crafting recipes', coop_marry: 'marry another player in co-op', divorce3: 'divorce 3 times',
 };
+export function temperChip(id) {
+  const t = TEMPER[id]; if (!t) return null; const col = t.good ? '#7fe0a0' : '#ffb36a';
+  const el = h('span', { class: 'chip temper ' + (t.good ? 'good' : 'mixed'), tabindex: 0, 'data-tip-title': t.name, 'data-tip-sub': t.good ? 'Personality · virtue' : 'Personality · trade-off', 'data-tip': t.desc, 'data-tip-color': col }, t.name); el.style.setProperty('--tc', col); return el;
+}
 export function traitChip(id) {
   const t = TRAIT_BY_ID[id]; if (!t) return null; const tier = TIERS[t.tier];
   const el = h('span', { class: 'chip ' + t.tier, tabindex: 0, 'data-tip-title': t.name, 'data-tip-sub': `${tier.name} trait`, 'data-tip': t.desc, 'data-tip-color': tier.color }, t.name); el.style.setProperty('--tc', tier.color); return el;
@@ -522,7 +529,7 @@ async function enterGate(i, sweep) {
     for (let k = 0; k < n; k++) {
       const L = weighted(table, x => x.w);
       if (L.id === 'gold') { const m = Math.round(ri(100, 900) * (1 + tier) * (1 + Math.max(0, tier - 5)) * yld * wage(cc)); money(cc, m); add(fmtMoney(cc, m)); }
-      else if (L.id === 'manual') { const mm = METHODS.filter(x => !(cc.qi.methods || ['basic']).includes(x.id) && (T.id === 'altar' || !x.demonic)); const m = pick(MANUALS.filter(x => x.id !== 'breathing' && !cc.qi.manuals.includes(x.id)));
+      else if (L.id === 'manual') { const mm = METHODS.filter(x => !x.hidden && !(cc.qi.methods || ['basic']).includes(x.id) && (T.id === 'altar' || !x.demonic)); const m = pick(MANUALS.filter(x => x.id !== 'breathing' && !cc.qi.manuals.includes(x.id)));
         if (mm.length && (chance(0.5) || !m)) { const x = pick(mm); learnMethod(cc, x.id); add(x.name); } else if (m) { learnManual(cc, m.id); add(m.name); } }
       else { const q = rollQuality(cc, awakened ? 0.08 : 0); addItem(cc, L.id, 1, q); add((tiered(L.id) && q !== 'mid' ? QUALITY[q].short + ' ' : '') + (ITEMS[L.id]?.name || L.id)); }
     }

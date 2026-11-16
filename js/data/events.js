@@ -45,7 +45,7 @@ const E = [
       else { stat(c, 'health', -8); ui.log('It fed on me. I woke up cold.', 'bad'); } } },
   { id: 'method_market', cond: c => c.qi.realm >= 1 && c.age >= 14, w: 2, run: async c => {
       const { METHODS } = await import('./realms.js'); const { learnMethod } = await import('../systems/cultivation.js');
-      const opts = METHODS.filter(m => !(c.qi.methods || ['basic']).includes(m.id)); if (!opts.length) return; const m = pick(opts); const price = Math.round(1500 * country(c).econ);
+      const opts = METHODS.filter(m => !m.hidden && !(c.qi.methods || ['basic']).includes(m.id)); if (!opts.length) return; const m = pick(opts); const price = Math.round(1500 * country(c).econ);
       const v = await ui.choice({ title: 'Ghost Market', text: `A blind scribe offers a cultivation method — the ${m.name} — for ${fmtMoney(c, price)}.\n${m.desc}`, icon: 'manual', options: [{ label: 'Buy', value: true, disabled: c.money < price }, { label: 'Pass', value: false }] });
       if (v && c.money >= price) { money(c, -price); learnMethod(c, m.id); } } },
   { id: 'manual_market', cond: c => c.qi.known && c.age >= 14, w: 2, run: async c => {

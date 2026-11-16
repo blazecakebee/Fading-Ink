@@ -65,5 +65,6 @@ export const METHODS = [
   { id: 'starfall', name: 'Starfall Meridian Method', qi: 1.2, merid: 0.1, desc: '+20% Qi and +10% meridian opening chance.' },
   { id: 'dual', name: 'Yin-Yang Dual Cultivation', qi: 1.2, dual: 0.3, desc: '+20% Qi, plus another +30% while you have a cultivator partner.' },
   { id: 'void', name: 'Void Stillness Scripture', qi: 1.5, bt: 0.05, minRealm: 4, desc: '+50% Qi and +5% breakthrough chance. Needs Core Formation to practise.' },
+  { id: 'myriad_souls', name: 'Myriad Souls Refinement (forbidden)', qi: 0.9, demonic: true, hidden: true, desc: '-10% Qi from meditation, but unlocks Blood Sacrifice: take a life for a huge surge of Qi and a better next breakthrough. It scars the mind.' },
   { id: 'blood_sea', name: 'Blood Sea Method (demonic)', qi: 1.7, demonic: true, desc: '+70% Qi, -4 Health per session, 5% chance of Qi corruption each time.', side: { health: -4 } },
 ];

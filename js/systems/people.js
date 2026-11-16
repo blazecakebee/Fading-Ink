@@ -1,5 +1,6 @@
 // NPCs: family, friends, classmates, partners, enemies, children.
 import { G } from '../core/state.js';
+import { TEMPER } from '../data/temper.js';
 import { ui } from '../core/bus.js';
 import { ri, pick, chance, clamp, uid } from '../core/rng.js';
 import { COUNTRIES } from '../data/countries.js';
@@ -51,7 +52,8 @@ export function familyAtBirth(c, wealth, parents) {
 // Grief: losing someone you're close to hurts for years, raises stress, and can tip you into depression.
 export function grieve(c, p, fam) {
   const close = p.close ?? 50; const core = ['Father', 'Mother', 'Spouse', 'Son', 'Daughter'].includes(p.role) || p.id === c.partnerId;
-  const weight = (core ? 1 : fam ? 0.7 : 0.5) * (0.4 + close / 100); if (!fam && close < 50) return; // acquaintances don't break your heart
+  const tg = (c.temper || []).reduce((m, id) => m * (TEMPER[id]?.grief ?? 1), 1); if (!tg) return; // psychopaths feel nothing
+  const weight = (core ? 1 : fam ? 0.7 : 0.5) * (0.4 + close / 100) * tg; if (!fam && close < 50) return; // acquaintances don't break your heart
   c.stats.happiness = clamp(c.stats.happiness - Math.round(20 + 25 * weight)); c.stats.stress = clamp(c.stats.stress + Math.round(10 + 20 * weight));
   c.grief = { who: p.first, years: core ? 3 : 2, weight: Math.max(c.grief?.weight || 0, weight) };
   ui.log(core ? `Losing ${p.first} broke something in me. The house is too quiet.` : `${p.first}'s death hit me harder than I expected.`, 'bad');
@@ -65,7 +67,7 @@ export function yearlyPeople(c) {
   for (const p of c.people) {
     if (!p.alive) continue;
     p.age++;
-    if (p.role !== 'Enemy') p.close = clamp(p.close - ri(0, 4));
+    if (p.role !== 'Enemy') p.close = clamp(p.close - Math.round(ri(0, 4) * ((c.temper || []).includes('loyal') ? 0.5 : (c.temper || []).includes('fickle') ? 2 : 1)));
     const a = p.age - (p.blessed?.years || 0) - [0, 2, 5, 12, 25, 35, 45, 55, 65, 75, 85, 100, 150].slice(1, (p.realm || 0) + 1).reduce((x, y) => x + y, 0); // longevity blessings & cultivation
     const deathChance = a > 85 ? 0.25 : a > 70 ? 0.06 : a > 50 ? 0.01 : 0.002;
     if (chance(deathChance)) {

@@ -30,6 +30,8 @@ import { TRAINER_SOCIAL, trainersYear } from './trainers.js';
 import { AGENT_SOCIAL, jobsYear } from './jobs.js';
 import { withFlavor } from '../data/flavor.js';
 import { withTaste } from '../data/personas.js';
+import { SACRIFICE, SACRIFICE_EVENT } from './sacrifice.js';
+import { rollTemper, temperYear, TEMPER } from '../data/temper.js';
 import { gainClose as gainCloseP } from './people.js';
 import { REJECT, BODY_ACTS, bodyYear, startPath, SEVERED_EVENTS, migrateBody } from './bodypath.js';
 import { ACHIEVEMENTS, ACH_BY_ID } from '../data/achievements.js';
@@ -45,7 +47,7 @@ for (const cty of COUNTRIES) { const x = MORE_NAMES[cty.id]; if (x && !cty._more
 // ---- martial arts schools replace the old all-you-can-eat class; private school, migration
 { const i = ACTIVITIES.findIndex(a => a.id === 'martial'); if (i >= 0) ACTIVITIES[i] = MARTIAL; else ACTIVITIES.push(MARTIAL); }
 { const i = ACTIVITIES.findIndex(a => a.id === 'doctor'); if (i >= 0) ACTIVITIES[i] = DOCTOR; else ACTIVITIES.push(DOCTOR); }
-ACTIVITIES.push(SWITCH_ART, PRIVATE, MIGRATE, REJECT, ...BODY_ACTS);
+ACTIVITIES.push(SWITCH_ART, PRIVATE, MIGRATE, REJECT, ...BODY_ACTS, SACRIFICE);
 // born without Qi at all
 for (const t of [{ id: 'heaven_severed', tier: 'legendary', name: 'Heaven-Severed', desc: 'Born with no Qi at all. You walk the Severed Path from birth: +12 Strength, +10 Agility, +10 Health.', mods: { strength: 12, agility: 10, health: 10 } }]) if (!TRAIT_BY_ID[t.id]) { TRAITS.push(t); TRAIT_BY_ID[t.id] = t; }
 for (const a of [{ id: 'severed', name: 'Severed', desc: 'Walk the Severed Path.', pts: 5, check: c => c.path === 'body' }, { id: 'iron_body', name: 'Steel Without Qi', desc: 'Reach Steel Sinew on the Severed Path.', pts: 10, check: c => (c.bodyPath?.tier || 0) >= 3 }, { id: 'unbound', name: 'The Unbound', desc: 'Complete the Severed Path.', pts: 40, check: c => (c.bodyPath?.tier || 0) >= 12 }, ...GOD_ACHIEVEMENTS]) if (!ACH_BY_ID[a.id]) { ACHIEVEMENTS.push(a); ACH_BY_ID[a.id] = a; }
@@ -69,7 +71,7 @@ ACTIVITIES.push(
 // ---- events
 const gs = EVENTS.find(e => e.id === 'gate_spawn');
 if (gs) { Object.defineProperty(gs, 'w', { get: () => newsMult('gate_surge') ? 12 : 5 }); gs.run = c => { spawnGate(c); }; }
-EVENTS.push(GOD_EVENT, ...SEVERED_EVENTS, ...FORTUNE_EVENTS,
+EVENTS.push(GOD_EVENT, SACRIFICE_EVENT, ...SEVERED_EVENTS, ...FORTUNE_EVENTS,
   { id: 'ruins', cond: c => c.age >= 16, w: 0.25, run: async c => {
       const v = await ui.choice({ title: 'Collapsed Ruins', icon: 'chest', text: 'A landslide has exposed the corner of an ancient storehouse. Something glints under the rubble.', options: [{ label: 'Dig carefully', value: 'dig' }, { label: 'Leave it', value: false }] });
       if (!v) return ui.log('I left the ruins alone.');
@@ -111,7 +113,8 @@ HOOKS.inherit.push((old, c, ch) => {
   c.flags.intro = { motif: 'tree', color: '#7fe3a0', lines: [`${fullName(old)} has died: ${old.cause || 'their story ended'}.`, 'The ink of their life dries on the page.', 'Their blood runs on in you.'], title: fullName(c), sub: `Generation ${c.generation}`, sound: 'birth' };
 });
 HOOKS.yearStart.push(c => { newsYear(c); portfolioYear(c); birthYear(c, haveChild); });
-HOOKS.yearEnd.push(c => { if (c.alive) { trainersYear(c); jobsYear(c); } });
+HOOKS.yearEnd.push(c => { if (c.alive) { trainersYear(c); jobsYear(c); temperYear(c, ui, stat); } });
+HOOKS.birth.push(c => { rollTemper(c); ui.log(`Personality: ${c.temper.map(id => TEMPER[id].name).join(', ')}.`); });
 HOOKS.yearEnd.push(async c => {
   grantPoints(c); schoolYear(c); ownSectYear(c); bodyYear(c);
   if (!canGetQiIllness(c) && clearQiIllness(c)) ui.log('Without cultivated Qi in my body, the Qi sickness simply faded away.', 'good');

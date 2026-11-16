@@ -2,7 +2,8 @@
 import { G, META } from '../core/state.js';
 import { h, icon } from './dom.js';
 import { drawFullBody } from './portrait.js';
-import { traitChip, render } from './render.js';
+import { traitChip, temperChip, render } from './render.js';
+import { TEMPER } from '../data/temper.js';
 import { REALMS, ELEMENTS } from '../data/realms.js';
 import { ITEMS, SLOTS } from '../data/items.js';
 import { COND_BY_ID } from '../data/conditions.js';
@@ -83,6 +84,7 @@ export function statusTab() {
       h('div', { class: 'box' }, h('h3', {}, 'Bonds'), bondList(c).length ? bondList(c).map(b => h('div', { class: 'small', style: { margin: '4px 0' } }, h('b', {}, `${b.label}: ${b.who.first}`), h('div', { class: 'muted' }, b.perks.join(' · ')))) : h('span', { class: 'muted' }, 'No best friend or partner yet.')),
       h('div', { class: 'box' }, h('h3', {}, 'Conditions'), (c.conditions || []).length ? c.conditions.map(x => h('div', { class: 'small bad', style: { margin: '3px 0' } }, `${COND_BY_ID[x.id].name}${x.sev > 1 ? ` (severity ${x.sev})` : ''}`)) : h('span', { class: 'good' }, 'Healthy'))),
     h('div', { class: 'box', style: { marginTop: '14px' } }, h('h3', {}, 'Traits'), c.traits.map(id => traitChip(id))),
+    h('div', { class: 'box', style: { marginTop: '14px' } }, h('h3', {}, 'Personality'), (c.temper || []).length ? c.temper.map(id => h('div', { class: 'small', style: { margin: '4px 0' } }, temperChip(id), ' ', h('span', { class: 'muted' }, TEMPER[id]?.desc))) : h('span', { class: 'muted' }, 'Still forming.')),
     bodySection(c),
   ];
 }

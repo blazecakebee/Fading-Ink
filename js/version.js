@@ -1,7 +1,13 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.8.3';
+export const VERSION = '0.8.4';
 export const CHANGELOG = [
+  { v: '0.8.4', date: '2026-11-15', title: 'Who you are', notes: [
+    'Personality: you\'re born with 1–2 of 40 personality traits (up to 4 at once). There are 20 virtues, like Kind, Loyal, Disciplined and Wise, and 20 trade-offs, like Psychopath, Eccentric, Naive, Egregiously Arrogant, Ruthless and Melancholic. Each has real effects on training, study, salary, relationships, stress, combat power, breakthroughs and more.',
+    'New personality traits develop from how you live: hours in the gym, years of meditation, gifts, crimes, grief, sacrifice… Opposites can\'t coexist, and the oldest trait fades when you gain a 5th. Loyal people\'s bonds barely fade; Fickle people\'s fade fast. Psychopaths feel no grief; Cold people feel half.',
+    'Forbidden art: the Myriad Souls Refinement. Only the dark or the desperate find it. It unlocks Blood Sacrifice once a year: take a life for a huge surge of Qi and +10% on your next breakthrough. Someone who loved you, family, or a cultivator gives far more than a stranger. The cost: crushing stress and sorrow, possible PTSD or depression, sometimes a colder personality for good, and you may be caught and jailed or hunted for revenge.',
+    'Fame has its own icon.',
+  ] },
   { v: '0.8.3', date: '2026-11-15', title: 'Everyone is different', notes: [
     'Every person now has a personality: two traits out of 14, including the new Grumpy and Competitive. Learn them by talking, and they show on each person\'s card in the People tab.',
     'Conversations are stricter. Only answers that suit their personality help. Bland answers do nothing (strangers find them off-putting), and the wrong ones cost a lot of closeness.',

@@ -77,6 +77,7 @@ export function breakthroughInfo(c) {
   add('Partner (dual cultivation)', bondBonus(c, 'breakthrough') - 1);
   if (method(c).bt) add(method(c).name, method(c).bt);
   if (c.flags.incense) add('Calming Incense burned', 0.12);
+  if (c.flags.soulFed) add('A devoured soul', 0.1);
   if (major && c.inv.trib_talisman) add('Lightning Ward Talisman', 0.15);
   const bp = major && next && Object.entries(ITEMS).find(([id, it]) => it.bt?.realm === next.id && c.inv[id]);
   if (bp) { const q = bestQ(c, bp[0]); add(`${QUALITY[q].name} ${bp[1].name}`, bp[1].bt.bonus * QUALITY[q].mult); }
@@ -102,7 +103,7 @@ export async function breakthrough(c) {
   const info = breakthroughInfo(c); let p = info.p;
   const ward = major && c.inv.trib_talisman; if (ward) addItem(c, 'trib_talisman', -1);
   if (major) { const bp = Object.entries(ITEMS).find(([id, it]) => it.bt?.realm === next.id && c.inv[id]); if (bp) addItem(c, bp[0], -1, 'best'); }
-  c.flags.incense = false;
+  c.flags.incense = false; c.flags.soulFed = false;
   if (major && next.req?.pill) addItem(c, next.req.pill, -1, 'best');
   if (major && next.trib) {
     ui.log(`Clouds gather. The Heavens send a Tribulation to judge my ascent to ${next.name}.`, 'qi');
