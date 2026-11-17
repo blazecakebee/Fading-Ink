@@ -1,7 +1,13 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.26';
+export const VERSION = '0.9.27';
 export const CHANGELOG = [
+  { v: '0.9.27', date: '2026-11-16', title: 'More Fables', notes: [
+    'Four new Fable Quests (Fables tab, 1,000,000 Fame): The Thousand-Mirror Palace, The Ferryman\'s Last Crossing, The Tiger Who Would Be Emperor and The Hungry Kitchen God.',
+    'Each has its own choices, stat checks, fights, a boss, and best, good and dark endings — plus a permanent Title, a piece of Fable gear (Shard of the True Mirror, The Ferryman\'s Oar, Tiger-Emperor\'s Mantle, Hearthfire Charm) and a legendary Fable heirloom.',
+    'Two of them have new glyph-lock puzzles, and the dark endings leave a lasting mark that follows you home.',
+    '"The Fabled" title now needs all eight Fables. Anyone who already earned it keeps it.',
+  ] },
   { v: '0.9.26', date: '2026-11-16', title: 'Looks', notes: [
     '20 new hairstyles. Female: Long Layers, Crown Braid, Low Pigtails, Messy Bun, Straight Cut, Swept Long, Ringlets, Ribbon Pony, Pixie Curl and Shoulder Waves. Male: Chonmage, Shaggy, Short Afro, Cornrows, Tall Spikes, Emo, Warrior Tail, Fade, Flat Top and Mullet. New characters can be born with them.',
     'Body types: everyone is now Lean, Average or Chubby. It comes from your parents, shows on your portrait and full-body sprite (rounder or narrower face, wider or slimmer frame, a belly), and is listed on the Character tab.',

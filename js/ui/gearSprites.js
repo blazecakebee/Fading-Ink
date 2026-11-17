@@ -121,6 +121,10 @@ export const GEAR_SPRITES = {
   fable_robe: P('mantle', '#3a7aa8', '#9fd8ff', '#1a3a5a', '#0a1a2a', '#000', '#e0f4ff'),
   fable_sword: P('sword', '#c0c8d8', '#ffffff', '#6a7383', '#3a2a1a', '#ffd36f', '#e0e6ff'),
   fable_ring: P('ring', '#d8d0ff', '#ffffff', '#7a70a8', '#000', '#e0d8ff', '#fff4b0'),
+  fable_mirror: P('coin', '#bfe6ff', '#ffffff', '#5a7a9a', '#000', '#e0f4ff', '#ffffff'),
+  fable_oar: P('staff', '#3a5a5a', '#6fd3c8', '#1a2a2a', '#0a1a1a', '#6fd3c8', '#e0fff8'),
+  fable_pelt: P('hide', '#ffb02e', '#ffe0a0', '#7a4a0a', '#1a1208', '#000', '#fff4b0'),
+  fable_hearth: P('amulet', '#ff7a4a', '#ffd0a0', '#a8320f', '#5a1a0a', '#ffd36f', '#fff4b0'),
 };
 const cache = {};
 export function gearSprite(id, size = 32) {

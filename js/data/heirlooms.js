@@ -17,6 +17,10 @@ export const HEIRLOOMS = {
   unfinished_book: { tier: 'legendary', fable: true, icon: 'manual', name: 'The Unfinished Book', desc: '+10% study, +3% breakthrough.', study: 1.1, breakthrough: 0.03 },
   general_seal:    { tier: 'legendary', fable: true, icon: 'shield', name: "Rusted General's Seal", desc: '+6% combat power, +6% training.', power: 1.06, train: 1.06 },
   moon_coin:       { tier: 'legendary', fable: true, icon: 'moon', name: 'The One Real Moon-Coin', desc: '+12% loot, +6% salary.', loot: 1.12, pay: 1.06 },
+  true_reflection: { tier: 'legendary', fable: true, icon: 'eye', name: 'The True Reflection', desc: '+8% closeness, +5% training.', social: 1.08, train: 1.05 },
+  ferry_bell:      { tier: 'legendary', fable: true, icon: 'bell', name: "The Ferryman's Bell", desc: 'Heal 8% faster, spirits hurt you less (+12%).', healRate: 1.08, spiritBane: 1.12 },
+  tiger_tally:     { tier: 'legendary', fable: true, icon: 'claw', name: 'Jade Tiger Tally', desc: '+5% combat power, +5% salary.', power: 1.05, pay: 1.05 },
+  hearth_pot:      { tier: 'legendary', fable: true, icon: 'cauldron', name: "The Kitchen God's Pot", desc: 'Pills work 10% better, +10% gathering.', pill: 1.1, gather: 1.1 },
   // common — small, flavourful
   jade_pendant:  { tier: 'common', icon: 'amulet', name: "Grandmother's Jade Pendant", desc: 'Stress builds 5% slower.', stressMult: 0.95 },
   iron_ring:     { tier: 'common', icon: 'ring', name: 'Worn Iron Ring', desc: '+3% combat power.', power: 1.03 },

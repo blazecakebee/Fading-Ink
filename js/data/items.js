@@ -75,6 +75,11 @@ export const ITEMS = {
   fable_robe:   { name: 'Robe of Drowned Pages', icon: 'robe', type: 'gear', slot: 'armor', fable: true, stats: { hp: 220, agi: 12, qi: 0.1 }, desc: 'Fable gear. +220 HP, +12 Agility, +10% Qi gain.' },
   fable_sword:  { name: 'Oathkeeper', icon: 'broadsword', type: 'gear', slot: 'weapon', fable: true, stats: { dmg: 1.3, agi: 6, qi: 0.1 }, desc: 'Fable gear. +130% damage, +6 Agility, +10% Qi gain.' },
   fable_ring:   { name: 'Ring of the Paid Debt', icon: 'ring', type: 'gear', slot: 'ring', fable: true, stats: { dmg: 0.16, luck: 10, qi: 0.06 }, color: '#d8d0ff', desc: 'Fable gear. +16% damage, +10 Luck, +6% Qi gain.' },
+  // v0.9.27 more Fable gear
+  fable_mirror: { name: 'Shard of the True Mirror', icon: 'eye', type: 'gear', slot: 'charm', fable: true, stats: { qi: 0.12, agi: 8, luck: 6 }, color: '#bfe6ff', desc: 'Fable gear. +12% Qi gain, +8 Agility, +6 Luck.' },
+  fable_oar:    { name: "The Ferryman's Oar", icon: 'water', type: 'gear', slot: 'weapon', fable: true, stats: { dmg: 1.15, hp: 80, qi: 0.08 }, desc: 'Fable gear. +115% damage, +80 HP, +8% Qi gain.' },
+  fable_pelt:   { name: "Tiger-Emperor's Mantle", icon: 'claw', type: 'gear', slot: 'armor', fable: true, stats: { hp: 180, agi: 10, dmg: 0.1 }, desc: 'Fable gear. +180 HP, +10 Agility, +10% damage.' },
+  fable_hearth: { name: 'Hearthfire Charm', icon: 'fire', type: 'gear', slot: 'necklace', fable: true, stats: { qi: 0.1, hp: 60, luck: 6 }, color: '#ff7a4a', desc: 'Fable gear. +10% Qi gain, +60 HP, +6 Luck.' },
   celestial_armor: { name: 'Celestial Armour', icon: 'shield', type: 'gear', slot: 'armor', stats: { hp: 180, agi: 10 }, desc: '+180 HP, +10 Agility.' },
   lucky_coin:      { name: 'Lucky Coin', icon: 'market', type: 'gear', slot: 'charm', price: 200, shop: 1, stats: { luck: 5 }, desc: '+5 Luck.' },
   phoenix_feather: { name: 'Phoenix Feather', icon: 'feather', type: 'gear', slot: 'charm', stats: { hp: 25, qi: 0.05 }, desc: '+25 HP, +5% Qi gain.' },
