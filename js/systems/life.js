@@ -9,7 +9,7 @@ import { G, META, save } from '../core/state.js';
 import { ui } from '../core/bus.js';
 import { ri, pick, chance, clamp, uid, weighted, rand } from '../core/rng.js';
 import { COUNTRIES, WEALTH, ERAS, TIERS, BIOMES } from '../data/countries.js';
-import { perk } from '../data/legacyTree.js';
+import { perk, legacyBirth } from '../data/legacyTree.js';
 import { METHODS } from '../data/realms.js';
 import { RECIPES, ITEMS } from '../data/items.js';
 import { REALMS, ELEMENTS } from '../data/realms.js';
@@ -175,6 +175,7 @@ export function newLife(opts = {}) {
   if (perk('m1')) c.stats.smarts = clamp(c.stats.smarts + 5);
   if (perk('m2')) c.stats.charisma = clamp(c.stats.charisma + 5);
   if (perk('m3')) { const pills = RECIPES.filter(r => ITEMS[r.out].type === 'consumable' && r.id !== 'r_ink').sort(() => Math.random() - 0.5).slice(0, 2); c.recipes = [...(c.recipes || []), ...pills.map(r => r.id)]; }
+  legacyBirth(c); // v0.9.25 the rest of the Legacy tree's birth bonuses
   if (perk('b4') && genes.carriers) genes.carriers = genes.carriers.filter(() => Math.random() < 0.5);
   c.lifespan += traitVal(c, 'life');
   c.money += ri(...wealth.money) * (opts.moneyBonus ? 1 : 1);
@@ -183,7 +184,7 @@ export function newLife(opts = {}) {
   if (!opts.inherit) geneticStats(c, base0);
   if (opts.inheritMoney) c.money += opts.inheritMoney;
   // birth log
-  ensureBody(c); if (opts.heights) c.body.adultHeight = adultHeight(c.country, c.gender, opts.heights);
+  ensureBody(c); c.body.build = c.genes.build || 'average'; if (opts.heights) c.body.adultHeight = adultHeight(c.country, c.gender, opts.heights);
   beginYear(c);
   geneticCheck(c, true);
   HOOKS.birth.forEach(f => f(c, opts));

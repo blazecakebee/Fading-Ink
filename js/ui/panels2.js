@@ -127,7 +127,7 @@ export function bodyPathTab() {
     const row = h('div', { class: 'rung' + (cur ? ' current' : done ? ' done' : ' locked') }, h('span', { class: 'rung-glyph', style: { '--rc': t.color } }, t.glyph),
       h('span', { class: 'rung-name' }, t.name, h('small', { class: 'muted' }, ` · fights like ${t.eq ? REALMS[t.eq].name : 'a mortal'}`)), null);
     row.style.setProperty('--rc', t.color); row.title = `Stat cap ${t.cap} · power ×${t.power} · +${t.life}y lifespan`; return row; }));
-  const moves = Object.values(BODY_MOVES).map(m => h('div', { class: 'small', style: { opacity: on && b.tier >= m.tier ? 1 : 0.5 } }, icon(m.icon, 'sm'), ' ', h('b', {}, m.name), ` (${BODY_TIERS[m.tier].name}) — ${m.info}`));
+  const moves = Object.values(BODY_MOVES).sort((x, y) => x.tier - y.tier).map(m => h('div', { class: 'small', style: { opacity: on && b.tier >= m.tier ? 1 : 0.5 } }, icon(m.icon, 'sm'), ' ', h('b', {}, m.name), ` (${BODY_TIERS[m.tier].name}) — ${m.info}`));
   return [h('h2', { class: 'display' }, 'The Severed Path'),
     h('p', { class: 'muted' }, 'Some are born without Qi. Some tear it out. Either way, heaven stops watching them — and their bodies stop having limits. Each tier of the body counts as a cultivation realm in every fight, Gate and Guild exam.'),
     on ? h('div', { class: 'year-card' }, h('h3', {}, `${T.name}`), h('div', { class: 'muted small' }, b.tier < BODY_TIERS.length - 1 ? `Tempering ${Math.round(b.prog)} / ${T.need}${b.prog >= T.need ? ' — ready for your Body Trial!' : ''}` : 'You are Unbound. There is nothing left to break.'),

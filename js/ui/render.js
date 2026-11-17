@@ -257,16 +257,9 @@ async function runMany(list, el) { // runs a list of activities in order while a
 }
 function quickBar(c) {
   if (!c.alive) return null; const av = availActs(c), pins = (META.settings.pins || []).map(id => av.find(a => a.id === id)).filter(Boolean);
-  const top = av.filter(a => REPEATABLE.includes(a.id) && c.counts[a.id]).sort((x, y) => c.counts[y.id] - c.counts[x.id]).slice(0, 3);
-  const rep = av.filter(a => REPEATABLE.includes(a.id)); G.ui.batch = rep.find(a => a.id === G.ui.batch?.id) ? G.ui.batch : { id: top[0]?.id || rep[0]?.id, n: 1 };
-  const n = Math.max(1, Math.min(G.ui.batch.n || 1, c.actions || 1));
+  // v0.9.25 the repeat-routine / batch bar is gone; only pinned actions remain
   return h('div', { class: 'quickbar' },
-    pins.length ? h('div', { class: 'acts pinned' }, pins.slice(0, 4).map(actBtn)) : h('div', { class: 'muted small' }, 'Tap ☆ on any action to pin it here (up to 4).'),
-    h('div', { class: 'qb-row' },
-      top.length ? h('button', { class: 'btn ghost mini', disabled: c.actions <= 0, title: top.map(a => a.name).join(', '), onclick: e => { const seq = []; while (seq.length < c.actions) seq.push(...top); runMany(seq.slice(0, c.actions), e.currentTarget); } }, `↻ Repeat routine: ${top.map(a => a.name.replace(/ \(.*\)$/, '')).join(', ')}`) : null,
-      rep.length ? h('span', { class: 'batch' }, h('select', { onchange: e => { G.ui.batch = { id: e.target.value, n }; render(); } }, rep.map(a => h('option', { value: a.id, selected: a.id === G.ui.batch.id }, a.name))),
-        h('input', { type: 'range', class: 'range', style: { '--p': `${c.actions > 1 ? (n - 1) / (c.actions - 1) * 100 : 100}%` }, min: 1, max: Math.max(1, c.actions), value: n, disabled: c.actions <= 1, oninput: e => { G.ui.batch.n = +e.target.value; e.target.style.setProperty('--p', `${(e.target.value - 1) / Math.max(1, c.actions - 1) * 100}%`); e.target.nextSibling.textContent = `×${e.target.value}`; } }), h('b', { class: 'batch-n' }, `×${n}`),
-        h('button', { class: 'btn mini', disabled: c.actions <= 0, onclick: e => { const a = rep.find(x => x.id === G.ui.batch.id); runMany(Array(Math.min(G.ui.batch.n || 1, c.actions)).fill(a), e.currentTarget); } }, 'Do it')) : null));
+    pins.length ? h('div', { class: 'acts pinned' }, pins.slice(0, 4).map(actBtn)) : h('div', { class: 'muted small' }, 'Tap ☆ on any action to pin it here (up to 4).'));
 }
 // v0.9.7 driver's license panel (Assets tab)
 function licenseBox(c) {
@@ -321,7 +314,7 @@ export const TABS = {
       h('div', { class: 'pframe' }, portraitFor(c, Math.max(160, (META.settings.portraitSize || 64) * 2.5))),
       h('div', { style: { flex: 1, minWidth: '240px' } }, h('h2', { class: 'display', style: { fontSize: '2.2rem' } }, fullName(c)),
         h('table', { class: 'kv' }, [['Born', `${c.city}, ${cty.name} (year ${c.birthYear})`], ['Family wealth', WEALTH.find(w => w.id === c.wealth).name], ['Age', `${c.age} · ${lifeStage(c.age)}`],
-          ['Expected lifespan', `~${lifespan(c)} years`], ['Hair', `${(c.hair?.style || c.genes.style)} · ${(c.hair?.color || c.genes.hairColor)}`], ['Base looks', c.genes.looks + ' (fixed at birth)'],
+          ['Expected lifespan', `~${lifespan(c)} years`], ['Hair', `${(c.hair?.style || c.genes.style)} · ${(c.hair?.color || c.genes.hairColor)}`], ['Base looks', c.genes.looks + ' (fixed at birth)'], ['Body type', `${{ lean: 'Lean', average: 'Average', chubby: 'Chubby' }[c.body?.build || c.genes.build || 'average']}${(c.body?.muscle || 0) >= 45 ? ' · broad from muscle' : ''} (training trims you down, idle years fill you out)`],
           ['Generation', c.generation], ['Heirlooms', heirloomsOf(c).map(x => HEIRLOOMS[x.id].name).join(', ') || '—']].map(([k, v]) => h('tr', {}, h('td', {}, k), h('td', {}, v)))),
         h('div', { class: 'row', style: { marginTop: '12px' } }, h('button', { class: 'btn', disabled: c.age < 13 || !c.alive, onclick: openSalon }, icon('salon', 'sm'), ' Visit the salon'), h('button', { class: 'btn ghost', disabled: c.age < 18 || !c.alive || c.actions <= 0, onclick: openSurgery }, icon('doctor', 'sm'), ' Plastic surgery')),
         h('p', { class: 'muted' }, 'You\'re born with your face and base looks. The salon changes your hair; plastic surgery (18+) can raise your Looks — at a price, and with a risk of going wrong. Cultivation and fitness help too.'))),

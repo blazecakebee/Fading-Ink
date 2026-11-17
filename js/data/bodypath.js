@@ -26,4 +26,15 @@ export const BODY_MOVES = {
   blood_rush:       { tier: 5, icon: 'heart', name: 'Blood Rush', cost: -20, dmg: [0, 0], acc: 1, guard: true, info: 'Force your heart to race: recover stamina and brace.' },
   heaven_splitter:  { tier: 9, icon: 'lightning', name: 'Heaven Splitter', cost: 26, dmg: [62, 88], acc: 0.8, stat: 'strength', body: true, pierce: true, info: 'A blow that splits clouds. Ignores defences.' },
   unbound_strike:   { tier: 6, icon: 'star', name: 'Unbound Strike', cost: 22, dmg: [42, 60], acc: 0.84, stat: 'strength', body: true, pierce: true, stun: 0.3, info: 'Everything you are in one strike. Ignores defences, may stun.' },
+  // v0.9.25 ten more Severed techniques (unlock as your body tier rises)
+  bull_charge:      { tier: 1, icon: 'kick', name: 'Bull Charge', cost: 9, dmg: [10, 15], acc: 0.85, stat: 'strength', body: true, stun: 0.15, info: 'Shoulder-first through their guard. May stun.' },
+  whirlwind_kick:   { tier: 2, icon: 'combat', name: 'Whirlwind Kick', cost: 12, dmg: [7, 10], hits: 2, acc: 0.9, stat: 'agility', body: true, info: 'Spin and strike twice.' },
+  iron_will:        { tier: 2, icon: 'shield', name: 'Iron Will', cost: -10, dmg: [0, 0], acc: 1, armor: 2, info: 'Clench every muscle: take half damage for 2 hits and catch your breath.' },
+  pressure_point:   { tier: 3, icon: 'claw', name: 'Pressure Point Strike', cost: 8, dmg: [10, 14], acc: 0.95, stat: 'agility', body: true, sap: 35, weaken: 2, info: 'A finger to the nerve: drains 35 stamina and weakens their blows for 2 turns.' },
+  earthshaker:      { tier: 4, icon: 'hammer', name: 'Earthshaker Stomp', cost: 16, dmg: [28, 40], acc: 0.82, stat: 'strength', body: true, stun: 0.35, info: 'The ground cracks under them. May stun.' },
+  hundred_fists:    { tier: 5, icon: 'fist', name: 'Hundred Fists', cost: 18, dmg: [10, 14], hits: 4, acc: 0.78, stat: 'agility', body: true, info: 'A blur of four strikes.' },
+  second_wind:      { tier: 6, icon: 'heart', name: 'Second Wind', cost: -30, dmg: [0, 0], acc: 1, heal: 0.15, info: 'Breathe deep: heal 15% of your max HP and recover stamina.' },
+  titan_grip:       { tier: 7, icon: 'fist', name: 'Titan Grip', cost: 20, dmg: [46, 62], acc: 0.85, stat: 'strength', body: true, shatter: true, weaken: 2, info: 'Seize and crush: breaks Guard and Iron Skin and weakens them for 2 turns.' },
+  meteor_dive:      { tier: 8, icon: 'star', name: 'Meteor Dive', cost: 28, dmg: [58, 80], acc: 0.76, stat: 'strength', body: true, pierce: true, stun: 0.3, info: 'Leap into the sky and come down like a meteor. Ignores defences.' },
+  world_ender:      { tier: 11, icon: 'sun', name: 'World-Ending Fist', cost: 34, dmg: [100, 140], acc: 0.8, stat: 'strength', body: true, pierce: true, stun: 0.4, info: 'One fist with the weight of the world behind it.' },
 };

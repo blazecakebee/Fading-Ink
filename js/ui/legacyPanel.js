@@ -98,7 +98,7 @@ function legacyTree() {
     col.append(h('div', { class: 'tree-head' }, ic(B.icon, 'sm'), ' ', h('b', {}, B.name), h('div', { class: 'muted small' }, B.desc)));
     for (const n of order(br)) {
       const lvl = perk(n.id), locked = n.req && !perk(n.req), maxed = lvl >= n.max;
-      const node = h('div', { class: 'tree-node' + (lvl ? ' owned' : '') + (locked ? ' locked' : '') + (maxed ? ' maxed' : ''), style: { marginLeft: depth(n) * 18 + 'px' } },
+      const node = h('div', { class: 'tree-node' + (lvl ? ' owned' : '') + (locked ? ' locked' : '') + (maxed ? ' maxed' : ''), style: { marginLeft: Math.min(depth(n), 4) * 12 + 'px' } },
         h('div', { class: 'row' }, h('b', {}, n.name), h('span', { class: 'pips-l' }, '◆'.repeat(lvl) + '◇'.repeat(n.max - lvl))),
         h('div', { class: 'small muted' }, n.desc),
         locked ? h('div', { class: 'small' }, `🔒 Needs ${NODE[n.req].name}`) :

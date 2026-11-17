@@ -1,7 +1,21 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.24';
+export const VERSION = '0.9.26';
 export const CHANGELOG = [
+  { v: '0.9.26', date: '2026-11-16', title: 'Looks', notes: [
+    '20 new hairstyles. Female: Long Layers, Crown Braid, Low Pigtails, Messy Bun, Straight Cut, Swept Long, Ringlets, Ribbon Pony, Pixie Curl and Shoulder Waves. Male: Chonmage, Shaggy, Short Afro, Cornrows, Tall Spikes, Emo, Warrior Tail, Fade, Flat Top and Mullet. New characters can be born with them.',
+    'Body types: everyone is now Lean, Average or Chubby. It comes from your parents, shows on your portrait and full-body sprite (rounder or narrower face, wider or slimmer frame, a belly), and is listed on the Character tab.',
+    'Your body type changes with how you live: years of training trim you down toward lean, idle years (especially later in life or when wealthy) fill you out.',
+    'Muscle now shows: the more muscle you build, the broader your shoulders, the thicker your arms and legs, and the sharper your V-shape — on both the portrait and the full-body sprite.',
+  ] },
+  { v: '0.9.25', date: '2026-11-16', title: 'Arts & Ancestors', notes: [
+    'Removed the "Repeat routine" button and the batch bar (action picker, slider and "Do it") from the Life tab. Pinned actions stay.',
+    'Legacy tree: 20 new upgrades in every branch (100 total) — Fortune, Cultivation, Body, Mind & Spirit and Destiny. Small, stackable bonuses to salary, loot, Qi, training, study, healing, lifespan, starting stats and money. They are expensive: maxing all of them takes many lives.',
+    '10 new Qi techniques you comprehend by cultivating: Gale Slash, Frost Lance, Lotus Bloom Mantra, Thousand Sword Rain, Earth Prison Seal, Soul-Binding Chains, Azure Dragon Roar, Heavenly Mirror, Sun-Piercing Pillar and Void Collapse. Every meditation gives a small chance (higher if the art matches your element), and reaching a new realm often brings a sudden insight. See them in the Cultivation tab.',
+    '10 new Severed Path techniques that unlock as your body tier rises: Bull Charge, Whirlwind Kick, Iron Will, Pressure Point Strike, Earthshaker Stomp, Hundred Fists, Second Wind, Titan Grip, Meteor Dive and World-Ending Fist.',
+    'Every new technique has its own visual effect and sound. New combat effects: multi-hit strikes, healing, stamina drain, weakening, shattering defences and reflecting damage.',
+    'Charge Qi in battle: your meridians now hold a limited amount of Qi in a fight (80 + 35 per realm); the rest waits in your dantian. Charge Qi spends your turn to draw up to half a bar back — but the enemy gets a free hit, each charge risks your meridians seizing for the rest of the fight, and running your Qi dry can lock charging for 2 turns. When your dantian is empty, there is nothing left to charge.',
+  ] },
   { v: '0.9.24', date: '2026-11-16', title: 'How to Play', notes: [
     'Every minigame now explains itself the first time you play it: the goal, what happens step by step, phone and PC controls, and what your result does. This covers all 35 action, meditation and social games, the 5 combat specials, boss and tribulation action phases, Gate Breaches and Fable locks.',
     'Each set of instructions only appears once. Settings → "Show all minigame instructions again" brings them back, and you can turn them off entirely. The game itself still can\'t be skipped.',

@@ -119,7 +119,21 @@ export function bodyYear(c) {
   }
   // muscle fades slowly without training
   if ((c.age - (c.lastTrained?.strength ?? c.age)) >= 3) c.body.muscle = Math.max(0, c.body.muscle - 1);
+  buildYear(c);
   const pn = pain(c); if (pn > 3) c.stats.happiness = clamp(c.stats.happiness - Math.round(pn));
+}
+
+// v0.9.26 body type (lean / average / chubby): starts from your genes, then drifts with how active you are
+export const BUILD_LABEL = { lean: 'Lean', average: 'Average', chubby: 'Chubby' };
+export function ensureBuild(c) { ensureBody(c); if (!c.body.build) { const g = c.genes?.build; c.body.build = g || (Math.random() < 0.3 ? 'lean' : Math.random() < 0.65 ? 'average' : 'chubby'); if (c.genes && !g) c.genes.build = c.body.build; } return c.body.build; }
+export function buildYear(c) {
+  const b = ensureBuild(c); if (c.age < 12) return;
+  const active = [c.lastTrained?.strength, c.lastTrained?.agility].some(a => a === c.age), idle = [c.lastTrained?.strength, c.lastTrained?.agility].every(a => a == null || c.age - a >= 2);
+  const rich = ['rich', 'royal'].includes(c.wealth) || (c.money || 0) > 200000, older = c.age >= 35;
+  let next = b;
+  if (active) { if (b === 'chubby' && chance(0.3)) next = 'average'; else if (b === 'average' && chance(0.12 + (c.body.muscle >= 40 ? 0.08 : 0))) next = 'lean'; }
+  else if (idle) { if (b === 'lean' && chance(0.08 + (older ? 0.04 : 0))) next = 'average'; else if (b === 'average' && chance(0.06 + (rich ? 0.04 : 0) + (older ? 0.04 : 0))) next = 'chubby'; }
+  if (next !== b) { c.body.build = next; ui.log(next === 'chubby' ? 'My clothes have been getting tighter. I\'ve filled out.' : next === 'lean' ? 'All that training paid off — I\'m leaner than I\'ve ever been.' : b === 'chubby' ? 'Training has trimmed me down to an average build.' : 'Without training I\'ve softened up a little.', next === 'chubby' ? '' : 'good'); }
 }
 
 // Qi healing: mends injuries; regrows limbs lost within 2 years (needs Foundation Establishment or higher)

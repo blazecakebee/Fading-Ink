@@ -176,6 +176,7 @@ HOOKS.yearEnd.push(async c => {
 });
 HOOKS.death.push(c => { F8.rollFate(c); });
 HOOKS.yearEnd.push(async c => { if (c.alive) await F8.fateYear(c); });
+HOOKS.yearEnd.push(async c => { if (c.alive) (await import('./skills.js')).skillsYear(c); }); // v0.9.25 comprehend new Qi arts
 HOOKS.death.push(c => {
   const born = G.world.year - c.age;
   ui.cinematic?.({ motif: 'crack', color: '#b9b0c0', threads: 4, lines: [`${c.cause ? (c.cause[0].toUpperCase() + c.cause.slice(1)).replace(/^I /, 'You ').replace(/\bmy\b/g, 'your') : 'The end came'}.`, c.heirlooms?.length || c.people.some(p => ['Son', 'Daughter'].includes(p.role) && p.alive) ? 'What you leave behind waits for your heirs.' : 'With no heir, your bloodline — and all it carried — ends here.'], title: fullName(c), sub: `${born} – ${G.world.year} · aged ${c.age}`, sound: 'death', introSound: 'click' });
@@ -189,6 +190,13 @@ export async function installExpansion() {
   ui.arena = o => AR.arena(o); ui.arenaOn = () => S().arenaFights !== false;
   ui.bossPhase = (await import('../ui/render.js')).bossPhase;
   { const FU = await import('../ui/fableUI.js'); TABS.fables = FU.fablesTab; }
+  { const base = TABS.cultivation, SK = await import('./skills.js'), { MOVES } = await import('../data/combat.js'), { h, icon } = await import('../ui/dom.js'); // v0.9.25 techniques list
+    TABS.cultivation = () => { const out = [base()].flat(), c = G.char; if (!c?.qi?.known || onBodyPathQ(c)) return out;
+      const known = c.qi.techs.filter(id => MOVES[id]), row = (id, has, note) => { const M = MOVES[id]; return h('div', { class: 'tech-row' + (has ? '' : ' locked') }, icon(M.icon, 'sm'), h('div', {}, h('b', {}, has ? M.name : '???'), ' ', h('span', { class: 'small muted' }, has ? `${M.qi ? M.qi + ' Qi · ' : ''}${M.info}` : note))); };
+      const box = h('details', { class: 'box', open: true, style: { marginTop: '14px' } }, h('summary', {}, h('h3', { style: { display: 'inline' } }, 'Combat techniques')),
+        h('p', { class: 'small muted' }, 'Manuals teach some arts. Others you must comprehend yourself: every meditation gives a chance (better if the art matches your element), and reaching a new realm often brings a sudden insight. In battle your meridians hold ' + (80 + c.qi.realm * 35) + ' Qi; use Charge Qi to draw more from your dantian.'),
+        known.map(id => row(id, true)), SK.QI_ARTS.filter(a => !known.includes(a.id)).map(a => row(a.id, false, `Not yet comprehended · needs ${(REALMS[a.realm] || {}).name || 'realm ' + a.realm}${a.elem === c.qi.elem ? ' · suits your element' : ''}`)));
+      return [...out, box]; }; }
   { const FTU = await import('../ui/fateUI.js'); TABS.blackmarket = FTU.blackMarketTab; const ch0 = TABS.character; TABS.character = function () { return [...[].concat(ch0.call(this)), FTU.fateCard(G.char)]; }; }
   { const BG = await import('../ui/breachGame.js'); ui.breach = (c, rank) => BG.playBreach(c, rank); }
   TABS.bloodline = P.bloodlineTab; TABS.factions = P.factionsTab;

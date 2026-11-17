@@ -52,9 +52,126 @@ export const TREE = [
   { id: 'd3', branch: 'destiny', name: 'Divine Notice', desc: 'Gods are twice as likely to cross your path.', cost: 60, max: 1, req: 'd1' },
   { id: 'd4', branch: 'destiny', name: 'Hunter\'s Blood', desc: 'End-game Hunts pay 10% more and are a little less deadly.', cost: 50, max: 1, req: 'd2' },
   { id: 'd5', branch: 'destiny', name: 'Fortune\'s Favourite', desc: '+5 Luck at birth, and loot rolls High grade more often.', cost: 80, max: 1, req: 'd3' },
+  // v0.9.25 twenty more nodes per branch (mods: per-level bonus, birth: per-level start bonus)
+  { id: 'f9', branch: 'fortune', name: 'Penny Wise', desc: '+3% salary per level.', cost: 25, max: 3, req: 'f1', mods: { pay: 0.03 } },
+  { id: 'f10', branch: 'fortune', name: 'Nest Egg', desc: '+1,000 starting money per level.', cost: 20, max: 3, req: 'f9', birth: { money: 1000 } },
+  { id: 'f11', branch: 'fortune', name: 'Street Smarts', desc: '8% less likely to be caught committing crimes per level.', cost: 30, max: 2, req: 'f9', mods: { crime: -0.08 } },
+  { id: 'f12', branch: 'fortune', name: 'Pawnbroker\'s Eye', desc: '+5% Gate loot.', cost: 35, max: 1, req: 'f11', mods: { loot: 0.05 } },
+  { id: 'f13', branch: 'fortune', name: 'Market Instinct', desc: '+2 Luck and +2 Smarts at birth per level.', cost: 25, max: 2, req: 'f10', birth: { luck: 2, smarts: 2 } },
+  { id: 'f14', branch: 'fortune', name: 'Hard Bargain', desc: '+4% salary.', cost: 40, max: 1, req: 'f13', mods: { pay: 0.04 } },
+  { id: 'f15', branch: 'fortune', name: 'Old Ledger', desc: 'Start with +2,500 money.', cost: 45, max: 1, req: 'f10', birth: { money: 2500 } },
+  { id: 'f16', branch: 'fortune', name: 'Silver Spoon', desc: '+4 Happiness and +3 Looks at birth.', cost: 30, max: 1, req: 'f15', birth: { happiness: 4, looks: 3 } },
+  { id: 'f17', branch: 'fortune', name: 'Patron\'s Favour', desc: '+3% closeness gains per level.', cost: 30, max: 2, req: 'f16', mods: { social: 0.03 } },
+  { id: 'f18', branch: 'fortune', name: 'Tax Shelter', desc: 'Stress builds 3% slower (money worries matter less).', cost: 40, max: 1, req: 'f14', mods: { stressMult: -0.03 } },
+  { id: 'f19', branch: 'fortune', name: 'Smuggler\'s Routes', desc: 'A further 10% less likely to be caught.', cost: 50, max: 1, req: 'f11', mods: { crime: -0.1 } },
+  { id: 'f20', branch: 'fortune', name: 'Hoarder\'s Luck', desc: '+4% gathering yields per level.', cost: 30, max: 2, req: 'f12', mods: { gather: 0.04 } },
+  { id: 'f21', branch: 'fortune', name: 'Family Bank', desc: 'Start with +5,000 money.', cost: 70, max: 1, req: 'f15', birth: { money: 5000 } },
+  { id: 'f22', branch: 'fortune', name: 'Guild Accounts', desc: '+3% salary per level.', cost: 60, max: 2, req: 'f14', mods: { pay: 0.03 } },
+  { id: 'f23', branch: 'fortune', name: 'Treasure Hunter', desc: '+4% Gate loot per level.', cost: 55, max: 2, req: 'f12', mods: { loot: 0.04 } },
+  { id: 'f24', branch: 'fortune', name: 'Golden Cradle', desc: '+5 Charisma at birth.', cost: 45, max: 1, req: 'f16', birth: { charisma: 5 } },
+  { id: 'f25', branch: 'fortune', name: 'Pill Merchant\'s Line', desc: 'Pills work 4% better.', cost: 60, max: 1, req: 'f20', mods: { pill: 0.04 } },
+  { id: 'f26', branch: 'fortune', name: 'Dynasty Fund', desc: 'Start with +10,000 money.', cost: 110, max: 1, req: 'f21', birth: { money: 10000 } },
+  { id: 'f27', branch: 'fortune', name: 'Lucky Coin', desc: '+4 Luck at birth per level.', cost: 50, max: 2, req: 'f24', birth: { luck: 4 } },
+  { id: 'f28', branch: 'fortune', name: 'Empire Builder', desc: '+5% salary and +3% closeness gains.', cost: 140, max: 1, req: 'f22', mods: { pay: 0.05, social: 0.03 } },
+  { id: 'c9', branch: 'cultivation', name: 'Calm Dantian', desc: '+3% Qi gain per level.', cost: 30, max: 3, req: 'c1', mods: { qi: 0.03 } },
+  { id: 'c10', branch: 'cultivation', name: 'Spirit Roots', desc: '+5 Qi affinity at birth per level.', cost: 25, max: 3, req: 'c1', birth: { affinity: 5 } },
+  { id: 'c11', branch: 'cultivation', name: 'Clear Channels', desc: '+4% chance to open meridians.', cost: 35, max: 1, req: 'c10', mods: { merid: 0.04 } },
+  { id: 'c12', branch: 'cultivation', name: 'Pill Tolerance', desc: 'Pills work 4% better per level.', cost: 35, max: 2, req: 'c9', mods: { pill: 0.04 } },
+  { id: 'c13', branch: 'cultivation', name: 'Steady Breath', desc: 'Stress builds 3% slower.', cost: 30, max: 1, req: 'c9', mods: { stressMult: -0.03 } },
+  { id: 'c14', branch: 'cultivation', name: 'Elder\'s Guidance', desc: '+1% breakthrough chance per level.', cost: 45, max: 3, req: 'c4', mods: { breakthrough: 0.01 } },
+  { id: 'c15', branch: 'cultivation', name: 'Ancestral Meridians', desc: '+3% chance to open meridians per level.', cost: 45, max: 2, req: 'c11', mods: { merid: 0.03 } },
+  { id: 'c16', branch: 'cultivation', name: 'Lineage Insight', desc: '+3% study gains (scriptures and manuals).', cost: 30, max: 1, req: 'c13', mods: { study: 0.03 } },
+  { id: 'c17', branch: 'cultivation', name: 'Spirit Ward', desc: 'Spirits hurt you 6% less per level.', cost: 35, max: 2, req: 'c13', mods: { spiritBane: 0.06 } },
+  { id: 'c18', branch: 'cultivation', name: 'Qi-Fed Body', desc: '+2 years of life per level.', cost: 40, max: 2, req: 'c12', mods: { life: 2 } },
+  { id: 'c19', branch: 'cultivation', name: 'Inner Furnace', desc: '+4% Qi gain.', cost: 60, max: 1, req: 'c9', mods: { qi: 0.04 } },
+  { id: 'c20', branch: 'cultivation', name: 'Bloodline Resonance', desc: '+10 Qi affinity at birth.', cost: 55, max: 1, req: 'c10', birth: { affinity: 10 } },
+  { id: 'c21', branch: 'cultivation', name: 'Sword Heart', desc: '+2% combat power per level.', cost: 60, max: 2, req: 'c19', mods: { power: 0.02 } },
+  { id: 'c22', branch: 'cultivation', name: 'Alchemist\'s Root', desc: '+3 Craftsmanship per level.', cost: 30, max: 2, req: 'c12', mods: { craft: 3 } },
+  { id: 'c23', branch: 'cultivation', name: 'Quick Reflexes', desc: 'You act first in fights more often.', cost: 50, max: 1, req: 'c21', mods: { initiative: 0.1 } },
+  { id: 'c24', branch: 'cultivation', name: 'Heaven\'s Patience', desc: '+1% breakthrough chance per level.', cost: 70, max: 2, req: 'c14', mods: { breakthrough: 0.01 } },
+  { id: 'c25', branch: 'cultivation', name: 'Nascent Spark', desc: '+3% Qi gain per level.', cost: 80, max: 2, req: 'c19', mods: { qi: 0.03 } },
+  { id: 'c26', branch: 'cultivation', name: 'Dao Comprehension', desc: '+4% study and +2% Qi gain.', cost: 90, max: 1, req: 'c16', mods: { study: 0.04, qi: 0.02 } },
+  { id: 'c27', branch: 'cultivation', name: 'Undying Ember', desc: '+4 years of life.', cost: 100, max: 1, req: 'c18', mods: { life: 4 } },
+  { id: 'c28', branch: 'cultivation', name: 'Ascendant Bloodline', desc: '+3% Qi gain, +1% breakthrough chance and +5 Qi affinity at birth.', cost: 160, max: 1, req: 'c25', mods: { qi: 0.03, breakthrough: 0.01 }, birth: { affinity: 5 } },
+  { id: 'b9', branch: 'body', name: 'Sturdy Frame', desc: '+3 Strength at birth per level.', cost: 20, max: 2, req: 'b1', birth: { strength: 3 } },
+  { id: 'b10', branch: 'body', name: 'Light Feet', desc: '+3 Agility at birth per level.', cost: 20, max: 2, req: 'b1', birth: { agility: 3 } },
+  { id: 'b11', branch: 'body', name: 'Training Genes', desc: '+3% training gains per level.', cost: 30, max: 3, req: 'b9', mods: { train: 0.03 } },
+  { id: 'b12', branch: 'body', name: 'Quick Mend', desc: '+5% healing per level.', cost: 25, max: 2, req: 'b8', mods: { healRate: 0.05 } },
+  { id: 'b13', branch: 'body', name: 'Iron Lungs', desc: '+3 Health at birth per level.', cost: 20, max: 2, req: 'b1', birth: { health: 3 } },
+  { id: 'b14', branch: 'body', name: 'Pain Tolerance', desc: 'Stress builds 3% slower.', cost: 35, max: 1, req: 'b13', mods: { stressMult: -0.03 } },
+  { id: 'b15', branch: 'body', name: 'Brawler\'s Blood', desc: '+3 Battle Knowledge at birth per level.', cost: 30, max: 2, req: 'b5', birth: { battle: 3 } },
+  { id: 'b16', branch: 'body', name: 'Natural Athlete', desc: '+3% training gains.', cost: 45, max: 1, req: 'b11', mods: { train: 0.03 } },
+  { id: 'b17', branch: 'body', name: 'Hollow Bones', desc: 'You act first in fights more often.', cost: 45, max: 1, req: 'b10', mods: { initiative: 0.1 } },
+  { id: 'b18', branch: 'body', name: 'Deep Roots', desc: '+2 years of life per level.', cost: 35, max: 3, req: 'b3', mods: { life: 2 } },
+  { id: 'b19', branch: 'body', name: 'Fast Recovery', desc: '+1 Health healed when you rest, per level.', cost: 30, max: 2, req: 'b12', mods: { heal: 1 } },
+  { id: 'b20', branch: 'body', name: 'Bone Density', desc: '+2% combat power per level.', cost: 55, max: 2, req: 'b6', mods: { power: 0.02 } },
+  { id: 'b21', branch: 'body', name: 'Good Posture', desc: '+3 Looks at birth.', cost: 25, max: 1, req: 'b13', birth: { looks: 3 } },
+  { id: 'b22', branch: 'body', name: 'Ironclad', desc: '+5 Strength and +5 Health at birth.', cost: 60, max: 1, req: 'b9', birth: { strength: 5, health: 5 } },
+  { id: 'b23', branch: 'body', name: 'Wolf\'s Stamina', desc: '+4% training gains per level.', cost: 70, max: 2, req: 'b16', mods: { train: 0.04 } },
+  { id: 'b24', branch: 'body', name: 'Spirit-Proof Skin', desc: 'Spirits hurt you 6% less.', cost: 40, max: 1, req: 'b20', mods: { spiritBane: 0.06 } },
+  { id: 'b25', branch: 'body', name: 'Centenarian Line', desc: '+4 years of life.', cost: 90, max: 1, req: 'b18', mods: { life: 4 } },
+  { id: 'b26', branch: 'body', name: 'Regenerator', desc: '+8% healing.', cost: 70, max: 1, req: 'b19', mods: { healRate: 0.08 } },
+  { id: 'b27', branch: 'body', name: 'War Body', desc: '+3% combat power and +3 Agility at birth.', cost: 120, max: 1, req: 'b20', mods: { power: 0.03 }, birth: { agility: 3 } },
+  { id: 'b28', branch: 'body', name: 'Titan\'s Heir', desc: '+5 Strength, +5 Agility and +5 Battle Knowledge at birth.', cost: 150, max: 1, req: 'b22', birth: { strength: 5, agility: 5, battle: 5 } },
+  { id: 'm9', branch: 'mind', name: 'Bookworm Line', desc: '+3% study gains per level.', cost: 25, max: 3, req: 'm1', mods: { study: 0.03 } },
+  { id: 'm10', branch: 'mind', name: 'Bright Eyes', desc: '+3 Smarts at birth per level.', cost: 20, max: 2, req: 'm1', birth: { smarts: 3 } },
+  { id: 'm11', branch: 'mind', name: 'Warm Smile', desc: '+3 Charisma at birth per level.', cost: 20, max: 2, req: 'm2', birth: { charisma: 3 } },
+  { id: 'm12', branch: 'mind', name: 'Good Listener', desc: '+3% closeness gains per level.', cost: 30, max: 2, req: 'm2', mods: { social: 0.03 } },
+  { id: 'm13', branch: 'mind', name: 'Even Temper', desc: 'Stress builds 3% slower per level.', cost: 35, max: 2, req: 'm1', mods: { stressMult: -0.03 } },
+  { id: 'm14', branch: 'mind', name: 'Steady Hands', desc: '+3 Craftsmanship per level.', cost: 25, max: 2, req: 'm6', mods: { craft: 3 } },
+  { id: 'm15', branch: 'mind', name: 'Cheerful Line', desc: '+5 Happiness at birth.', cost: 20, max: 1, req: 'm13', birth: { happiness: 5 } },
+  { id: 'm16', branch: 'mind', name: 'Gifted Pupil', desc: '+4% study gains.', cost: 45, max: 1, req: 'm9', mods: { study: 0.04 } },
+  { id: 'm17', branch: 'mind', name: 'Born Leader', desc: '+4 Charisma and +2% closeness gains.', cost: 50, max: 1, req: 'm11', birth: { charisma: 4 }, mods: { social: 0.02 } },
+  { id: 'm18', branch: 'mind', name: 'Pill Lore', desc: 'Pills work 3% better per level.', cost: 35, max: 2, req: 'm3', mods: { pill: 0.03 } },
+  { id: 'm19', branch: 'mind', name: 'Forager\'s Wit', desc: '+4% gathering yields per level.', cost: 30, max: 2, req: 'm10', mods: { gather: 0.04 } },
+  { id: 'm20', branch: 'mind', name: 'Second Wind', desc: '2% chance per level that an action costs nothing.', cost: 80, max: 2, req: 'm5', mods: { refund: 0.02 } },
+  { id: 'm21', branch: 'mind', name: 'Social Butterfly', desc: '+1 Social point every year.', cost: 140, max: 1, req: 'm12', mods: { extraSocial: 1 } },
+  { id: 'm22', branch: 'mind', name: 'Prodigy', desc: '+5 Smarts at birth.', cost: 55, max: 1, req: 'm10', birth: { smarts: 5 } },
+  { id: 'm23', branch: 'mind', name: 'Master Artisan Line', desc: '+5 Craftsmanship.', cost: 60, max: 1, req: 'm14', mods: { craft: 5 } },
+  { id: 'm24', branch: 'mind', name: 'Tranquil Mind', desc: 'Stress builds 4% slower.', cost: 70, max: 1, req: 'm13', mods: { stressMult: -0.04 } },
+  { id: 'm25', branch: 'mind', name: 'Lucky Charm', desc: '+3 Luck at birth per level.', cost: 35, max: 2, req: 'm4', birth: { luck: 3 } },
+  { id: 'm26', branch: 'mind', name: 'Scholar Dynasty', desc: '+4% study gains per level.', cost: 80, max: 2, req: 'm16', mods: { study: 0.04 } },
+  { id: 'm27', branch: 'mind', name: 'Silver Voice', desc: '+4% closeness gains and +3% salary.', cost: 90, max: 1, req: 'm17', mods: { social: 0.04, pay: 0.03 } },
+  { id: 'm28', branch: 'mind', name: 'Sage\'s Heir', desc: '+5 Smarts, +5 Charisma and +3% study gains.', cost: 150, max: 1, req: 'm22', birth: { smarts: 5, charisma: 5 }, mods: { study: 0.03 } },
+  { id: 'd6', branch: 'destiny', name: 'Gate Instinct', desc: '+3% Gate loot per level.', cost: 25, max: 3, req: 'd2', mods: { loot: 0.03 } },
+  { id: 'd7', branch: 'destiny', name: 'Close Call', desc: '+3 Luck at birth per level.', cost: 20, max: 2, req: 'd1', birth: { luck: 3 } },
+  { id: 'd8', branch: 'destiny', name: 'Ghost Sight', desc: 'Spirits hurt you 6% less per level.', cost: 30, max: 2, req: 'd1', mods: { spiritBane: 0.06 } },
+  { id: 'd9', branch: 'destiny', name: 'Hunter\'s Instinct', desc: 'You act first in fights more often.', cost: 40, max: 1, req: 'd2', mods: { initiative: 0.1 } },
+  { id: 'd10', branch: 'destiny', name: 'Fated Strength', desc: '+2% combat power per level.', cost: 50, max: 2, req: 'd9', mods: { power: 0.02 } },
+  { id: 'd11', branch: 'destiny', name: 'Blessed Birth', desc: '+5 Happiness and +3 Health at birth.', cost: 25, max: 1, req: 'd7', birth: { happiness: 5, health: 3 } },
+  { id: 'd12', branch: 'destiny', name: 'Star-Crossed Charm', desc: '+3% closeness gains.', cost: 30, max: 1, req: 'd7', mods: { social: 0.03 } },
+  { id: 'd13', branch: 'destiny', name: 'Omen Reader', desc: '+1% breakthrough chance per level.', cost: 45, max: 2, req: 'd3', mods: { breakthrough: 0.01 } },
+  { id: 'd14', branch: 'destiny', name: 'Scavenger\'s Fate', desc: '+4% gathering yields per level.', cost: 30, max: 2, req: 'd6', mods: { gather: 0.04 } },
+  { id: 'd15', branch: 'destiny', name: 'Heaven-Sent Pills', desc: 'Pills work 3% better per level.', cost: 40, max: 2, req: 'd13', mods: { pill: 0.03 } },
+  { id: 'd16', branch: 'destiny', name: 'Charmed Life', desc: '+2 years of life per level.', cost: 40, max: 2, req: 'd11', mods: { life: 2 } },
+  { id: 'd17', branch: 'destiny', name: 'Fate\'s Shield', desc: 'Stress builds 3% slower.', cost: 35, max: 1, req: 'd11', mods: { stressMult: -0.03 } },
+  { id: 'd18', branch: 'destiny', name: 'Warrior\'s Destiny', desc: '+3% training gains per level.', cost: 40, max: 2, req: 'd10', mods: { train: 0.03 } },
+  { id: 'd19', branch: 'destiny', name: 'Spoils of Fate', desc: '+5% Gate loot.', cost: 60, max: 1, req: 'd6', mods: { loot: 0.05 } },
+  { id: 'd20', branch: 'destiny', name: 'Lucky Break', desc: '1% chance per level that an action costs nothing.', cost: 60, max: 2, req: 'd5', mods: { refund: 0.01 } },
+  { id: 'd21', branch: 'destiny', name: 'Fortune\'s Child', desc: '+5 Luck at birth.', cost: 55, max: 1, req: 'd7', birth: { luck: 5 } },
+  { id: 'd22', branch: 'destiny', name: 'Chosen One', desc: '+3% Qi gain and +3% training gains.', cost: 90, max: 1, req: 'd18', mods: { qi: 0.03, train: 0.03 } },
+  { id: 'd23', branch: 'destiny', name: 'Slayer\'s Mark', desc: '+3% combat power.', cost: 100, max: 1, req: 'd10', mods: { power: 0.03 } },
+  { id: 'd24', branch: 'destiny', name: 'Destiny\'s Favour', desc: '+1% breakthrough chance and +3% Gate loot.', cost: 110, max: 1, req: 'd13', mods: { breakthrough: 0.01, loot: 0.03 } },
+  { id: 'd25', branch: 'destiny', name: 'Heaven\'s Darling', desc: '+5 Luck, +3 years of life and +2% to Qi, training and study gains.', cost: 170, max: 1, req: 'd21', birth: { luck: 5 }, mods: { life: 3, qi: 0.02, train: 0.02, study: 0.02 } },
 ];
 // passive bonuses from the tree (fed into the bonus system)
-export const legacyMods = () => ({ healRate: 1 + 0.1 * perk('b8'), loot: 1 + 0.08 * perk('d2') });
+const ADDITIVE = ['breakthrough', 'life', 'refund', 'heal', 'craft', 'merid', 'extraSocial', 'extraAction'];
+export function legacyMods() {
+  const m = { healRate: 1 + 0.1 * perk('b8'), loot: 1 + 0.08 * perk('d2') };
+  for (const n of TREE) { const l = perk(n.id); if (!l || !n.mods) continue;
+    for (const [k, v] of Object.entries(n.mods)) m[k] = ADDITIVE.includes(k) ? (m[k] || 0) + v * l : (m[k] ?? 1) * (1 + v * l); }
+  return m;
+}
+// v0.9.25 birth bonuses from the tree (stats, Qi affinity, starting money)
+export function legacyBirth(c) {
+  for (const n of TREE) { const l = perk(n.id); if (!l || !n.birth) continue;
+    for (const [k, v] of Object.entries(n.birth)) {
+      if (k === 'money') c.money += v * l;
+      else if (k === 'affinity') c.qi.affinity = Math.min(100, c.qi.affinity + v * l);
+      else if (k in c.stats) c.stats[k] = Math.max(0, Math.min(100, (c.stats[k] || 0) + v * l));
+    }
+  }
+}
 // v0.8.6 one-time blessings: bought now, used up by your next life (a new life or an heir)
 // v0.9.11 the old next-life blessing shop is gone. Kept only so queued blessings can be refunded.
 export const BLESSINGS = [

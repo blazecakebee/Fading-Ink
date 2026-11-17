@@ -15,6 +15,17 @@ export const MOVES = {
   star_fall:   { icon: 'star', name: 'Falling Star Palm', cost: 12, qi: 60, dmg: [52, 78], acc: 0.72, stat: 'qi', stun: 0.2, info: 'A palm like a falling star. May stun.' },
   qilin_flame: { icon: 'fire', name: 'Qilin Flame', cost: 6, qi: 35, dmg: [26, 36], acc: 0.9, stat: 'qi', burn: 3, info: 'Holy fire that clings for 2 turns.' },
   blood_drain: { icon: 'demon', name: 'Blood Drain', cost: 6, qi: 20, dmg: [14, 22], acc: 0.85, stat: 'qi', drain: 0.5, info: 'Heals you for half the damage. Demonic.' },
+  // v0.9.25 techniques comprehended through cultivation (see systems/skills.js)
+  gale_slash:    { icon: 'feather', name: 'Gale Slash', cost: 3, qi: 12, dmg: [9, 14], acc: 0.97, stat: 'qi', evade: true, info: 'A blade of wind. Strike and slip away on the gust.' },
+  frost_lance:   { icon: 'snowball', name: 'Frost Lance', cost: 4, qi: 20, dmg: [16, 24], acc: 0.9, stat: 'qi', sap: 25, info: 'Ice through the ribs. Drains 25 of their stamina.' },
+  lotus_bloom:   { icon: 'flower', name: 'Lotus Bloom Mantra', cost: 0, qi: 25, dmg: [0, 0], acc: 1, heal: 0.2, info: 'A lotus of Qi opens over your heart. Heal 20% of your max HP.' },
+  sword_rain:    { icon: 'saber', name: 'Thousand Sword Rain', cost: 6, qi: 32, dmg: [9, 13], hits: 3, acc: 0.85, stat: 'qi', info: 'Qi swords fall three times.' },
+  earth_prison:  { icon: 'earth', name: 'Earth Prison Seal', cost: 6, qi: 28, dmg: [14, 20], acc: 0.88, stat: 'qi', stun: 0.45, info: 'Stone pillars clamp shut around them. Likely to stun.' },
+  soul_chains:   { icon: 'skull', name: 'Soul-Binding Chains', cost: 6, qi: 34, dmg: [18, 26], acc: 0.86, stat: 'qi', sap: 30, weaken: 2, info: 'Chains of Qi bind the soul: drains stamina and weakens their blows for 2 turns.' },
+  azure_dragon:  { icon: 'water', name: 'Azure Dragon Roar', cost: 10, qi: 48, dmg: [44, 62], acc: 0.82, stat: 'qi', shatter: true, info: 'A dragon of Qi tears through Guard and Iron Skin, hitting harder if they were up.' },
+  heaven_mirror: { icon: 'moon', name: 'Heavenly Mirror', cost: 0, qi: 36, dmg: [0, 0], acc: 1, reflect: 0.6, info: 'The next blow that lands on you is reflected: they take 60% of it.' },
+  sun_pillar:    { icon: 'sun', name: 'Sun-Piercing Pillar', cost: 10, qi: 62, dmg: [62, 86], acc: 0.8, stat: 'qi', pierce: true, burn: 3, info: 'A pillar of sunfire from the sky. Ignores defences and burns.' },
+  void_collapse: { icon: 'eye', name: 'Void Collapse', cost: 12, qi: 85, dmg: [92, 130], acc: 0.78, stat: 'qi', pierce: true, stun: 0.35, info: 'Space folds in on itself. Ignores defences, may stun.' },
 };
 export const BASE_MOVES = ['jab', 'punch', 'kick', 'guard'];
 Object.assign(MOVES, BODY_MOVES); // Severed Path techniques
