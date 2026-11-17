@@ -1,7 +1,14 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.44';
+export const VERSION = '0.9.45';
 export const CHANGELOG = [
+  { v: '0.9.45', date: '2026-11-17', title: 'Breathing room', notes: [
+    'Bad luck is much less constant. After something bad happens, misfortune eases off for the next couple of years. Illness, weather, shortages, Beast Tides, plagues and the gloomier random events are all rarer right after a bad year, and a bit rarer overall. Unprompted bad luck now hits about 1 year in 3 instead of nearly every year.',
+    'The death of someone you barely knew no longer counts as a tragedy, and grief reminders are quieter and less frequent.',
+    'A failed haggle is no longer logged as a misfortune.',
+    'Practice bouts now give real stats. A win gives Battle, Strength and Agility; a loss still teaches you some Battle and Strength; yielding gives a little.',
+    'Hidden techniques: each teacher passes on only ONE, with a full cutscene, and then the option disappears for good.',
+  ] },
   { v: '0.9.44', date: '2026-11-17', title: 'Awkward presents', notes: [
     'Gifts give less: about +4 to +9 closeness instead of a flat +15, before the minigame.',
     'Each extra gift to the same person in a year counts for less (half, then a quarter).',

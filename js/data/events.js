@@ -2,6 +2,7 @@ import { eff } from '../systems/body.js';
 import { effRealm } from '../systems/path.js';
 // Random yearly events. Each: cond(c) -> bool, weight, run(c) async. Choice events open a popup.
 import { ui } from '../core/bus.js';
+import { lull } from '../systems/luck.js';
 import { G } from '../core/state.js';
 import { ri, pick, chance, clamp, weighted } from '../core/rng.js';
 import { stat, money, fmtMoney, country, addItem, discount, priceFor, wage } from '../systems/life.js';
@@ -64,7 +65,7 @@ const E = [
         options: [{ label: `Buy for ${fmtMoney(c, price)}`, value: 'buy', disabled: c.money < price }, { label: 'Haggle (Charisma)', value: 'haggle' }, { label: 'Walk away', value: 'no', ghost: true }] });
       if (v === 'haggle') {
         if (chance(0.25 + eff(c, 'charisma') / 200)) { price = Math.round(price * 0.7); c.flags.haggled = true; stat(c, 'charisma', 1); const ok = await ui.choice({ title: 'Haggled!', icon: 'shop', text: `"Fine, fine — ${fmtMoney(c, price)}, and you're robbing me."`, options: [{ label: `Buy for ${fmtMoney(c, price)}`, value: true, disabled: c.money < price }, { label: 'No thanks', value: false, ghost: true }] }); if (!ok) return ui.log('I talked a merchant down, then walked away anyway.'); }
-        else return ui.log('I tried to haggle with a merchant. They packed up and left in a huff.', 'bad');
+        else return ui.log('I tried to haggle with a merchant. They packed up and left in a huff.');
       } else if (v !== 'buy') return;
       if (c.money < price) return; money(c, -price); addItem(c, id, n); ui.log(`I bought ${n}× ${it.name} from a merchant for ${fmtMoney(c, price)}.`, 'good'); } },
   // --- exotic merchants: rare, stock pills (incl. breakthrough pills) at steep prices — Charisma helps
@@ -91,13 +92,16 @@ const E = [
       `World: ${pick(['An earthquake', 'A typhoon', 'A heatwave'])} struck ${pick(['the coast', 'the capital', 'the north'])}.`]), 'world') },
 ];
 
+// v0.9.45 events that can go badly are rarer right after a bad year (see luck.js)
+let BAD_EV = new Set(), BAD_N = -1;
 export async function yearlyEvents(c) {
+  if (BAD_N !== E.length) { BAD_N = E.length; BAD_EV = new Set(E.filter(e => /'bad'/.test(String(e.run))).map(e => e.id)); } // EVENTS gets extended after load
   const fired = new Set();
   const n = c.age < 3 ? 1 : ri(1, 3);
   for (let i = 0; i < n; i++) {
     const pool = E.filter(e => !fired.has(e.id) && e.cond(c) && !(e.once && c.flags['ev_' + e.id]));
     if (!pool.length) break;
-    const ev = weighted(pool, e => e.w * (e.id === 'bully' || e.id === 'gang_threat' ? traitMult(c, 'fights') : 1));
+    const ev = weighted(pool, e => e.w * (e.id === 'bully' || e.id === 'gang_threat' ? traitMult(c, 'fights') : 1) * (BAD_EV.has(e.id) ? lull(c) * 0.6 : 1));
     fired.add(ev.id); if (ev.once) c.flags['ev_' + ev.id] = 1;
     if (!c.alive) break;
     await ev.run(c);

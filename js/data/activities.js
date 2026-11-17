@@ -64,7 +64,11 @@ export const ACTIVITIES = [
   { id: 'spar', cat: 'training', name: 'Practice bout', icon: 'combat', minAge: 8, run: async c => {
       const opp = c.people.find(p => p.alive && p.role !== 'Enemy' && Math.abs(p.age - c.age) < 6) || makePerson(c);
       const r = await fight(c, c.qi.realm ? 'gangster' : 'bully', { name: `${opp.first} (sparring)`, hp: 30 + c.age, sparring: true, realm: Math.max(0, c.qi.realm - 1) });
-      stat(c, 'agility', 1); return { text: `Practice Bout vs ${opp.first}: ${r === 'win' ? 'VICTORY' : r === 'flee' ? 'I yielded' : 'DEFEAT'}.`, cls: r === 'win' ? 'good' : '' }; } },
+      // v0.9.45 a bout is real training: winning teaches the most, losing still teaches you something
+      const [bt, st, ag] = r === 'win' ? [g(c, 2, 4), g(c, 1, 3), g(c, 1, 2)] : r === 'flee' ? [g(c, 1, 2), 0, g(c, 1, 2)] : [g(c, 2, 3), g(c, 1, 2), 1];
+      stat(c, 'battle', bt); if (st) stat(c, 'strength', st); stat(c, 'agility', ag); addMuscle(c, r === 'flee' ? 0 : 1);
+      const gains = `Battle +${bt}${st ? `, Strength +${st}` : ''}, Agility +${ag}.`;
+      return { text: `Practice Bout vs ${opp.first}: ${r === 'win' ? 'VICTORY' : r === 'flee' ? 'I yielded' : 'DEFEAT'}. ${gains}`, cls: r === 'win' ? 'good' : '' }; } },
 
   // ---- CULTIVATION (hidden until you know Qi exists)
   { id: 'meditate', cat: 'cultivation', name: 'Meditate / Gather Qi', icon: 'meditate', minAge: 4, need: c => (c.qi.medYear || 0) < 3, run: c => ({ text: meditate(c), cls: c.qi.known ? 'qi' : '' }) },

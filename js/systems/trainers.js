@@ -47,7 +47,7 @@ export function ensureTrainer(c, kind, art) {
 // can they teach you their hidden art right now?
 function readiness(c, p) {
   const t = p.trainer, left = hiddenFor(t.kind === 'martial' ? t.art : t.kind).filter(k => !(c.hiddenTechs || []).includes(k));
-  if (!left.length) return { ok: false, why: `${p.first} has nothing left to teach you.` };
+  if (t.taught || !left.length) return { ok: false, why: `${p.first} has nothing left to teach you.` };
   if (p.close < 70) return { ok: false, why: `${p.first} doesn't trust you enough yet (closeness 70+).` };
   if (t.kind === 'martial' && (c.martial?.[t.art] || 0) < 30) return { ok: false, why: `"Come back with a Brown belt." (${beltOf(c.martial?.[t.art] || 0)} now)` };
   if (t.kind === 'severed' && (c.bodyPath?.tier || 0) < 3) return { ok: false, why: '"Your bones are still soft. Reach Steel Sinew first."' };
@@ -63,12 +63,18 @@ export const TRAINER_SOCIAL = [
     else if (t.kind === 'sect') c.qi.qi += ri(10, 25);
     stat(c, 'battle', 1);
     return `${p.first} drilled me one-on-one for ${fmtMoney(c, fee)}. ${pick(['"Again."', '"Slower. Now faster."', '"Better. Not good. Better."', '"Your feet are lying to you."'])}`; } },
-  { id: 'trainer_secret', emoji: '📜', name: 'Ask for a hidden technique', icon: 'manual', age: 10, need: (c, p) => isTrainer(p), run: (c, p) => {
+  // v0.9.45 each teacher passes on ONE hidden technique, with a cutscene, and then never again
+  { id: 'trainer_secret', emoji: '📜', name: 'Ask for a hidden technique', icon: 'manual', age: 10, need: (c, p) => isTrainer(p) && !p.trainer.taught, run: async (c, p) => {
+    if (p.trainer.taught) return { text: `${p.first} shook their head. "I gave you the one thing I had. There is nothing more."`, cls: '' };
     const r = readiness(c, p); if (!r.ok) return { text: `I asked ${p.first} about their hidden technique. ${r.why}`, cls: '' };
     if (!chance(0.35 + (p.close - 70) / 60)) { gainClose(c, p, -2); return { text: `${p.first} studied me for a long time. "Not yet." (Try again when you're closer.)`, cls: '' }; }
-    (c.hiddenTechs ||= []).push(r.move); const m = HIDDEN[r.move]; gainClose(c, p, 5);
-    ui.cinematic?.({ motif: 'sword', color: '#ffd36f', lines: [`${p.first} closes the doors and lowers the blinds.`, '"I have taught this to three people. Two are dead."'], title: m.name, sub: 'Hidden technique', sound: 'milestone', hold: 1.6 });
-    return { text: `${p.first} taught me a hidden technique: ${m.name}! (${m.info}) It's now in my fight moves.`, cls: 'big', big: true }; } },
+    (c.hiddenTechs ||= []).push(r.move); p.trainer.taught = r.move; const m = HIDDEN[r.move]; gainClose(c, p, 5);
+    await ui.cinematic?.({ keepLines: true, motif: 'sword', color: '#ffd36f', lines: [
+      `${p.first} closes the doors and lowers the blinds.`,
+      pick(['"I have taught this to three people. Two are dead."', '"My teacher gave this to me on his last night. Now I give it to you."', '"Watch once. I will not show it twice."']),
+      `${p.first} moves. The air in the room goes still.`,
+      '"That is all of it. Everything I had worth giving. Don\'t ask me again."'], title: m.name, sub: 'Hidden technique', sound: 'milestone', hold: 2 });
+    return { text: `${p.first} taught me their hidden technique: ${m.name}! (${m.info}) It's now in my fight moves. They have nothing more to teach me in secret.`, cls: 'big', big: true }; } },
 ];
 
 // yearly: make sure your current teachers exist, and sometimes the dangerous life catches up with them

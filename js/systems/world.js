@@ -1,6 +1,7 @@
 import { eff } from './body.js';
 // Living world: each year rolls world conditions that are reported in the news AND actually change the world.
 // news.mods feed straight into the bonus system (pay, qi, price…); flags change spawn rates and events.
+import { lull } from './luck.js';
 import { effRealm } from './path.js';
 import { G } from '../core/state.js';
 import { ui } from '../core/bus.js';
@@ -42,11 +43,11 @@ export function newsYear(c) {
   n.lines.forEach(t => ui.log(`News: ${t}`, 'world'));
   if (n.id === 'gate_surge' && c.age >= 10) spawnGate(c, true);
   if (n.id === 'beast_tide' && c.age >= 6) {
-    const safe = c.qi.realm >= 3 || c.assets.some(a => a.type === 'house');
+    const safe = c.qi.realm >= 3 || c.assets.some(a => a.type === 'house') || !chance(lull(c));
     if (!safe) { stat(c, 'health', -ri(4, 10)); stat(c, 'stress', 8); ui.log('The Beast Tide reached our district. We barely got out.', 'bad'); }
     if (c.age >= 14) c.gates.push({ ...makeGate(pick(['E', 'D', 'C'])), type: 'den' });
   }
-  if (n.id === 'plague' && c.qi.realm < 2 && chance(0.35)) { stat(c, 'health', -ri(6, 14)); ui.log('I caught the fever going around.', 'bad'); }
+  if (n.id === 'plague' && c.qi.realm < 2 && chance(0.35 * lull(c))) { stat(c, 'health', -ri(6, 14)); ui.log('I caught the fever going around.', 'bad'); }
 }
 // Pick a Gate rank around the player's own realm so there is always something worth fighting.
 export function rankFor(c) {

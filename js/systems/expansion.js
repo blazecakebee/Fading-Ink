@@ -1,5 +1,6 @@
 // v0.6.0 "Bloodlines" expansion: wires heirlooms, genetics, sects & guild, world news, family life,
 // new traits, activities, events and cinematics into the existing game through hooks.
+import { noteBad } from './luck.js';
 import { G } from '../core/state.js';
 import { ui } from '../core/bus.js';
 import { ri, pick, chance, clamp } from '../core/rng.js';
@@ -190,6 +191,7 @@ HOOKS.death.push(c => {
 
 // ---- install UI-side pieces (called by main.js once the UI hooks exist)
 export async function installExpansion() {
+  { const l0 = ui.log; ui.log = (t, cls, ...r) => { if (cls === 'bad' && G.char?.alive) noteBad(G.char); return l0(t, cls, ...r); }; } // v0.9.45 luck.js lull
   const [{ cinematic }, { TABS, render, runActivity }, P] = await Promise.all([import('../ui/cinematic.js'), import('../ui/render.js'), import('../ui/expansionPanels.js')]);
   const SP = await import('../data/storyPool.js'); ui.cinematic = o => cinematic(o.keepLines ? o : SP.varyCinematic(o)); // v0.9.2 varied scenes
   const AR = await import('../ui/arena.js'); const { S } = await import('../settings.js');

@@ -61,7 +61,7 @@ export function grieve(c, p, fam) {
   import('./health.js').then(m => { if (chance(0.12 * weight + (c.stats.happiness < 30 ? 0.15 : 0))) m.addCondition(c, 'depression'); if (core) m.trauma(c, 0.15); });
 }
 // mourning lingers for a few years
-export function griefYear(c) { const g = c.grief; if (!g || g.years <= 0) return; c.stats.happiness = clamp(c.stats.happiness - Math.round(4 + 6 * g.weight)); c.stats.stress = clamp(c.stats.stress + 3); g.years--; if (!g.years) { ui.log(`The ache of losing ${g.who} has finally dulled.`); c.grief = null; } else ui.log(`I still think about ${g.who} every day.`, 'bad'); }
+export function griefYear(c) { const g = c.grief; if (!g || g.years <= 0) return; c.stats.happiness = clamp(c.stats.happiness - Math.round(4 + 6 * g.weight)); c.stats.stress = clamp(c.stats.stress + 3); g.years--; if (!g.years) { ui.log(`The ache of losing ${g.who} has finally dulled.`); c.grief = null; } else if (chance(0.5)) ui.log(pick([`I still think about ${g.who} every day.`, `Some mornings I forget ${g.who} is gone. Then I remember.`, `I kept something of ${g.who}'s by my bed.`])); }
 // Each year: everyone ages, relationships drift, new people appear, some die.
 export function yearlyPeople(c) {
   griefYear(c);
@@ -74,7 +74,7 @@ export function yearlyPeople(c) {
     if (chance(deathChance)) {
       p.alive = false;
       const fam = ['Father', 'Mother', 'Brother', 'Sister', 'Spouse', 'Son', 'Daughter'].includes(p.role);
-      ui.log(`My ${p.role.toLowerCase()} ${p.first} died at age ${p.age}.`, fam ? 'death' : 'bad');
+      ui.log(`My ${p.role.toLowerCase()} ${p.first} died at age ${p.age}.`, fam ? 'death' : p.close >= 40 ? 'bad' : ''); // v0.9.45 people you barely knew aren't a tragedy
       grieve(c, p, fam);
       if (p.id === c.partnerId) c.partnerId = null;
       if (['Father', 'Mother'].includes(p.role) && c.age < 18 && !c.people.some(q => ['Father', 'Mother'].includes(q.role) && q.alive)) c.flags.orphan = true;

@@ -1,4 +1,5 @@
 // Mood, skill decay, illnesses & mental health, and treatment (doctor, therapy, rest, Qi healing, Qi medicine).
+import { lull } from './luck.js';
 import { effRealm, bodyTier } from './path.js';
 import { HARD } from '../core/hard.js';
 import { ui } from '../core/bus.js';
@@ -72,7 +73,7 @@ export function healthYear(c) {
   // ---- genetic conditions waking up
   geneticCheck(c);
   // ---- new conditions (at most one per year)
-  for (const C of CONDITIONS) { if (!has(c, C.id) && chance(C.onset(c) * (1 + (HARD - 1) * 0.6))) { addCondition(c, C.id); break; } }
+  for (const C of CONDITIONS) { if (!has(c, C.id) && chance(C.onset(c) * (1 + (HARD - 1) * 0.6) * 0.55 * (0.3 + 0.7 * lull(c)))) { addCondition(c, C.id); break; } }
 }
 
 // Genetic conditions: manifest at birth or when you reach their age window

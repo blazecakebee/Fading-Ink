@@ -1,4 +1,5 @@
 // Character creation, yearly aging loop, death, and generational inheritance.
+import { lull } from './luck.js';
 import { onBodyPath, bodyTier } from './path.js';
 import { workloadYear } from './workload.js';
 import { maybeBreach } from './breach.js';
@@ -267,11 +268,11 @@ async function ageUp0() {
 
   // necessities & weather
   const T = tierOf(c), B = BIOMES[country(c).biome];
-  if (T.scarcity && chance(T.scarcity) && !['wealthy', 'rich', 'royal'].includes(c.wealth) && c.money < 5000 * country(c).econ) {
+  if (T.scarcity && chance(T.scarcity * 0.7 * lull(c)) && !['wealthy', 'rich', 'royal'].includes(c.wealth) && c.money < 5000 * country(c).econ) {
     const what = pick(['Food ran short this year — I often went to bed hungry.', 'The water was unsafe for months. I got sick from it.', 'Power cuts and empty markets made it a hard year.']);
     stat(c, 'health', -ri(3, 7)); stat(c, 'happiness', -4); ui.log(what, 'bad');
   }
-  if (B && chance(0.22)) {
+  if (B && chance(0.12 * lull(c))) {
     const [txt, kind] = pick(B.events); const shelter = c.assets.some(a => a.type === 'house') || c.money > 20000 * country(c).econ;
     if (shelter) ui.log(`${txt} I rode it out safely at home.`, 'world');
     else { stat(c, 'health', -ri(2, 6)); stat(c, 'happiness', -4); ui.log(`${txt} ${kind === 'cold' ? 'I could barely afford heating.' : kind === 'heat' ? 'I had no way to keep cool.' : kind === 'drought' ? 'We rationed every drop.' : 'Our home was damaged.'}`, 'bad'); }
