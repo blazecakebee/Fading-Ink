@@ -1,7 +1,10 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.42';
+export const VERSION = '0.9.43';
 export const CHANGELOG = [
+  { v: '0.9.43', date: '2026-11-17', title: 'Hotfix', notes: [
+    'Fixed the game showing only empty boxes after 0.9.42 (a broken line stopped it from loading).',
+  ] },
   { v: '0.9.42', date: '2026-11-17', title: 'Practice pays', notes: [
     'Minigame sessions now give about 17% more than before (training, studying, work, Qi).',
     'Bad sessions sting less: a sloppy session keeps 55% of the gains (was 45%), a mishap keeps 30% (was 20%). A peak session gives 2.7x (was 2.5x).',
