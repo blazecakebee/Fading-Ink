@@ -258,7 +258,7 @@ async function ageUp0() {
   // investments are handled by the stock market (systems/market.js)
   // comfort: a home, a car and pets make life easier
   const cf = comfort(c); if (cf.happy) stat(c, 'happiness', cf.happy); if (cf.stress) stat(c, 'stress', -cf.stress); if (cf.health) stat(c, 'health', cf.health);
-  c.assets.forEach(a => { if (a.rent && a.tenant) { money(c, a.rent); } a.value = Math.round(a.value * (a.type === 'car' ? 0.88 : 1 + (rand() * 0.1 - 0.02))); });
+  c.assets.forEach(a => { if (a.type === 'biz') return; if (a.rent && a.tenant) { money(c, a.rent); } a.value = Math.round(a.value * (['car', 'boat', 'plane'].includes(a.type) ? (a.prestige >= 3 ? 0.93 : 0.88) : 1 + (rand() * 0.1 - 0.02))); }); // businesses are valued by property.js
   if (c.age >= 18 && c.money < 0) { stat(c, 'stress', 10); ui.log('Debt collectors keep calling.', 'bad'); }
   if (c.age === 18 && !c.flags.leftHome) { c.flags.leftHome = true; const p = c.people.find(p => p.role === 'Mother' || p.role === 'Father'); if (p && chance(0.5) && c.wealth !== 'destitute') { const g = ri(200, 3000); money(c, g); ui.log(`${p.first} gave me ${fmtMoney(c, g)} to start my adult life.`, 'good'); } }
 
@@ -352,14 +352,16 @@ export function die(c, cause) {
 // ---- estate & inheritance: no prenup + living spouse → the spouse inherits everything; otherwise the children do
 // Comfort bonuses from what you own (rented-out homes don't count as your home)
 export function comfort(c) {
-  const homes = c.assets.filter(a => a.type === 'house' && !a.tenant), cars = c.assets.filter(a => a.type === 'car'), pets = c.assets.filter(a => a.type === 'pet');
+  const homes = c.assets.filter(a => a.type === 'house' && !a.tenant), cars = c.assets.filter(a => ['car', 'boat', 'plane'].includes(a.type)), pets = c.assets.filter(a => a.type === 'pet');
   const best = homes.reduce((m, a) => Math.max(m, a.value), 0) / country(c).econ;
   const home = best >= 800000 ? 3 : best >= 200000 ? 2 : best > 0 ? 1 : 0;
   const lines = [];
   if (home) lines.push(['🏠', ['A roof of your own', 'A comfortable family home', 'A luxurious villa'][home - 1], `+${home * 2} Happiness, -${home * 2} Stress a year, safe from bad weather`]);
   if (cars.length) lines.push(['🚗', 'Your own wheels', '+2 Happiness, -2 Stress a year']);
   if (pets.length) lines.push(['🐾', pets.length > 1 ? 'Your pets' : pets[0].name, `+${Math.min(3, pets.length) * 2} Happiness, -2 Stress a year`]);
-  return { happy: home * 2 + (cars.length ? 2 : 0) + Math.min(3, pets.length) * 2, stress: home * 2 + (cars.length ? 2 : 0) + (pets.length ? 2 : 0), health: home >= 2 ? 1 : 0, lines };
+  const prest = Math.min(4, c.assets.filter(a => a.type !== 'biz' && !a.tenant).reduce((m, a) => Math.max(m, a.prestige || 0), 0) + (c.assets.filter(a => (a.prestige || 0) >= 3).length >= 3 ? 1 : 0)); // v0.9.28 luxury
+  if (prest) lines.push(['✨', 'Luxury', `+${prest} Happiness a year from owning the finer things`]);
+  return { happy: home * 2 + (cars.length ? 2 : 0) + Math.min(3, pets.length) * 2 + prest, stress: home * 2 + (cars.length ? 2 : 0) + (pets.length ? 2 : 0), health: home >= 2 ? 1 : 0, lines };
 }
 export const estateValue = c => c.money + (c.stocks || 0) + c.assets.reduce((s, a) => s + (a.value || 0), 0);
 export function willInfo(c) {

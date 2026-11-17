@@ -55,7 +55,7 @@ export function schoolYear(c) {
   const e = c.edu;
   if (!e.school) { e.private = false; return; }
   if (e.private) {
-    if (!e.scholarship) { const f = tuition(c); if (c.money < f) { e.private = false; ui.log('My family could no longer afford private school. I moved back to a public one.', 'bad'); return; } money(c, -f); }
+    if (!e.scholarship && !e.parentsPay) { const f = tuition(c); if (c.money < f) { e.private = false; ui.log('My family could no longer afford private school. I moved back to a public one.', 'bad'); return; } money(c, -f); }
     e.grades = clamp(e.grades + ri(1, 3)); stat(c, 'smarts', 1);
   }
   // university scholarships: refund part of tuition for excellent students

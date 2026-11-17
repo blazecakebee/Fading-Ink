@@ -1047,3 +1047,31 @@ body.mo-shake #center { animation: brShake .35s; }
 .fight .moves.many .btn { padding: 9px 6px; font-size: .9rem; flex-wrap: wrap; gap: 4px 6px; line-height: 1.15; }
 .fight .moves.many .btn small { width: 100%; font-size: .72rem; }
 @media (max-width: 760px) { .fight .moves.many { grid-template-columns: 1fr 1fr; } }
+
+/* v0.9.28 vendors & businesses */
+.vend-seg { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+.vend-seg button { flex: 1 1 auto; }
+.vend-grid { align-items: start; }
+.card.vendor { display: flex; flex-direction: column; gap: 8px; }
+.vend-head { display: flex; gap: 10px; align-items: flex-start; }
+.vend-ic { font-size: 1.6rem; line-height: 1; }
+.vend-item { display: flex; gap: 10px; align-items: center; padding-top: 8px; border-top: 1px dashed var(--border-soft); }
+.vend-item .btn { white-space: nowrap; }
+.mkt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 4px 16px; }
+.mkt-row { display: grid; grid-template-columns: 1fr 70px 70px; align-items: center; gap: 8px; font-size: .9rem; }
+.mkt-row b { text-align: right; font-variant-numeric: tabular-nums; }
+.spark { width: 70px; height: 20px; color: var(--accent, #e8c46a); }
+.pos { color: #7fe3a0; } .neg { color: #e0566a; }
+.biz-card.warn { border-color: #e0566a; box-shadow: 0 0 10px rgba(224,86,106,.3); }
+.biz-modal { max-width: 720px; }
+.biz-opt { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.biz-btns { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+.biz-hist { overflow-x: auto; margin-top: 8px; } .biz-hist th { text-align: left; padding: 2px 6px; } .biz-hist td { padding: 2px 6px; }
+.btn.danger { color: #ff8a9a; border-color: #e0566a; }
+
+/* v0.9.28 reacting to people */
+.react-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; font-style: normal; }
+.react-chip { font: inherit; font-size: .8rem; padding: 4px 9px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--text) 25%, transparent); background: color-mix(in srgb, var(--panel, #241c16) 70%, transparent); color: var(--text); cursor: pointer; transition: transform .1s, border-color .1s; }
+.react-chip:hover, .react-chip:focus-visible { border-color: var(--accent, #e8c46a); transform: translateY(-1px); }
+.st-line.say.me { color: color-mix(in srgb, var(--text) 80%, #ffd36f); }
+@media (max-width: 760px) { .react-chip { font-size: .85rem; padding: 7px 11px; } }

@@ -8,6 +8,7 @@ import { ri, pick, chance, clamp } from '../core/rng.js';
 import { stat, money, fmtMoney, wage } from './life.js';
 import { gainClose } from './people.js';
 import { ensurePersona } from '../data/personas.js';
+import * as T from './talk.js';
 
 const FAMILY = ['Father', 'Mother', 'Brother', 'Sister', 'Son', 'Daughter', 'Spouse', 'Partner'];
 const CLOSE_ROLES = [...FAMILY, 'Friend', 'Best Friend', 'Crush', 'Classmate', 'Coworker', 'Acquaintance', 'Disciple'];
@@ -15,7 +16,7 @@ const people = c => (c.people || []).filter(p => p.alive && !p.coop && !p.hostil
 const isParent = p => p.role === 'Father' || p.role === 'Mother';
 const isLove = (c, p) => p.id === c.partnerId || p.role === 'Spouse' || p.role === 'Partner';
 const has = (p, ...t) => { ensurePersona(p); return p.persona.some(x => t.includes(x)); };
-const say = (p, text, cls = 'say') => ui.log(`${p.first} (${p.role.toLowerCase()}): “${text}”`, cls);
+const say = (p, text, cls = 'say', mood) => mood ? T.sayR(G.char, p, text, mood, cls) : ui.log(`${p.first} (${p.role.toLowerCase()}): “${text}”`, cls); // v0.9.28 with a mood, you can react to it
 
 // ---------- what changed this year
 function snapshot(c) {
@@ -105,7 +106,7 @@ const CHAT = {
 const kindOf = (c, p) => isParent(p) ? 'parent' : (p.role === 'Son' || p.role === 'Daughter') && p.age < 16 ? 'kid' : isLove(c, p) ? 'love' : (p.role === 'Brother' || p.role === 'Sister') ? 'sibling' : 'friend';
 function smallTalk(c) {
   const pool = people(c).filter(p => p.close >= 45 && p.age >= 5); if (!pool.length || !chance(0.45)) return;
-  const p = pick(pool); say(p, pick(CHAT[kindOf(c, p)]));
+  const p = pick(pool), k = kindOf(c, p); say(p, pick(CHAT[k]), 'say', { parent: 'chat', kid: 'kid', love: 'love', friend: 'chat', sibling: 'chat' }[k]);
 }
 
 // ---------- neglect: people you never spend time with drift away, and tell you so
@@ -114,7 +115,7 @@ function neglect(c) {
     if (p.close < 50 || c.age < 12 || !(FAMILY.includes(p.role) || ['Friend', 'Best Friend'].includes(p.role))) continue;
     if (p.neglectSaid && G.world.year - p.neglectSaid < 4) continue;
     const last = p.lastTalk ?? p.met ?? G.world.year; if (G.world.year - last < 3) continue;
-    if (chance(0.25)) { p.neglectSaid = G.world.year; p.close = clamp(p.close - ri(2, 5)); say(p, pick(isParent(p) ? ['You never call any more.', 'Are we not good enough for you now?', 'I had to hear about your life from the neighbours.'] : isLove(c, p) ? ['Do you even see me any more?', 'I feel like I\'m living with a stranger.'] : ['Guess you\'re too busy for me these days.', 'You used to have time for me.', 'Did I do something wrong?']), 'say bad'); return; }
+    if (chance(0.25)) { p.neglectSaid = G.world.year; p.close = clamp(p.close - ri(2, 5)); say(p, pick(isParent(p) ? ['You never call any more.', 'Are we not good enough for you now?', 'I had to hear about your life from the neighbours.'] : isLove(c, p) ? ['Do you even see me any more?', 'I feel like I\'m living with a stranger.'] : ['Guess you\'re too busy for me these days.', 'You used to have time for me.', 'Did I do something wrong?']), 'say bad', 'complaint'); return; }
   }
 }
 
@@ -176,12 +177,13 @@ const REQ = [
         return ui.log(pick([`${p.first} beamed at me like I'd hung the moon.`, `${p.first} told everyone at school about it.`, `Small things. ${p.first} will remember them forever.`]), 'good'); }
       gainClose(c, p, -ri(3, 6)); ui.log(`${p.first} went quiet and walked away.`, 'bad'); } },
 ];
+REQ.push(...T.QUESTIONS.map(q => ({ ...q, run: (c, p) => q.run(c, p, ask) }))); // v0.9.28 people ask you things
 async function ask(c, p, text, opts) {
   const { indexCard } = await import('../ui/conversation.js').catch(() => ({}));
   return ui.choice({ title: `${p.first} ${p.last || ''}`.trim(), icon: 'people', portrait: indexCard ? indexCard(p) : null, dismiss: false, text: `${p.role} · closeness ${p.close}%\n${text}`, options: opts.map(([label, value, dis]) => ({ label, value, disabled: !!dis, ghost: value === 'no' })) });
 }
 async function request(c) {
-  if (c.age < 6 || c.prison || !ui.choice || !chance(c.age < 14 ? 0.3 : 0.55)) return;
+  if (c.age < 5 || c.prison || !ui.choice || !chance(c.age < 14 ? 0.45 : 0.55)) return;
   const pool = people(c).filter(p => p.close >= 30);
   const opts = []; for (const R of REQ) for (const p of pool) if (R.who(c, p)) opts.push({ R, p, w: R.w * (0.5 + p.close / 100) });
   if (!opts.length) return; let r = Math.random() * opts.reduce((s, o) => s + o.w, 0); const o = opts.find(x => (r -= x.w) < 0) || opts[0];
@@ -197,11 +199,11 @@ const LIFE = [
       if (v === 'go') { gainClose(c, p, ri(5, 9)); stat(c, 'happiness', 5); return ui.log(`${p.first}'s wedding: lanterns, too much food, one very drunk uncle.`, 'good'); }
       gainClose(c, p, -ri(6, 10)); say(p, 'You missed my wedding.', 'say bad'); } },
   { id: 'baby', ok: p => p.age >= 22 && p.age <= 45 && p.married && !FAMILY.includes(p.role), run: (c, p) => { p.kids = (p.kids || 0) + 1; ui.log(`${p.first} had a baby. They sent me a photo of a very small, very angry face.`); } },
-  { id: 'promo', ok: p => p.age >= 20 && p.age < 65, run: (c, p) => { say(p, pick(['I got promoted! Drinks are on me.', 'They finally made me manager.', 'I quit my job and started my own business!']), 'say good'); } },
-  { id: 'sick', ok: p => p.age >= 40, run: (c, p) => { p.ill = true; say(p, pick(['The doctor found something. It\'s probably nothing.', 'I\'ve been in hospital. I didn\'t want to worry you.', 'My back is ruined. Getting old is a scam.']), 'say bad'); if (p.close >= 60) stat(c, 'stress', 4); } },
-  { id: 'move', ok: p => p.age >= 18 && !isLove({ partnerId: null }, p) && !isParent(p), run: (c, p) => { say(p, pick(['I\'m moving to another city. I\'ll visit, I promise.', 'I got a job abroad! Come see me sometime.']), 'say'); p.close = clamp(p.close - 5); } },
-  { id: 'qi', ok: p => p.age >= 12 && p.age < 40 && !p.realm, run: (c, p) => { p.realm = 1; say(p, pick(['I felt it. The Qi. You weren\'t lying all those years.', 'I joined a sect. Don\'t laugh!']), 'say good'); } },
-  { id: 'brag', ok: p => p.age >= 14 && has(p, 'proud', 'competitive'), run: (c, p) => { say(p, pick(['I bought a new car. Just saying.', 'Did you hear I won the tournament?', 'My boss says I\'m the best they\'ve ever had.'])); } },
+  { id: 'promo', ok: p => p.age >= 20 && p.age < 65, run: (c, p) => { say(p, pick(['I got promoted! Drinks are on me.', 'They finally made me manager.', 'I quit my job and started my own business!']), 'say good', 'good'); } },
+  { id: 'sick', ok: p => p.age >= 40, run: (c, p) => { p.ill = true; say(p, pick(['The doctor found something. It\'s probably nothing.', 'I\'ve been in hospital. I didn\'t want to worry you.', 'My back is ruined. Getting old is a scam.']), 'say bad', 'bad'); if (p.close >= 60) stat(c, 'stress', 4); } },
+  { id: 'move', ok: p => p.age >= 18 && !isLove({ partnerId: null }, p) && !isParent(p), run: (c, p) => { say(p, pick(['I\'m moving to another city. I\'ll visit, I promise.', 'I got a job abroad! Come see me sometime.']), 'say', 'news'); p.close = clamp(p.close - 5); } },
+  { id: 'qi', ok: p => p.age >= 12 && p.age < 40 && !p.realm, run: (c, p) => { p.realm = 1; say(p, pick(['I felt it. The Qi. You weren\'t lying all those years.', 'I joined a sect. Don\'t laugh!']), 'say good', 'good'); } },
+  { id: 'brag', ok: p => p.age >= 14 && has(p, 'proud', 'competitive'), run: (c, p) => { say(p, pick(['I bought a new car. Just saying.', 'Did you hear I won the tournament?', 'My boss says I\'m the best they\'ve ever had.']), 'say', 'brag'); } },
 ];
 async function theirLives(c) {
   if (!chance(0.4)) return; const pool = people(c).filter(p => p.close >= 35 && !p.coop);
@@ -211,6 +213,7 @@ async function theirLives(c) {
 
 export async function socialYear(c) {
   if (!c.alive) return;
+  T.expireTalks(c);
   const prev = c._ys; c._ys = snapshot(c);
   if (prev) reactions(c, prev);
   loans(c); neglect(c); smallTalk(c);

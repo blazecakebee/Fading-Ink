@@ -41,6 +41,7 @@ import { DARK_EVENTS, REHAB, addictionYear } from '../data/darkEvents.js';
 import { IDENTITY_ACTS, attractedTo, sexualityOf } from './selfhood.js';
 import { appearanceYear } from './appearance.js';
 import * as F8 from './fate.js';
+import * as PR8 from './property.js';
 import { SECTS } from '../data/realms.js';
 import { ITEMS } from '../data/items.js';
 import { ambientLine } from '../data/storyPool.js';
@@ -63,6 +64,7 @@ SOCIAL.push(F8.ASSAULT, F8.MURDER); // v0.9.23 you can hurt anyone you know (add
 for (const s of F8.DEMONIC_SECTS) if (!SECTS.some(x => x.id === s.id)) SECTS.push(s);
 for (const [id, it] of Object.entries(F8.DEMON_GEAR)) if (!ITEMS[id]) ITEMS[id] = it;
 ACTIVITIES.push(F8.SEARCH_PAST);
+ACTIVITIES.push(PR8.MANAGE);
 { const r0 = SACRIFICE.run; SACRIFICE.run = async c => { const r = await r0(c); if (r) { F8.addKarma(c, -25); F8.addInfamy(c, 400); c.demonPts = (c.demonPts || 0) + 20; } return r; }; }
 // ---- more names (fewer repeats)
 for (const cty of COUNTRIES) { const x = MORE_NAMES[cty.id]; if (x && !cty._more) { cty._more = 1; cty.m = [...new Set([...cty.m, ...x.m.split(' ')])]; cty.f = [...new Set([...cty.f, ...x.f.split(' ')])]; } }
@@ -176,7 +178,8 @@ HOOKS.yearEnd.push(async c => {
 });
 HOOKS.death.push(c => { F8.rollFate(c); });
 HOOKS.yearEnd.push(async c => { if (c.alive) await F8.fateYear(c); });
-HOOKS.yearEnd.push(async c => { if (c.alive) (await import('./skills.js')).skillsYear(c); }); // v0.9.25 comprehend new Qi arts
+HOOKS.yearEnd.push(async c => { if (c.alive) (await import('./skills.js')).skillsYear(c); });
+HOOKS.yearEnd.push(async c => { if (c.alive) (await import('./property.js')).propertyYear(c); }); // v0.9.28 businesses, market, upkeep // v0.9.25 comprehend new Qi arts
 HOOKS.death.push(c => {
   const born = G.world.year - c.age;
   ui.cinematic?.({ motif: 'crack', color: '#b9b0c0', threads: 4, lines: [`${c.cause ? (c.cause[0].toUpperCase() + c.cause.slice(1)).replace(/^I /, 'You ').replace(/\bmy\b/g, 'your') : 'The end came'}.`, c.heirlooms?.length || c.people.some(p => ['Son', 'Daughter'].includes(p.role) && p.alive) ? 'What you leave behind waits for your heirs.' : 'With no heir, your bloodline — and all it carried — ends here.'], title: fullName(c), sub: `${born} – ${G.world.year} · aged ${c.age}`, sound: 'death', introSound: 'click' });

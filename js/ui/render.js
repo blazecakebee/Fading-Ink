@@ -11,6 +11,8 @@ import { statusTab } from './statusPanel.js';
 import { moodFace, TRAINABLE, decayRate } from '../systems/health.js';
 import { COND_BY_ID, condTip } from '../data/conditions.js';
 import * as LIC from '../systems/license.js';
+import * as PUI from './propertyUI.js';
+import * as TALK from '../systems/talk.js';
 import * as PRX from '../systems/practice.js';
 import * as SCH from '../systems/school.js';
 import * as WL from '../systems/workload.js';
@@ -255,6 +257,11 @@ async function runMany(list, el) { // runs a list of activities in order while a
     await runActivity(a, null, P ? { score: scores[id] } : {}); done++; }
   gainPopups(c, snap, at); if (done) toast(`Did ${done} action${done > 1 ? 's' : ''}.`);
 }
+// v0.9.28 react to what someone just told you
+function reactRow(c, id) {
+  const t = TALK.talkOpen(c, id); if (!t) return null;
+  return h('span', { class: 'react-row' }, TALK.REACT[t.mood].map(([label], i) => h('button', { class: 'react-chip', onclick: e => { e.stopPropagation(); fx('click'); TALK.respond(c, id, i); save(); render(); } }, label)));
+}
 function quickBar(c) {
   if (!c.alive) return null; const av = availActs(c), pins = (META.settings.pins || []).map(id => av.find(a => a.id === id)).filter(Boolean);
   // v0.9.25 the repeat-routine / batch bar is gone; only pinned actions remain
@@ -291,7 +298,7 @@ export const TABS = {
     const years = c.log.slice(-7).map((y, yi, arr) => { const now = yi === arr.length - 1;
       return h('div', { class: 'st-year' + (now ? ' now' : '') }, h('div', { class: 'st-age' }, h('span', {}, `Age ${y.age}`)),
         ...(y.lines.length ? y.lines : [{ t: now ? (c.age === 0 ? 'A new story begins in faded ink.' : 'The year is still unwritten.') : 'A quiet year.', c: 'ambient' }]).map((l, li) =>
-          h('p', { class: 'st-line ' + (l.c || '') + (KEY.some(k => (l.c || '').includes(k)) ? ' key' : '') + (now && li >= fresh ? ' fresh' : '') }, (() => { const ic = META.settings.showIcons !== false && lineIcon(l.t, l.c); return ic ? [h('span', { class: 'st-ic' }, ic), l.t] : l.t; })()))); });
+          h('p', { class: 'st-line ' + (l.c || '') + (KEY.some(k => (l.c || '').includes(k)) ? ' key' : '') + (now && li >= fresh ? ' fresh' : '') }, (() => { const ic = META.settings.showIcons !== false && lineIcon(l.t, l.c); return [...(ic ? [h('span', { class: 'st-ic' }, ic), l.t] : [l.t]), l.tk ? reactRow(c, l.tk) : null]; })()))); });
     const stage = h('div', { class: 'story-stage' }, ...years);
     // Keep the reader's place on re-renders (dock chips etc.); only jump to the end when new lines arrive. Instant, no smooth sweep.
     const sig = c.log.length + ':' + cur.lines.length, prev = G.ui.stage || {};
@@ -493,8 +500,7 @@ export const TABS = {
 
   assets() {
     const c = G.char, k = country(c).econ;
-    const SHOP = [['Studio apartment', 'house', 'house', 60000], ['Family house', 'house', 'house', 250000], ['Mountain villa', 'house', 'house', 900000], ['Used car', 'car', 'car', 4000], ['Sedan', 'car', 'car', 25000], ['Sports car', 'car', 'car', 120000]];
-    return [h('h2', { class: 'display' }, 'Assets & Market'), h('table', { class: 'kv', style: { marginTop: '10px' } }, [['Cash', fmtMoney(c, c.money)], ['Investments', fmtMoney(c, c.stocks)], ['Net worth', fmtMoney(c, c.money + c.stocks + c.assets.reduce((s, a) => s + a.value, 0))]].map(([a, b]) => h('tr', {}, h('td', {}, a), h('td', {}, b)))),
+        return [h('h2', { class: 'display' }, 'Assets & Market'), h('table', { class: 'kv', style: { marginTop: '10px' } }, [['Cash', fmtMoney(c, c.money)], ['Investments', fmtMoney(c, c.stocks)], ['Net worth', fmtMoney(c, c.money + c.stocks + c.assets.reduce((s, a) => s + a.value, 0))]].map(([a, b]) => h('tr', {}, h('td', {}, a), h('td', {}, b)))),
       (() => { const cf = comfort(c); return h('div', { class: 'box', style: { marginTop: '12px' } }, h('h3', {}, 'Comfort'),
         cf.lines.length ? cf.lines.map(([ic, name, eff]) => h('div', { class: 'row small', style: { margin: '4px 0' } }, h('span', {}, ic), h('b', {}, name), h('span', { class: 'muted' }, eff)))
           : h('div', { class: 'muted small' }, 'You own nothing that makes life cosier yet. A home, a car or a pet each give yearly Happiness and less Stress.')); })(),
@@ -505,15 +511,12 @@ export const TABS = {
             const amt = await choice({ title: `Gift money to ${k.first}`, text: `Cash: ${fmtMoney(c, c.money)}. Gifts wait for them — if you continue as ${k.first}, it's theirs.`, icon: 'gift', options: [0.1, 0.25, 0.5].map(f => ({ label: `${Math.round(f * 100)}% (${fmtMoney(c, c.money * f)})`, value: Math.floor(c.money * f) })).concat([{ label: 'Cancel', value: null, ghost: true }]) });
             if (amt) { const t = giftToChild(c, k, { money: amt }); if (t) { logLine(t, 'good'); fx('coin'); render(); } } } }, `🎁 ${k.first}`))) : null); })(),
       h('h3', { class: 'display', style: { margin: '16px 0 8px' } }, 'Owned'),
-      c.assets.length ? h('div', { class: 'grid2' }, c.assets.map((a, i) => h('div', { class: 'card row' }, icon(a.type === 'pet' ? 'pet' : a.type), h('div', { style: { flex: 1 } }, h('b', {}, a.name), h('div', { class: 'muted' }, a.type === 'pet' ? 'Pet' : `${fmtMoney(c, a.value)}${a.tenant ? ` · rented ${fmtMoney(c, a.rent)}/yr` : ''}`)),
+      c.assets.length ? h('div', { class: 'grid2' }, c.assets.map((a, i) => a.type === 'biz' ? PUI.bizCard(c, a) : h('div', { class: 'card row' }, icon(a.type === 'pet' ? 'pet' : ['boat', 'plane'].includes(a.type) ? 'travel' : a.type), h('div', { style: { flex: 1 } }, h('b', {}, a.name, a.prestige ? ' ' + '✨'.repeat(a.prestige) : ''), h('div', { class: 'muted' }, a.type === 'pet' ? 'Pet' : `${fmtMoney(c, a.value)}${a.tenant ? ` · rented ${fmtMoney(c, a.rent)}/yr` : ''}`)),
         a.type === 'house' ? h('button', { class: 'btn ghost', onclick: () => { a.tenant = !a.tenant; a.rent = Math.round(a.value * 0.05); logLine(a.tenant ? `I rented out my ${a.name}.` : `I evicted my tenant.`); render(); } }, a.tenant ? 'Evict' : 'Rent out') : null,
         a.type !== 'pet' ? h('button', { class: 'btn ghost', onclick: () => { money(c, a.value); c.assets.splice(i, 1); fx('coin'); logLine(`I sold my ${a.name} for ${fmtMoney(c, a.value)}.`); render(); } }, 'Sell') : null,
         willInfo(c).kids.length ? h('button', { class: 'btn ghost', title: 'Hand this to one of your children now', onclick: async () => { const kids = willInfo(c).kids; const k = kids.length === 1 ? kids[0] : await choice({ title: `Give ${a.name} to…`, options: kids.map(x => ({ label: `${x.first} (${x.role.toLowerCase()}, ${x.age})`, value: x })).concat([{ label: 'Cancel', value: null, ghost: true }]) }); if (!k) return; const t = giftToChild(c, k, { asset: a }); if (t) { logLine(t, 'good'); fx('action'); render(); } } }, 'Give') : null))) : h('div', { class: 'muted' }, 'Nothing yet.'),
       licenseBox(c),
-      h('h3', { class: 'display', style: { margin: '16px 0 8px' } }, 'Market'),
-      h('p', { class: 'muted small' }, discount(c) ? `Your charisma gets you ${Math.round(discount(c) * 100)}% off everything here.` : 'Raise your Charisma to get better deals from merchants.'),
-      h('div', { class: 'grid2' }, SHOP.map(([name, type, ic, price]) => { const p = priceFor(c, price * k); return h('div', { class: 'card row' }, icon(ic), h('div', { style: { flex: 1 } }, h('b', {}, name), h('div', { class: 'muted' }, fmtMoney(c, p))),
-        type === 'car' && !LIC.hasLicense(c) ? h('button', { class: 'btn', disabled: true, 'data-tip': LIC.licenseState(c) === 'suspended' ? 'Your license is suspended.' : 'You need a driver\'s license to buy a car. Get one above.' }, 'Needs license') : h('button', { class: 'btn', disabled: c.age < 18 || c.money < p || !c.alive, onclick: async () => { const ok = await choice({ title: 'Buy ' + name + '?', text: `Price: ${fmtMoney(c, p)}`, icon: ic, options: [{ label: 'Buy', value: true }, { label: 'Cancel', value: false, ghost: true }] }); if (!ok) return; money(c, -p); c.assets.push({ type, name, value: p }); fx('coin'); stat(c, 'happiness', 10); logLine(`I bought a ${name.toLowerCase()} for ${fmtMoney(c, p)}.`, 'good'); render(); } }, 'Buy')); })),
+      ...PUI.vendorsSection(c), // v0.9.28 dealerships, estate agents, farms, factories, investors
       h('div', { class: 'row', style: { marginTop: '14px' } }, h('button', { class: 'btn', disabled: c.age < 18, onclick: () => { G.ui.tab = 'market'; render(); } }, icon('stocks', 'sm'), ' Open the stock market'))];
   },
 

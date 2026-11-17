@@ -1,7 +1,17 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.27';
+export const VERSION = '0.9.28';
 export const CHANGELOG = [
+  { v: '0.9.28', date: '2026-11-16', title: 'Tycoons & Talk', notes: [
+    'The Assets tab now has Vendors instead of one shop: car dealerships (Budget Bob\'s Used Cars, Kestrel Motors, Ironhide Trucks, Hanzo Motorcycles, Velluto Luxury, Aurum Supercars), Bluewater Marina & Aviation (jet skis, yachts, private jets), estate agents (Cornerstone Realty, Lotus Heritage Homes, Skyline Estates), Greenfield Land & Agriculture, Old Man Wen the retiring factory owner, the Liquidators Guild, Meridian Commercial Brokers and Harbor Capital Investors.',
+    'Dozens of new vehicles and homes. Luxury things (✨) make you happier every year but cost upkeep — insurance, maintenance and property tax are now charged yearly. A Cultivator\'s Mountain Retreat boosts Qi gain while you live there.',
+    'Businesses you manage: farms, ranches, a spirit herb garden, factories (textiles, bricks, a cannery, steel, electronics, a pill refinery), shops, restaurants, a hotel and a shopping mall. Old Man Wen and the Liquidators sell used ones cheaply — in rough condition, and their stock changes every year.',
+    'Each business follows its own market: 12 sectors with supply and demand, booms, gluts, droughts, recessions and crazes. High prices draw new producers in, so booms tend to end in busts. See the Commodity market panel.',
+    'Manage them: set production (cautious / normal / full tilt), wages (cheap / fair / generous — cheap means strikes), hire a manager or run them yourself with the new "Manage your businesses" action (neglected businesses lose 15% output), expand, repair, deposit or withdraw cash.',
+    'Businesses can go bankrupt: if losses pile up and the debt passes half of what the business is worth, creditors give you one year of warning — then take it. Harbor Capital buys businesses, lends against them and buys stakes.',
+    'React to people: when someone tells you something — good news, bad news, bragging, complaints, small talk — reaction buttons appear under the line. How they take it depends on their personality and how close you are, and sometimes they react in a way you didn\'t expect. Ignoring bad news or complaints stings a little.',
+    'People ask you things: your parents ask if you like basketball, want a private school (they pay), music lessons, what you want to be, if there\'s anyone special, about university or grandchildren; siblings ask you to cover for them; partners ask about children and pets; friends ask you to invest in their business or whether they should quit and travel; your kids ask to join teams. Your answer changes your life and how they feel about you.',
+  ] },
   { v: '0.9.27', date: '2026-11-16', title: 'More Fables', notes: [
     'Four new Fable Quests (Fables tab, 1,000,000 Fame): The Thousand-Mirror Palace, The Ferryman\'s Last Crossing, The Tiger Who Would Be Emperor and The Hungry Kitchen God.',
     'Each has its own choices, stat checks, fights, a boss, and best, good and dark endings — plus a permanent Title, a piece of Fable gear (Shard of the True Mirror, The Ferryman\'s Oar, Tiger-Emperor\'s Mantle, Hearthfire Charm) and a legendary Fable heirloom.',
