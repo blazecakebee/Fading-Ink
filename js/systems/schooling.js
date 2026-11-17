@@ -1,4 +1,6 @@
 import { eff } from './body.js';
+import { movesAtBelt } from '../data/artMoves.js';
+import { MOVES } from '../data/combat.js';
 import { gpaOf } from './school.js';
 // Martial arts schools with belts, private schools & scholarships, and moving to another country.
 import { G } from '../core/state.js';
@@ -12,9 +14,10 @@ import { traitMult } from './traits.js';
 export const ARTS = {
   karate: { name: 'Karate', main: 'strength' }, taekwondo: { name: 'Taekwondo', main: 'agility' }, kungfu: { name: 'Kung Fu', main: 'agility' },
   judo: { name: 'Judo', main: 'strength' }, muaythai: { name: 'Muay Thai', main: 'strength' }, wingchun: { name: 'Wing Chun', main: 'battle' },
+  boxing: { name: 'Boxing', main: 'strength' },
 };
 export const BELTS = ['White', 'Yellow', 'Orange', 'Green', 'Blue', 'Brown', 'Black', 'Black (2nd dan)', 'Black (3rd dan)'];
-const NEED = [0, 4, 9, 15, 22, 30, 40, 55, 75];
+export const NEED = [0, 4, 9, 15, 22, 30, 40, 55, 75];
 export const beltOf = xp => BELTS[NEED.filter(n => xp >= n).length - 1];
 // Classes cost money, are limited to 2 a year, and gains are modest — belts are the long game.
 export const MARTIAL = { id: 'martial', cat: 'training', name: 'Martial arts class', icon: 'fist', minAge: 5,
@@ -34,7 +37,7 @@ export const MARTIAL = { id: 'martial', cat: 'training', name: 'Martial arts cla
   const T = await import('./trainers.js'), M = T.ensureTrainer(c, 'martial', art); M.close = Math.min(100, M.close + ri(2, 4));
   const t = traitMult(c, 'train') * (1 + M.close / 400); stat(c, A.main, Math.max(1, Math.round(ri(1, 2) * t))); stat(c, 'battle', Math.max(1, Math.round(ri(0, 2) * t))); addMuscle(c, 1);
   let text = `${A.name} class with Master ${M.first}: kata after kata.`;
-  if (after !== before) { stat(c, 'battle', 2); stat(c, 'happiness', 6); text += ` I earned my ${after} belt in ${A.name}!`; if (after.startsWith('Black') && !before.startsWith('Black')) ui.cinematic?.({ motif: 'sword', color: '#e9e6df', lines: ['Years of sweat on the dojo floor.', 'Your master ties the black belt himself.'], title: `${A.name} Black Belt`, sub: `${c.first} ${c.last}`, sound: 'milestone' }); }
+  if (after !== before) { stat(c, 'battle', 2); stat(c, 'happiness', 6); text += ` I earned my ${after} belt in ${A.name}!`; const nm = movesAtBelt(art, BELTS.indexOf(after)); if (nm.length) text += ` New move: ${nm.map(k => MOVES[k].name).join(', ')}.`; if (after.startsWith('Black') && !before.startsWith('Black')) ui.cinematic?.({ motif: 'sword', color: '#e9e6df', lines: ['Years of sweat on the dojo floor.', 'Your master ties the black belt himself.'], title: `${A.name} Black Belt`, sub: `${c.first} ${c.last}`, sound: 'milestone' }); }
   return { text, cls: after !== before ? 'good' : '', big: after !== before };
 } };
 export const SWITCH_ART = { id: 'martial_switch', cat: 'training', name: 'Switch martial art', icon: 'kick', minAge: 5, need: c => !!c.martialStyle, run: c => { const old = c.martialStyle; c.martialStyle = null; return `I stopped practising ${ARTS[old]?.name || 'my old style'} for now. (Belts are kept.)`; } };

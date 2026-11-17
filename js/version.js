@@ -1,7 +1,14 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.45';
+export const VERSION = '0.9.46';
 export const CHANGELOG = [
+  { v: '0.9.46', date: '2026-11-17', title: 'Styles', notes: [
+    'Every martial art now teaches its own moves. You unlock them as you climb the belts: one each at Yellow, Green, Brown and Black.',
+    'Boxing: Uppercut, Weave, Liver Shot, Dempsey Roll. Karate: Mae Geri, Age Uke, Gyaku Zuki, Mawashi Geri. Taekwondo: Push Kick, Back Kick, Spinning Hook Kick, Double Roundhouse.',
+    'Kung Fu: Tiger Claw, Snake Strike, Mantis Hook, Dragon Tail Sweep. Judo: Ukemi, O Goshi, Juji Gatame, Seoi Nage. Muay Thai: Teep, Low Kick, Clinch Knee, Spinning Elbow. Wing Chun: Chain Punch, Pak Sao, Stop Hit, Wooden Dummy Combo.',
+    'New art: Boxing, with its own master and a hidden technique, the Bolo Punch.',
+    'Belts are kept per art, so moves from every style you have trained stay with you. Each move has its own effect, look and sound.',
+  ] },
   { v: '0.9.45', date: '2026-11-17', title: 'Breathing room', notes: [
     'Bad luck is much less constant. After something bad happens, misfortune eases off for the next couple of years. Illness, weather, shortages, Beast Tides, plagues and the gloomier random events are all rarer right after a bad year, and a bit rarer overall. Unprompted bad luck now hits about 1 year in 3 instead of nearly every year.',
     'The death of someone you barely knew no longer counts as a tragedy, and grief reminders are quieter and less frequent.',

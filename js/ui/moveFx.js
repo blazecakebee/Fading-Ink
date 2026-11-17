@@ -21,6 +21,14 @@ const MOVE_FX = {
   pressure_point: { shape: 'needle', snd: 'tick' }, earthshaker: { shape: 'shockwave', snd: 'stomp', size: 1.2 }, hundred_fists: { shape: 'barrage', snd: 'barrage' },
   second_wind: { shape: 'aura', snd: 'breath', aura: 'heal' }, titan_grip: { shape: 'grip', snd: 'grip', size: 1.2 }, meteor_dive: { shape: 'dive', snd: 'dive', size: 1.3 },
   world_ender: { shape: 'ender', snd: 'ender', size: 1.6 },
+  // v0.9.46 martial art base moves
+  box_uppercut: { shape: 'impact', snd: 'punch', size: 1.1 }, box_weave: { shape: 'afterimage', snd: 'swish' }, box_liver: { shape: 'impact', snd: 'crunch' }, box_dempsey: { shape: 'barrage', snd: 'barrage' }, boxing_bolo: { shape: 'spin', snd: 'punch', size: 1.2 },
+  kar_maegeri: { shape: 'arc', snd: 'kick' }, kar_ageuke: { shape: 'shield', snd: 'guard' }, kar_gyaku: { shape: 'impact', snd: 'punch', size: 1.1 }, kar_mawashi: { shape: 'arc', snd: 'kick', size: 1.3 },
+  tkd_push: { shape: 'arc', snd: 'kick', size: 0.8 }, tkd_back: { shape: 'impact', snd: 'kick', size: 1.2 }, tkd_hook: { shape: 'spin', snd: 'whirl' }, tkd_double: { shape: 'cyclone', snd: 'whirl' },
+  kf_tiger: { shape: 'slash', snd: 'grip' }, kf_snake: { shape: 'needle', snd: 'tick' }, kf_mantis: { shape: 'afterimage', snd: 'swish' }, kf_dragon: { shape: 'quake', snd: 'stomp' },
+  jd_ukemi: { shape: 'shield', snd: 'thud' }, jd_ogoshi: { shape: 'quake', snd: 'thud' }, jd_juji: { shape: 'grip', snd: 'grip' }, jd_seoi: { shape: 'quake', snd: 'quake', size: 1.3 },
+  mt_teep: { shape: 'arc', snd: 'kick', size: 0.8 }, mt_low: { shape: 'arc', snd: 'crunch' }, mt_knee: { shape: 'impact', snd: 'crunch', size: 1.2 }, mt_spin: { shape: 'slash', snd: 'crunch', size: 1.3 },
+  wc_chain: { shape: 'barrage', snd: 'jab' }, wc_paksao: { shape: 'impact', snd: 'slap', size: 0.8 }, wc_stop: { shape: 'impact', snd: 'jab', size: 1 }, wc_dummy: { shape: 'barrage', snd: 'barrage', size: 1.1 },
   muay_elbow: { shape: 'slash', snd: 'crunch' }, wingchun_inch: { shape: 'impact', snd: 'jab', size: 0.9 }, severed_rebound: { shape: 'quake', snd: 'boom' }, sect_hidden: { shape: 'siphon', snd: 'palm' },
 };
 // future-proof: derive a look from what a move does

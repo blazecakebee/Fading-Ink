@@ -1,6 +1,8 @@
 import { eff } from '../systems/body.js';
 // Turn-based 1v1 combat screen: two portraits, realm/level, HP bars, momentum chevrons,
 // stamina + Qi bars and vertical move buttons with "Move info".
+import { artMoves } from '../data/artMoves.js';
+import { NEED as BELT_NEED } from '../systems/schooling.js';
 import { onBodyPath, effRealm, bodyTier } from '../systems/path.js';
 import { BODY_MOVES } from '../data/bodypath.js';
 import { h, icon } from './dom.js';
@@ -92,7 +94,7 @@ export function fight(enemyDef, opts = {}) {
       h('div', { class: 'finfo' }, h('a', { onclick: () => { infoBox.style.display = infoBox.style.display === 'none' ? 'block' : 'none'; } }, 'Move info')));
     const m = openModal(box, { cls: 'fight', dismiss: false });
 
-    const myMoves = [...(onBodyPath(c) ? [...BASE_MOVES, ...Object.keys(BODY_MOVES).filter(k => (c.bodyPath.tier || 0) >= BODY_MOVES[k].tier)] : [...BASE_MOVES, ...(c.qi.realm >= 1 ? ['qi_palm'] : []), ...c.qi.techs]), ...myHidden(c).filter(k => !MOVES[k].qi || c.qi.realm >= 1)];
+    const myMoves = [...(onBodyPath(c) ? [...BASE_MOVES, ...Object.keys(BODY_MOVES).filter(k => (c.bodyPath.tier || 0) >= BODY_MOVES[k].tier)] : [...BASE_MOVES, ...(c.qi.realm >= 1 ? ['qi_palm'] : []), ...c.qi.techs]), ...artMoves(c, BELT_NEED), ...myHidden(c).filter(k => !MOVES[k].qi || c.qi.realm >= 1)];
     infoBox.append(...myMoves.filter(k => MOVES[k]).map(k => h('div', {}, icon(MOVES[k].icon, 'sm'), ' ', h('b', {}, MOVES[k].name + ': '), MOVES[k].info, MOVES[k].qi ? ` (${MOVES[k].qi} Qi)` : '')));
     const mini = enemyDef.mini && MINIS[enemyDef.mini] ? enemyDef.mini : null; let miniUsed = false;
     if (qiUser) myMoves.push('charge');
