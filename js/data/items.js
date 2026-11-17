@@ -105,8 +105,8 @@ export const SLOTS = { weapon: 'Weapon', armor: 'Armour', charm: 'Charm', neckla
 // Recipes: inputs is a multiset. base = success chance before Smarts/traits/bonds. known = starter recipe.
 export const RECIPES = [
   { id: 'r_heal', out: 'heal_pill', inputs: { spirit_herb: 2 }, base: 0.8 },
-  { id: 'r_sword', out: 'iron_sword', inputs: { iron_ore: 2 }, base: 0.8, known: true },
-  { id: 'r_robe', out: 'padded_robe', inputs: { cloth: 2 }, base: 0.85, known: true },
+  { id: 'r_sword', out: 'iron_sword', inputs: { iron_ore: 2 }, base: 0.8 },
+  { id: 'r_robe', out: 'padded_robe', inputs: { cloth: 2 }, base: 0.85 },
   { id: 'r_qi', out: 'qi_pill', inputs: { spirit_herb: 1, spirit_stone: 1 }, base: 0.7 },
   { id: 'r_incense', out: 'calm_incense', inputs: { spirit_herb: 1, cloth: 1 }, base: 0.75 },
   { id: 'r_charm', out: 'jade_charm', inputs: { spirit_stone: 1, cloth: 1 }, base: 0.6 },

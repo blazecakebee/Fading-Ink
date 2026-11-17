@@ -88,6 +88,5 @@ export function statusTab() {
     h('div', { class: 'box', style: { marginTop: '14px' } }, h('h3', {}, 'All bonuses'), h('table', { class: 'kv' }, bonuses.map(([k, v, why]) => h('tr', {}, h('td', {}, h('span', { class: 'kv-key' }, icon(iconFor(k), 'sm'), k)), h('td', { class: v.startsWith('-') ? 'bad' : v === '+0%' || v === '0%' ? '' : 'good' }, v), h('td', { class: 'muted small' }, why))))),
     h('div', { class: 'box', style: { marginTop: '14px' } }, h('h3', {}, 'Traits'), c.traits.map(id => traitChip(id))),
     h('div', { class: 'box', style: { marginTop: '14px' } }, h('h3', {}, 'Personality'), (c.temper || []).length ? c.temper.map(id => h('div', { class: 'small', style: { margin: '4px 0' } }, temperChip(id), ' ', h('span', { class: 'muted' }, TEMPER[id]?.desc))) : h('span', { class: 'muted' }, 'Still forming.')),
-    bodySection(c),
   ];
 }

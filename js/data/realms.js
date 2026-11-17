@@ -45,6 +45,21 @@ export const SECTS = [
   { id: 'crimson', name: 'Crimson Lotus Society', kind: 'gang', align: 'demonic', req: { strength: 45 }, desc: 'A street gang that feeds members blood pills. Fast power, high cost.' },
   { id: 'ink', name: 'The Fading Ink Pavilion', kind: 'sect', align: 'hidden', req: { trait: 'ink_touched' }, desc: 'A library that only exists for those who can read it.' },
   { id: 'iron', name: 'Iron Fist Syndicate', kind: 'gang', align: 'neutral', req: { strength: 40 }, desc: 'Fight clubs and protection rackets. Body-tempering techniques.' },
+  // v0.9.38 many more doors to knock on. home: countries where they're easier to find. manual/method: what they teach you.
+  { id: 'thunder_peak', name: 'Thunder Peak Sect', kind: 'sect', align: 'orthodox', req: { strength: 45, agility: 40 }, manual: 'thunder_fist', method: 'thunder', desc: 'Disciples train on a mountain that is struck by lightning every night.' },
+  { id: 'moon_well', name: 'Moon Well Convent', kind: 'sect', align: 'orthodox', req: { charisma: 45 }, manual: 'river_step', method: 'moonlit', desc: 'Silent nuns who gather Qi from a well that reflects only the moon.' },
+  { id: 'nine_swords', name: 'Nine Swords Pavilion', kind: 'sect', align: 'orthodox', req: { agility: 50 }, manual: 'river_step', method: 'sword_intent', home: ['cn', 'kr', 'jp'], desc: 'Nine masters, nine blades. Each disciple chooses one and never looks back.' },
+  { id: 'red_dust', name: 'Red Dust Temple', kind: 'sect', align: 'orthodox', req: { smarts: 40, charisma: 40 }, manual: 'flame_palm', method: 'lotus', home: ['th', 'np', 'in', 'vn'], desc: 'Monks who say enlightenment is found in the market, not on the mountain.' },
+  { id: 'jade_river', name: 'Jade River School', kind: 'sect', align: 'orthodox', req: { smarts: 45 }, manual: 'river_step', method: 'five_elements', desc: 'Scholars and herbalists. Their library has more pill recipes than books.' },
+  { id: 'sunfire', name: 'Order of the Sunfire Crown', kind: 'sect', align: 'orthodox', req: { strength: 40, charisma: 40 }, manual: 'flame_palm', method: 'heart_fire', home: ['eg', 'tr', 'ml', 'et'], desc: 'Desert knights who cultivate in the noon sun and fight in white.' },
+  { id: 'frostveil', name: 'Frostveil Monastery', kind: 'sect', align: 'hidden', req: { smarts: 40 }, manual: 'iron_skin', method: 'turtle', home: ['ru', 'ca', 'np'], desc: 'Hermits who meditate in snowfields until the cold stops mattering.' },
+  { id: 'starlit', name: 'Starlit Observatory', kind: 'sect', align: 'hidden', req: { smarts: 55 }, manual: 'thunder_fist', method: 'starfall', desc: 'Astronomer-cultivators who map the meridians of the sky.' },
+  { id: 'twin_rivers', name: 'Twin Rivers Union', kind: 'sect', align: 'orthodox', req: { charisma: 50 }, manual: 'river_step', method: 'dual', desc: 'They cultivate in pairs. Couples, siblings, rivals — never alone.' },
+  { id: 'jungle_drum', name: 'Order of the Jungle Drum', kind: 'sect', align: 'neutral', req: { agility: 40, strength: 35 }, manual: 'river_step', method: 'five_elements', home: ['br', 'co', 'cd', 'ng', 'id', 'ph'], desc: 'Their drums carry Qi through the canopy for miles.' },
+  { id: 'silent_bell', name: 'Silent Bell Abbey', kind: 'sect', align: 'hidden', req: { smarts: 50, luck: 40 }, manual: 'iron_skin', method: 'void', desc: 'A bell that never rings. They say the day it does, every disciple ascends.' },
+  { id: 'grey_wolves', name: 'Grey Wolf Brotherhood', kind: 'gang', align: 'neutral', req: { strength: 45 }, manual: 'iron_skin', method: 'thunder', home: ['ru', 'de', 'gb', 'us'], desc: 'Bikers, bouncers and former soldiers who discovered Qi in a prison yard.' },
+  { id: 'golden_carp', name: 'Golden Carp Guild', kind: 'gang', align: 'neutral', req: { charisma: 45, luck: 45 }, manual: 'river_step', method: 'turtle', desc: 'Gamblers and smugglers. Luck, they say, is just Qi you have not noticed yet.' },
+  { id: 'black_lotus', name: 'Black Lotus Cabal', kind: 'gang', align: 'demonic', req: { smarts: 40 }, manual: 'blood_art', method: 'blood_sea', desc: 'Polite, well-dressed and utterly ruthless. They keep a ledger of every debt.' },
 ];
 
 export const MANUALS = [

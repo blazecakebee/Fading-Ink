@@ -75,14 +75,15 @@ export const ACTIVITIES = [
   { id: 'seek_sect', cat: 'cultivation', name: 'Seek a hidden sect', icon: 'manual', minAge: 12, need: c => c.qi.known && !c.sect, run: async c => {
       const opts = SECTS.filter(s => (!s.req.trait || has(c, s.req.trait)) && !c.flags.exiled?.[s.id] && (!s.needDemonic || c.demonic) && !(c.demonic && s.align === 'orthodox'));
       if (!opts.length) return 'Word of my expulsions has spread. No sect will open its gates to me.';
-      const s = pick(opts); const ok = Object.entries(s.req).every(([k, v]) => k === 'trait' || c.stats[k] >= v);
+      const seen = (c.flags.sectsSeen ||= {}), wt = s => (s.home?.includes(c.country) ? 3 : 1) / (1 + (seen[s.id] || 0) * 2); // v0.9.38 local sects are likelier, and you rarely meet the same one twice in a row
+      let rr = Math.random() * opts.reduce((t, s) => t + wt(s), 0); const s = opts.find(x => (rr -= wt(x)) < 0) || opts[0]; seen[s.id] = (seen[s.id] || 0) + 1; const ok = Object.entries(s.req).every(([k, v]) => k === 'trait' || c.stats[k] >= v);
       if (!ok) return `I found the ${s.name}... they turned me away. (${Object.entries(s.req).map(([k, v]) => `${k} ${v}+`).join(', ')})`;
       const yes = await ui.choice({ title: s.name, text: `${s.desc}\n\nThey offer you a place. Join?`, icon: s.kind === 'gang' ? 'crime' : 'manual', options: [{ label: 'Join', value: true }, { label: 'Walk away', value: false }] });
       if (!yes) return `I declined the ${s.name}.`;
       c.sect = s.id; c.sectRank = 0; c.contrib = 0; c.flags.sectJoined = G.world.year; learnManual(c, 'breathing');
-      if (s.align === 'demonic') learnManual(c, 'blood_art'); else if (s.id === 'iron') learnManual(c, 'iron_skin'); else learnManual(c, pick(['flame_palm', 'river_step']));
+      if (s.manual) learnManual(c, s.manual); else if (s.align === 'demonic') learnManual(c, 'blood_art'); else if (s.id === 'iron') learnManual(c, 'iron_skin'); else learnManual(c, pick(['flame_palm', 'river_step']));
       if (chance(0.5)) addItem(c, 'qi_pill', 2);
-      learnMethod(c, s.align === 'demonic' ? 'blood_sea' : pick(['turtle', 'five_elements', 'lotus', 'sword_intent', 'heart_fire']));
+      learnMethod(c, s.method || (s.align === 'demonic' ? 'blood_sea' : pick(['turtle', 'five_elements', 'lotus', 'sword_intent', 'heart_fire'])));
       ui.cinematic?.({ motif: 'seal', color: '#9ad0ff', lines: ['The gate opens. Incense, bells, a long stair.', 'You kneel, and are given a name in the register.'], title: s.name, sub: 'You joined', sound: 'milestone' });
       return { text: `I joined the ${s.name}.`, cls: 'qi', big: true }; } },
 

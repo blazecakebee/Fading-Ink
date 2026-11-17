@@ -1,7 +1,13 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.37';
+export const VERSION = '0.9.38';
 export const CHANGELOG = [
+  { v: '0.9.38', date: '2026-11-17', title: 'More sects', notes: [
+    '14 new sects and gangs to find: Thunder Peak Sect, Moon Well Convent, Nine Swords Pavilion, Red Dust Temple, Jade River School, Order of the Sunfire Crown, Frostveil Monastery, Starlit Observatory, Twin Rivers Union, Order of the Jungle Drum, Silent Bell Abbey, Grey Wolf Brotherhood, Golden Carp Guild and the Black Lotus Cabal.',
+    'Each one asks for different stats and teaches its own technique and cultivation method. Some are easier to find in their home countries, and you\'ll rarely run into the same sect twice in a row when searching.',
+    'The Body diagram is no longer repeated on the Status tab. It lives on the Health tab.',
+    'New lives no longer start knowing the Iron Sword and Padded Robe recipes. Discover them like every other recipe.',
+  ] },
   { v: '0.9.37', date: '2026-11-17', title: 'Status layout', notes: [
     'Status tab: the Equipment, Bonds and Conditions boxes now sit in the same row as Core, Stats and Combat, filling the empty space beside them. On narrower screens they wrap neatly underneath.',
   ] },
