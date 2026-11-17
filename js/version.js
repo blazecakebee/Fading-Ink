@@ -1,7 +1,10 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.36';
+export const VERSION = '0.9.37';
 export const CHANGELOG = [
+  { v: '0.9.37', date: '2026-11-17', title: 'Status layout', notes: [
+    'Status tab: the Equipment, Bonds and Conditions boxes now sit in the same row as Core, Stats and Combat, filling the empty space beside them. On narrower screens they wrap neatly underneath.',
+  ] },
   { v: '0.9.36', date: '2026-11-17', title: 'Awakening tree', notes: [
     'The Bloodline Awakening tree is now a radial graph like the Legacy tree. Four arms grow out of your DNA core: Body, Spirit, Mind and Blood. The gold cross-branch genes sit between the two arms they need.',
     'Lines light up as you awaken genes. Genes you can awaken pulse, flaws (⚠) have dashed edges, and transcendent genes (✦) are larger. Click a gene to read it, see what it needs, and awaken it.',
