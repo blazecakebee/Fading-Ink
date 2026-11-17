@@ -156,7 +156,7 @@ export function newLife(opts = {}) {
              strength: ri(10, 40), agility: ri(10, 40), charisma: base(), luck: base() },
     traits: [], qi: { known: false, realm: 0, stage: 1, qi: 0, elem: pick(ELEMENTS).id, affinity: ri(5, 60), meridians: 0, manuals: [], techs: [] },
     inv: {}, edu: { level: 0, school: null, uniYears: 0, major: null, grades: ri(40, 80) },
-    job: null, people: [], partnerId: null, log: [], counts: {}, flags: { stageSystem: 5, realmsV2: true, realmsV3: true }, prison: 0,
+    job: null, people: [], partnerId: null, log: [], counts: {}, flags: { stageSystem: 3, realmsV2: true, realmsV3: true }, prison: 0,
     assets: [], stocks: 0, wins: 0, kills: 0, gatesCleared: 0, gates: [], sect: null,
     lifespan: ri(68, 92), actions: ACTIONS_PER_YEAR, social: SOCIAL_PER_YEAR, idleYears: 0, heirlooms: opts.heirlooms || [],
   };

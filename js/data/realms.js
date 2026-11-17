@@ -1,22 +1,22 @@
 // Cultivation realms.
-// Each major realm has 5 stages (Mortal and Immortal Ascension have 1). glyph = the character shown on the realm ladder.
+// v0.9.49 Each major realm has 3 stages: Early, Middle and Peak (Mortal and Heavenly Venerable have 1). glyph = the character shown on the realm ladder.
 // Nobody lives forever: even an Immortal's years run out (~700 years at the very peak).
 // maxQi = Qi needed to attempt the next stage. life = lifespan bonus in years. power = combat multiplier.
 // trib = major breakthrough INTO this realm triggers a Heavenly Tribulation fight.
 // cap = highest any trainable stat can go in this realm. Gains slow down past 70% of the cap (soft cap).
 export const REALMS = [
   { id: 'mortal', glyph: '凡', cap: 100, name: 'Mortal', stages: 1, maxQi: 40, life: 0, power: 1, color: '#9a8f80' },
-  { id: 'refining', glyph: '煉', cap: 110, name: 'Qi Refining', stages: 5, maxQi: 60, life: 2, power: 1.3, color: '#a9d4ff' },
-  { id: 'qi', glyph: '結', cap: 120, name: 'Qi Condensation', stages: 5, maxQi: 100, life: 5, power: 1.6, color: '#7fd1ff' },
-  { id: 'foundation', glyph: '築', cap: 150, name: 'Foundation Establishment', stages: 5, maxQi: 400, life: 12, power: 3, color: '#7fffb0', req: { pill: 'foundation_pill' }, trib: 1 },
-  { id: 'core', glyph: '金', cap: 200, name: 'Golden Core', stages: 5, maxQi: 1500, life: 25, power: 6, color: '#ffd36f', trib: 2 },
-  { id: 'origin', glyph: '具', cap: 230, name: 'Origin Spirit', stages: 5, maxQi: 3500, life: 35, power: 9, color: '#b07fff', trib: 2 },
-  { id: 'nascent', glyph: '元', cap: 260, name: 'Nascent Soul', stages: 5, maxQi: 7000, life: 45, power: 12, color: '#ff8fd0', trib: 3 },
-  { id: 'soulform', glyph: '化', cap: 300, name: 'Soul Formation', stages: 5, maxQi: 14000, life: 55, power: 18, color: '#ff6a5a', trib: 3 },
-  { id: 'severing', glyph: '斬', cap: 340, name: 'Spirit Severing', stages: 5, maxQi: 25000, life: 65, power: 25, color: '#c39bff', trib: 4 },
-  { id: 'void', glyph: '虛', cap: 380, name: 'Void Refinement', stages: 5, maxQi: 40000, life: 75, power: 33, color: '#8fa8ff', trib: 4 },
-  { id: 'integration', glyph: '合', cap: 420, name: 'Body Integration', stages: 5, maxQi: 65000, life: 85, power: 42, color: '#6fe0d0', trib: 5 },
-  { id: 'dao', glyph: '道', cap: 480, name: 'Dao Seeking', stages: 5, maxQi: 100000, life: 100, power: 55, color: '#ffffff', trib: 5 },
+  { id: 'refining', glyph: '煉', cap: 110, name: 'Qi Refining', stages: 3, maxQi: 60, life: 2, power: 1.3, color: '#a9d4ff' },
+  { id: 'qi', glyph: '結', cap: 120, name: 'Qi Condensation', stages: 3, maxQi: 100, life: 5, power: 1.6, color: '#7fd1ff' },
+  { id: 'foundation', glyph: '築', cap: 150, name: 'Foundation Establishment', stages: 3, maxQi: 400, life: 12, power: 3, color: '#7fffb0', req: { pill: 'foundation_pill' }, trib: 1 },
+  { id: 'core', glyph: '金', cap: 200, name: 'Golden Core', stages: 3, maxQi: 1500, life: 25, power: 6, color: '#ffd36f', trib: 2 },
+  { id: 'origin', glyph: '具', cap: 230, name: 'Origin Spirit', stages: 3, maxQi: 3500, life: 35, power: 9, color: '#b07fff', trib: 2 },
+  { id: 'nascent', glyph: '元', cap: 260, name: 'Nascent Soul', stages: 3, maxQi: 7000, life: 45, power: 12, color: '#ff8fd0', trib: 3 },
+  { id: 'soulform', glyph: '化', cap: 300, name: 'Soul Formation', stages: 3, maxQi: 14000, life: 55, power: 18, color: '#ff6a5a', trib: 3 },
+  { id: 'severing', glyph: '斬', cap: 340, name: 'Spirit Severing', stages: 3, maxQi: 25000, life: 65, power: 25, color: '#c39bff', trib: 4 },
+  { id: 'void', glyph: '虛', cap: 380, name: 'Void Refinement', stages: 3, maxQi: 40000, life: 75, power: 33, color: '#8fa8ff', trib: 4 },
+  { id: 'integration', glyph: '合', cap: 420, name: 'Body Integration', stages: 3, maxQi: 65000, life: 85, power: 42, color: '#6fe0d0', trib: 5 },
+  { id: 'dao', glyph: '道', cap: 480, name: 'Dao Seeking', stages: 3, maxQi: 100000, life: 100, power: 55, color: '#ffffff', trib: 5 },
   { id: 'immortal', glyph: '羽', cap: 600, name: 'Immortal Ascension', stages: 3, maxQi: 160000, life: 150, power: 120, color: '#fff4b0', trib: 7 },
   // v0.8.7 beyond Immortal Ascension (finite Qi everywhere: the old Infinity broke Qi bars and moves)
   { id: 'immortal_king', glyph: '王', cap: 700, name: 'Immortal King', stages: 3, maxQi: 260000, life: 120, power: 180, color: '#ffd36f', trib: 8 },
@@ -88,3 +88,8 @@ export const METHODS = [
   { id: 'myriad_souls', name: 'Myriad Souls Refinement (forbidden)', qi: 0.9, demonic: true, hidden: true, desc: '-10% Qi from meditation, but unlocks Blood Sacrifice: take a life for a huge surge of Qi and a better next breakthrough. It scars the mind.' },
   { id: 'blood_sea', name: 'Blood Sea Method (demonic)', qi: 1.7, demonic: true, desc: '+70% Qi, -4 Health per session, 5% chance of Qi corruption each time.', side: { health: -4 } },
 ];
+
+// v0.9.49 stage names
+export const STAGE_NAMES = ['Early', 'Middle', 'Peak'];
+export const stageName = (realm, stage) => (REALMS[realm]?.stages || 1) > 1 ? STAGE_NAMES[Math.max(0, Math.min(2, (stage || 1) - 1))] : '';
+export const IMMORTAL_I = REALMS.findIndex(r => r.id === 'immortal');

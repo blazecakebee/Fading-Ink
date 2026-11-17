@@ -1,7 +1,26 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.48';
+export const VERSION = '0.9.50';
 export const CHANGELOG = [
+  { v: '0.9.50', date: '2026-11-17', title: 'Superficial', notes: [
+    'Looks matter much more when asking someone out. With average closeness, a plain face (30 Looks) gets about 1 yes in 20, an average one about 2 in 5, a good-looking one (70) about 2 in 3, and a stunning one (90) almost 9 in 10.',
+    'Asking out someone far better-looking than you rarely works. Charm, closeness and the minigame still help, just less than a face.',
+    'Good-looking people now attract admirers: someone may develop a crush on you, and the better you look the more often it happens.',
+    'Rejections and yeses can now say why.',
+  ] },
+  { v: '0.9.49', date: '2026-11-17', title: 'Early, Middle, Peak', notes: [
+    'Every cultivation realm now has 3 stages instead of 5: Early, Middle and Peak. (The Immortal realms keep their 3; Mortal and Heavenly Venerable stay single.)',
+    'Each stage is a bigger step: Qi capacity and power jump twice as much per stage, so Peak is as strong as the old Stage 5.',
+    'Stage breakthroughs mean more: +15 Health, -10 Stress, +1 Qi affinity, +1 Strength, Agility and Smarts, and +35 meridian progress (was +20).',
+    'Cultivation is about 1.3x faster overall. Each meditation gives a little less Qi, but there is far less to fill and fewer breakthroughs to survive. Immortal realms gain Qi 30% faster.',
+    'Existing characters are re-measured: Stage 1 → Early, 2–3 → Middle, 4–5 → Peak.',
+  ] },
+  { v: '0.9.48', date: '2026-11-17', title: 'Simpler minigames', notes: [
+    'Basic meditation is now "Breathe": hold while the circle grows, let go while it shrinks.',
+    'Studying is now Flash Cards: is the sum right or wrong? 5 cards, quick correct answers score best.',
+    'Yin-Yang Dual Cultivation is now one simple rule: a dark or light orb appears, tap YIN or YANG to match. 6 orbs.',
+    'The new instructions show once, even if you saw the old ones.',
+  ] },
   { v: '0.9.48', date: '2026-11-17', title: 'Clearer minigames', notes: [
     'Basic meditation is simpler: hold while the circle grows (breathe in), let go while it shrinks (breathe out).',
     'Yin-Yang Dual Cultivation is simpler: a dark or light orb appears; tap YIN for dark, YANG for light. 6 orbs.',

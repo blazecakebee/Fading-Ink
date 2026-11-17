@@ -197,7 +197,15 @@ export const SOCIAL = [
       return `Spar vs ${p.first}: ${r === 'win' ? 'VICTORY' : 'DEFEAT'}. Strength +${gs}, Agility +${ga}.${extra}`; } },
   { id: 'argue', emoji: '😠', name: 'Argue', icon: 'brokenheart', run: (c, p) => { p.close = clamp(p.close - ri(8, 18)); stat(c, 'stress', 4); if (p.close < 5 && p.role !== 'Enemy' && !['Father', 'Mother'].includes(p.role)) { p.role = 'Enemy'; return { text: `${p.first} and I are enemies now.`, cls: 'bad' }; } return `I argued with ${p.first}.`; } },
   { id: 'date', emoji: '🌹', name: 'Ask out', icon: 'flower', age: 14, need: (c, p) => !c.partnerId && !['Father', 'Mother', 'Brother', 'Sister', 'Son', 'Daughter'].includes(p.role) && Math.abs(p.age - c.age) < 10 && p.age >= 14,
-    run: (c, p) => { const ok = chance(0.25 + p.close / 200 + (c.stats.looks - 50) / 200 + (eff(c, 'charisma') - 50) / 300 + ((c._soc ?? 0.5) - 0.5) * 0.3); if (ok) { p.role = 'Partner'; c.partnerId = p.id; gainClose(c, p, 15); return { text: `${p.first} said yes! We're dating.`, cls: 'good', big: true }; } p.close = clamp(p.close - 5); return { text: `${p.first} turned me down.`, cls: 'bad' }; } },
+    // v0.9.50 people are superficial: your looks count for much more, and asking out someone far better-looking rarely works
+    run: (c, p) => { const L = c.stats.looks, gap = L - (p.genes?.looks ?? 55);
+      const pr = clamp(0.2 + p.close / 200 + (L - 50) / 110 + (gap >= 0 ? gap / 300 : gap / 140) + (eff(c, 'charisma') - 50) / 300 + ((c._soc ?? 0.5) - 0.5) * 0.3, 0.03, 0.92);
+      if (chance(pr)) { p.role = 'Partner'; c.partnerId = p.id; gainClose(c, p, 15);
+        const why = L >= 75 ? pick([' "Honestly? I said yes the moment you smiled."', ' They couldn\'t stop looking at me.', ' "Have you seen yourself? Of course."']) : L < 40 ? pick([' "You make me laugh. That matters more." (It doesn\'t always.)', ' They saw past the face. Rare.']) : '';
+        return { text: `${p.first} said yes! We're dating.${why}`, cls: 'good', big: true }; }
+      p.close = clamp(p.close - 5);
+      const why = gap <= -20 ? pick([' They glanced at their friends and laughed.', ` "Aren't you a bit… out of my league? I mean, I'm out of yours."`, ' They were nice about it. That made it worse.']) : L < 40 ? pick([' They looked me up and down. "You\'re sweet, but… no."', ' "I just don\'t see you that way."', ' I heard later they said I wasn\'t their type. I knew what they meant.']) : '';
+      return { text: `${p.first} turned me down.${why}`, cls: 'bad' }; } },
   { id: 'propose', emoji: '💍', name: 'Propose', icon: 'ring', age: 18, need: (c, p) => p.role === 'Partner', run: async (c, p) => {
       const ok = chance(0.35 + p.close / 150 + ((c._soc ?? 0.5) - 0.5) * 0.25); if (!ok) { p.close = clamp(p.close - 15); return { text: `${p.first} said no...`, cls: 'bad' }; }
       const pre = c.money > 50000 ? await ui.choice({ title: 'Prenup?', text: 'You have significant assets. Ask for a prenup?', icon: 'paper', options: [{ label: 'Yes, prenup', value: true }, { label: 'No', value: false }] }) : false;

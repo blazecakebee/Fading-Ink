@@ -393,7 +393,7 @@ export const TABS = {
     const cards = [
       card('meditate', 'Meditate', [!q.manuals.length ? 'Without a manual you only calm your mind (-Stress).' : `Gathers about ${mLo}–${mHi} Qi using the ${M.name}.`, M.side ? 'Method effect: ' + M.desc : null, `Sessions this year: ${q.medYear || 0}/3. Meridian fatigue ${Math.round((q.fatigue || 0) * 10) / 10} → gains ×${fatigueMult(c).toFixed(2)} (do other things to recover).`, '-5 Stress.', q.realm === 0 && q.manuals.length ? 'Fill your Qi to enter Qi Condensation on your next birthday.' : null]),
       q.realm >= 1 ? card('meridian', 'Work on your meridians', mi.open >= 12 ? ['All twelve meridians are open — Grand Circulation.'] : mi.open >= mi.max ? [`Your realm can hold ${mi.max} open meridians. Break through to open more.`, `Progress saved: ${mi.prog}/${mi.need}.`] : [`Costs ${mi.cost} Qi and 1–4 Health.`, `Channel progress ${mi.prog}/${mi.need} — never lost, not even on a breakthrough. A better minigame means more progress.`, `When the bar fills, you choose which meridian opens (${mi.open}/${mi.max} at this realm).`, mi.tired < 1 ? `Repeating it this year: progress ×${mi.tired.toFixed(2)}.` : null, 'Breakthroughs widen your channels: +20 progress (+60 for a new realm).']) : null,
-      q.realm >= 1 ? card('breakthrough', bi.major ? `Break into ${bi.next?.name || '—'}` : `Break to Stage ${q.stage + 1}`, [
+      q.realm >= 1 ? card('breakthrough', bi.major ? `Break into ${bi.next?.name || '—'}` : `Break to ${['Early', 'Middle', 'Peak'][q.stage] || 'the next stage'} ${REALMS[q.realm].name}`, [
         `Success chance: ${pc(bi.p)}.`, bi.trib ? `⚡ A Heavenly Tribulation (${bi.trib} bolts) must be survived first.` : null,
         'On success: Qi resets, +Health, more power and lifespan.', 'On failure: lose half your Qi, some Health, 40% risk of Qi Deviation Sickness.', ...bi.blockers.map(b => '⛔ ' + b)],
         h('table', { class: 'kv small' }, bi.parts.map(([l, v]) => h('tr', {}, h('td', {}, l), h('td', { class: v >= 0 ? 'good' : 'bad' }, (v >= 0 ? '+' : '') + Math.round(v * 100) + '%'))))) : null,
@@ -743,7 +743,7 @@ function realmLadder(c) {
     const cur = i === q.realm, done = i < q.realm;
     const row = h('div', { class: 'rung' + (cur ? ' current' : done ? ' done' : ' locked') },
       h('span', { class: 'rung-glyph', style: { '--rc': r.color } }, r.glyph),
-      h('span', { class: 'rung-name' }, r.name, cur && r.stages > 1 ? h('small', {}, ` · Stage ${q.stage}/${r.stages}`) : null),
+      h('span', { class: 'rung-name' }, r.name, cur && r.stages > 1 ? h('small', {}, ` · ${['Early', 'Middle', 'Peak'][q.stage - 1] || ''} (${q.stage}/${r.stages})`) : null),
       null);
     row.style.setProperty('--rc', r.color);
     row.title = `${r.name} — stat cap ${r.cap}, +${r.life}y lifespan, power ×${r.power}`;

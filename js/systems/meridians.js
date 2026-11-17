@@ -98,7 +98,7 @@ async function openOne(c) {
 // a breakthrough widens the channels: free progress, never a reset
 export function breakthroughBonus(c, major) {
   ensureMer(c); if (c.qi.mer.length >= 12) return '';
-  const g = major ? 60 : 20; c.qi.merProg += g;
+  const g = major ? 60 : 35; // v0.9.49 fewer, bigger stage breakthroughs c.qi.merProg += g;
   return ` The surge widened my channels (meridian progress +${g}).`;
 }
 export function yearReset(c) { if (c.qi) c.qi.merYear = 0; }

@@ -77,7 +77,7 @@ export function fight(enemyDef, opts = {}) {
       const hpTxt = h('div', { class: 'flvl' }); ui[isMe ? 'meHpTxt' : 'enHpTxt'] = hpTxt;
       const qb = isMe && qiOf(c) ? qiBadge(c.qiType.primary, 20, c.qiType.fused ? c.qiType.secondary : null) : null; if (qb) qb.style.marginLeft = '6px';
       const info = h('div', { class: 'info' }, h('div', { class: 'fname' }, isMe ? 'You' : who.name, qb),
-        h('div', { class: 'flvl' }, `${isMe ? (onBodyPath(c) ? bodyTier(c).name : realmLabel(c.qi.realm) + (c.qi.realm ? ' ' + c.qi.stage : '')) : realmLabel(who.realm || 0)} · Power ${Math.round(who.pow * 10) / 10}${isMe ? ` · ${bkLabel(me.bk)}` : ''}`),
+        h('div', { class: 'flvl' }, `${isMe ? (onBodyPath(c) ? bodyTier(c).name : realmLabel(c.qi.realm) + (c.qi.realm && REALMS[c.qi.realm].stages > 1 ? ' · ' + ['Early', 'Middle', 'Peak'][c.qi.stage - 1] : '')) : realmLabel(who.realm || 0)} · Power ${Math.round(who.pow * 10) / 10}${isMe ? ` · ${bkLabel(me.bk)}` : ''}`),
         h('div', { class: 'hpbar' }, hp), hpTxt, mom);
       const pf = h('div', { class: 'fportrait' }, isMe ? mePortrait : ePortrait); ui[isMe ? 'mePf' : 'enPf'] = pf;
       return h('div', { class: 'fighter' + (isMe ? ' me' : '') }, isMe ? [pf, info] : [info, pf]);

@@ -9,7 +9,8 @@ import { ensureBody } from './systems/body.js';
 import { scheduleSync } from './net/cloud.js';
 import { ui } from './core/bus.js';
 import { ERAS } from './data/countries.js';
-import { REALMS, OLD_REALM_MAP, V2_REALM_MAP } from './data/realms.js';
+import { REALMS, OLD_REALM_MAP, V2_REALM_MAP, IMMORTAL_I } from './data/realms.js';
+import { qiCap } from './systems/cultivation.js';
 import { migrateExpansion, installExpansion } from './systems/expansion.js';
 import { pick, ri } from './core/rng.js';
 import { loadIcons } from './ui/dom.js';
@@ -43,16 +44,25 @@ window.FadingInk = { G, META }; // handy for debugging in the browser console
 
 // Before v0.3.0 every realm had 9 stages; now they have 5. Rescale older cultivators proportionally (9 → 5, 7 → 4, 5 → 3…).
 function migrateStages(c) {
-  if (!c || c.flags?.stageSystem === 5) return;
+  if (!c || c.flags?.stageSystem === 3) return;
+  if (c.flags?.stageSystem === 5) { // v0.9.49 five stages became three: Early, Middle, Peak
+    const R = REALMS[c.qi.realm], before = c.qi.stage;
+    if (c.qi.realm > 0 && c.qi.realm < IMMORTAL_I) {
+      c.qi.stage = Math.max(1, Math.min(3, Math.ceil(before * 3 / 5)));
+      c.qi.qi = Math.min(c.qi.qi, qiCap(c));
+      if (before !== c.qi.stage) logLine(`The heavens re-measured my cultivation: Stage ${before}/5 is now ${['Early', 'Middle', 'Peak'][c.qi.stage - 1]} ${R.name}.`, 'qi');
+    }
+    c.flags.stageSystem = 3; return;
+  }
   c.flags ||= {};
   const prev = META.lastSeenVersion; const older = !prev || prev.split('.').map(Number).reduce((a, n, i) => a + n * [1e6, 1e3, 1][i], 0) < 3000;
   const R = REALMS[c.qi.realm];
   if (c.qi.realm > 0 && R.stages > 1 && (c.qi.stage > R.stages || older)) {
     const before = c.qi.stage; c.qi.stage = Math.max(1, Math.min(R.stages, Math.ceil(before * R.stages / 9)));
-    c.qi.qi = Math.min(c.qi.qi, Math.round(R.maxQi * (1 + (c.qi.stage - 1) * 0.7)));
-    if (before !== c.qi.stage) logLine(`The heavens re-measured my cultivation: ${R.name} Stage ${before}/9 is now Stage ${c.qi.stage}/5.`, 'qi');
+    c.qi.qi = Math.min(c.qi.qi, qiCap(c));
+    if (before !== c.qi.stage) logLine(`The heavens re-measured my cultivation: ${R.name} Stage ${before}/9 is now ${['Early', 'Middle', 'Peak'][c.qi.stage - 1] || ''}.`, 'qi');
   }
-  c.flags.stageSystem = 5;
+  c.flags.stageSystem = 3;
 }
 
 // v0.5.8 added Qi Refining, Origin Spirit and Soul Formation: shift older characters onto the new realm ladder

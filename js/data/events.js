@@ -85,6 +85,10 @@ const E = [
   { id: 'lottery', cond: c => c.age >= 18, w: 1, run: c => { if (chance(0.02 * (1 + c.stats.luck / 50))) { const g = Math.round(ri(10000, 200000) * country(c).econ); money(c, g); ui.log(`I won the lottery: ${fmtMoney(c, g)}!`, 'big'); ui.fx('milestone'); } } },
   { id: 'promotion', cond: c => c.job && c.job.perf > 70, w: 6, run: c => { const g = Math.round(2000 * wage(c)); money(c, g); c.job.perf = 50; ui.log(`I was promoted! Raise and bonus: ${fmtMoney(c, g)}.`, 'good'); } },
   { id: 'injury', cond: c => c.age >= 12, w: 3, run: c => { if (has(c, 'clumsy') || chance(0.5)) { stat(c, 'health', -ri(5, 15)); ui.log(`I ${pick(['broke my wrist', 'sprained an ankle', 'fell down the stairs'])}.`, 'bad'); } } },
+  // v0.9.50 good-looking people get admirers; plain people mostly don't
+  { id: 'admirer', cond: c => c.age >= 14 && c.age <= 45 && !c.partnerId, w: 4, run: c => { const L = c.stats.looks; if (!chance(clamp((L - 40) / 55, 0.03, 0.85))) return;
+      const p = makePerson(c, { role: 'Crush', age: c.age + ri(-3, 3), close: ri(45, 70) + (L >= 80 ? 10 : 0) }); p.admirer = true; c.people.push(p);
+      ui.log(L >= 80 ? `${p.first} ${p.last} has a crush on me. So do half the people I walk past, apparently.` : `${p.first} ${p.last} has a crush on me. I can tell by how they keep finding reasons to talk.`, 'good'); } },
   { id: 'crush', cond: c => c.age >= 13 && c.age <= 30 && !c.partnerId, w: 5, run: c => { const p = makePerson(c, { role: 'Crush', age: c.age + ri(-1, 2), close: ri(20, 45) }); c.people.push(p); ui.log(`I have a crush on ${p.first} ${p.last}.`); } },
   { id: 'news', cond: () => true, w: 6, run: c => ui.log(pick([
       `World: The Hunter Association reported ${ri(3, 90)} Gate breaks this year.`, 'World: A sect war spilled into the streets of a distant capital. Officials blame "gas leaks".',

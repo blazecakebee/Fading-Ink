@@ -11,24 +11,29 @@ import { stat, die, addItem, money, country, fmtMoney, QUALITY, bestQ } from './
 import { bondBonus } from './people.js';
 import { condQiMult, addCondition } from './health.js';
 import { gearStats } from './crafting.js';
-import { SECTS, METHODS, RI } from '../data/realms.js';
+import { SECTS, METHODS, RI, stageName, IMMORTAL_I } from '../data/realms.js';
 import { perk as perkC } from '../data/legacyTree.js';
 import { ITEMS } from '../data/items.js';
 import * as MR from './meridians.js';
 
-export const realmName = c => onBodyPath(c) ? `${bodyTier(c).name} (Severed)` : c.qi.realm === 0 ? 'Mortal' : `${REALMS[c.qi.realm].name} ${REALMS[c.qi.realm].stages > 1 ? 'Stage ' + c.qi.stage : ''}`.trim();
-export const qiCap = c => Math.round(REALMS[c.qi.realm].maxQi * (1 + (c.qi.stage - 1) * 0.7));
-export const power = c => (onBodyPath(c) ? bodyTier(c).power * (1 + Math.min(1, (c.bodyPath.prog || 0) / bodyTier(c).need) * 0.3) : REALMS[c.qi.realm].power * (1 + (c.qi.stage - 1) * 0.11)) * powerBonus(c);
+export const realmName = c => onBodyPath(c) ? `${bodyTier(c).name} (Severed)` : c.qi.realm === 0 ? 'Mortal' : `${stageName(c.qi.realm, c.qi.stage)} ${REALMS[c.qi.realm].name}`.trim();
+// v0.9.49 three stages per realm: each stage is a bigger step (same Peak as the old Stage 5)
+const STEP = r => r >= IMMORTAL_I ? 0.7 : 1.4, PSTEP = r => r >= IMMORTAL_I ? 0.11 : 0.22;
+export const qiCap = c => Math.round(REALMS[c.qi.realm].maxQi * (1 + (c.qi.stage - 1) * STEP(c.qi.realm)));
+export const power = c => (onBodyPath(c) ? bodyTier(c).power * (1 + Math.min(1, (c.bodyPath.prog || 0) / bodyTier(c).need) * 0.3) : REALMS[c.qi.realm].power * (1 + (c.qi.stage - 1) * PSTEP(c.qi.realm))) * powerBonus(c);
 // v0.7.9: power from traits, genes, heirlooms and gods stacks with diminishing returns and tops out at x1.6
 export const powerBonus = c => { const m = traitMult(c, 'power'); return m <= 1 ? m : Math.min(1.6, 1 + (m - 1) * 0.6); };
 
+// v0.9.49 pace: 3 stages need ~40% less Qi per realm than the old 5, so each session gives a bit less;
+// net result, cultivation is about 1.3x faster overall, and each stage takes longer to fill.
+const QI_PACE = c => c.qi.realm >= IMMORTAL_I ? 1.3 : 0.78;
 export function qiGain(c, base) {
   const manual = Math.max(1, ...c.qi.manuals.map(m => MANUALS.find(x => x.id === m)?.qi || 1));
   const aff = 0.5 + c.qi.affinity / 100; const merid = MR.flowMult(c); // v0.9.32 +5% per open meridian (each one also has its own bonus)
   const stress = c.stats.stress > 60 ? 0.6 : 1;
   const sect = c.ownSect ? 1.1 : 1;
   const M = method(c); const meth = M.qi * (M.dual && bondBonus(c, 'qi') > 1 ? 1 + M.dual : 1);
-  return Math.max(1, Math.round(base * qiFlowMult(c) * aff * merid * manual * traitMult(c, 'qi') * stress * bondBonus(c, 'qi') * condQiMult(c) * (1 + gearStats(c).qi) * sect * meth * (perkC('c3') ? 1.15 : 1)));
+  return Math.max(1, Math.round(base * qiFlowMult(c) * aff * merid * manual * traitMult(c, 'qi') * stress * bondBonus(c, 'qi') * condQiMult(c) * (1 + gearStats(c).qi) * sect * meth * (perkC('c3') ? 1.15 : 1) * QI_PACE(c)));
 }
 
 // Meditate: main Qi source. Returns text for the chronicle.
@@ -123,14 +128,15 @@ export async function breakthrough(c) {
     ui.log(`My limits shatter: stats can now reach ${REALMS[c.qi.realm].cap} (gains slow past ${Math.round(REALMS[c.qi.realm].cap * 0.7)}).`, 'qi');
     if (REALMS[c.qi.realm].id === 'immortal') earnTrait(c, 'author');
     return `BREAKTHROUGH! I have entered ${REALMS[c.qi.realm].name}. My lifespan stretches before me. My body can now hold ${MR.maxOpen(c)} meridians open.${MR.breakthroughBonus(c, true)}`; }
-  c.qi.stage++; ui.fx('breakthrough', { major: false }); stat(c, 'health', 5);
-  return `Breakthrough! ${R.name} Stage ${c.qi.stage}.${MR.breakthroughBonus(c, false)}`;
+  c.qi.stage++; ui.fx('breakthrough', { major: false }); stat(c, 'health', 15); stat(c, 'stress', -10); c.qi.affinity = Math.min(100, (c.qi.affinity || 0) + 1);
+  for (const k of ['strength', 'agility', 'smarts']) stat(c, k, 1);
+  return `Breakthrough! I have reached ${stageName(c.qi.realm, c.qi.stage)} ${R.name}. My Qi capacity and power surged (+15 Health, +1 Qi affinity, +1 Strength, Agility and Smarts).${MR.breakthroughBonus(c, false)}`;
 }
 
 // Passive yearly cultivation bits
 export function cultivationYear(c) {
   // sects look after disciples who are ready for Foundation Establishment
-  if (c.sect && c.qi.realm === RI.qi && c.qi.stage >= 5 && !c.inv.foundation_pill && chance(0.35)) {
+  if (c.sect && c.qi.realm === RI.qi && c.qi.stage >= REALMS[RI.qi].stages && !c.inv.foundation_pill && chance(0.35)) {
     addItem(c, 'foundation_pill'); ui.log(`An elder of the ${sectName(c)} handed me a Foundation Establishment Pill. "You are ready."`, 'qi');
   }
   if (c.qi.known && c.qi.manuals.length && c.qi.realm === 0 && c.qi.qi >= qiCap(c)) {
@@ -152,7 +158,7 @@ export const sectName = c => c.sect === 'own' ? c.ownSect?.name : c.sect === 'gu
 export function foundReq(c) {
   const cost = Math.round(5000 * country(c).econ), out = [];
   if (c.age < 18) out.push('Be at least 18');
-  if (!(c.qi.realm >= RI.foundation || (c.qi.realm === RI.qi && c.qi.stage >= 5))) out.push('Reach Qi Condensation stage 5');
+  if (!(c.qi.realm >= RI.foundation || (c.qi.realm === RI.qi && c.qi.stage >= REALMS[RI.qi].stages))) out.push('Reach Peak Qi Condensation');
   if (c.money < cost) out.push(`Have ${fmtMoney(c, cost)}`);
   return { cost, missing: out };
 }
