@@ -1,7 +1,18 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.22';
+export const VERSION = '0.9.23';
 export const CHANGELOG = [
+  { v: '0.9.23', date: '2026-11-16', title: 'Fate', notes: [
+    'Genetics: your starting Smarts, Strength, Agility, Charisma and Luck are now a blend of both parents and your own roll. Strong parents usually have strong kids, and most kids land around the average or a little above it. Heirs inherit the same way.',
+    'Enemies and broken relationships: with someone who hates you, you can only talk, argue, or hurt them. With an ex or someone you\'ve drifted far from, you can also compliment them, give gifts or ask for money. No more training with your nemesis.',
+    'You can now assault or kill anyone you know (People tab). It costs karma and fame, and the police will investigate. Killing family hurts you too.',
+    'Karma and infamy: crimes, murder and blood sacrifice lower your karma. Fame can now go negative (Disliked, Notorious, Infamous, Reviled). Check the new Karma & Reputation card on the Character tab.',
+    'The Demonic Path: you fall onto it by using a demonic cultivation method, staying on the run after a jailbreak, or wearing demonic gear while Qi Corruption goes untreated for 10+ years. Guild hunters come after you, you lose Guild membership and elite invitations, and fame only earns infamy. In return, Qi Corruption can\'t hurt you, your Qi becomes Tainted (+15% Qi, +5% power, slower healing, with a dark element name), three demonic sects will take you in, and a Black Market tab opens with a rotating stock of high-end goods and 5 new pieces of demonic gear.',
+    'Reincarnation: once you reach Immortal Ascension, dying with no heir has a 20% chance (more with strong heirlooms) to let you reincarnate. You keep your recipes and personality, remember your Fable choices, pick 1 of 4 past-life cards, and gain ×1.2 to everything. A reincarnated soul can\'t reincarnate again. Use "Search for your past life\'s belongings" to recover the heirlooms and money you left behind.',
+    'Regression: at Void Refinement or higher, being killed in battle (Gate, hunt, Fable, mutiny, ambush) has a 12% chance to send you 1 to 100 years into the past as yourself. Your realm drops one level and your Qi is unstable (-40% Qi gain) for 4 years.',
+    'Cursed objects: an evil soul (karma -60 or lower, Void Refinement+, no heir) may become a cursed object when it dies. Years later someone picks it up, and you play on as them — possessed, Tainted and on the demonic path.',
+    'Updates no longer refresh the game while a year is passing, an activity, fight, minigame, cutscene or any dialog is open, or you are inside a Fable. It waits until you are done.',
+  ] },
   { v: '0.9.22', date: '2026-11-16', title: 'Fix', notes: [
     'Fixed: in the Argue minigame the third answer was cut off. The window now grows to fit all three answers, on PC and phones.',
   ] },

@@ -25,6 +25,7 @@ import { ensureBody, bodyYear, adultHeight, eff, workMult, healMult } from './bo
 import { bonds, bondBonus } from './people.js';
 import { checkEarned } from './traits.js';
 import { bonusVal } from './bonus.js';
+import { tryRegress } from './fate.js';
 
 // Extension points: other systems (heirlooms, genetics, sects, world news, family) register here.
 export const HOOKS = { birth: [], yearStart: [], yearEnd: [], inherit: [], death: [] };
@@ -125,6 +126,17 @@ export function addItem(c, id, n = 1, q) {
 export const rollQuality = (c, bonus = 0) => { const r = Math.random(), hi = 0.12 + bonus + (perk('d5') ? 0.05 : 0) + Math.max(0, (c?.stats?.luck || 50) - 50) / 1000; return r < hi ? 'hi' : r > 0.62 - bonus ? 'lo' : 'mid'; };
 export const bestQ = (c, id) => { const k = qCounts(c, id); return k.hi ? 'hi' : k.mid ? 'mid' : k.lo ? 'lo' : null; };
 
+// v0.9.23 genetics: a child's potential is a blend of both parents and their own roll (best of two), so
+// strong parents usually have strong kids, and most kids land around the average or a little above it.
+export const GENE_STATS = ['smarts', 'strength', 'agility', 'charisma', 'luck'];
+const best2 = () => Math.max(ri(15, 75), ri(15, 75));
+export const geneMix = (a, b, w = 0.55, v = 6) => clamp(Math.round(((a + b) / 2) * w + best2() * (1 - w) + ri(-v, v)));
+function geneticStats(c, base0) {
+  const ps = c.people.filter(p => (p.role === 'Father' || p.role === 'Mother') && p.stats); if (!ps.length) return;
+  const pv = k => ps.map(p => p.stats[k] ?? 50), adult = { strength: 0.5, agility: 0.5 };
+  for (const k of GENE_STATS) { const v = pv(k), g = geneMix(v[0], v[1] ?? v[0]) * (adult[k] || 1); c.stats[k] = clamp(Math.round(c.stats[k] + g - base0[k])); }
+}
+
 // ---- new life ----------------------------------------------------------------
 export function newLife(opts = {}) {
   const cty = opts.country || weighted(COUNTRIES, () => 1);
@@ -146,6 +158,7 @@ export function newLife(opts = {}) {
     assets: [], stocks: 0, wins: 0, kills: 0, gatesCleared: 0, gates: [], sect: null,
     lifespan: ri(68, 92), actions: ACTIONS_PER_YEAR, social: SOCIAL_PER_YEAR, idleYears: 0, heirlooms: opts.heirlooms || [],
   };
+  const base0 = { ...c.stats };
   // perks & inheritance
   if (opts.inherit) Object.entries(opts.inherit).forEach(([k, v]) => { c.stats[k] = clamp(Math.round(v)); });
   c.traits = opts.traits || rollBirthTraits(c);
@@ -167,6 +180,7 @@ export function newLife(opts = {}) {
   c.money += ri(...wealth.money) * (opts.moneyBonus ? 1 : 1);
   G.char = c;
   familyAtBirth(c, wealth, opts.parents, opts.siblings);
+  if (!opts.inherit) geneticStats(c, base0);
   if (opts.inheritMoney) c.money += opts.inheritMoney;
   // birth log
   ensureBody(c); if (opts.heights) c.body.adultHeight = adultHeight(c.country, c.gender, opts.heights);
@@ -195,7 +209,8 @@ export function beginYear(c) {
 
 // ---- yearly aging ----------------------------------------------------------
 let lastAgeClicks = [];
-export async function ageUp() {
+export async function ageUp() { const w = typeof window !== 'undefined' ? window : globalThis; w.__fiBusy = (w.__fiBusy || 0) + 1; try { return await ageUp0(); } finally { w.__fiBusy = Math.max(0, w.__fiBusy - 1); } }
+async function ageUp0() {
   const c = G.char; if (!c || !c.alive) return;
   if (c.fableRun) { ui.toast('You are inside a Fable. Time is frozen until you finish it (Fables tab).'); return; }
   workloadYear(c, stat); // v0.9.19 the year's workload turns into stress
@@ -318,6 +333,7 @@ function checkDeath(c) {
 export const LEGACY_RATE = 0.6;
 export function die(c, cause) {
   if (!c.alive) return;
+  if (tryRegress(c, cause)) return; // v0.9.23: sometimes a fallen Void Refiner wakes up years in the past
   c.alive = false; c.cause = cause;
   ui.log(`I died at age ${c.age}: ${cause}.`, 'death');
   if (c.age >= 100 && !c.qi.realm) earnTrait(c, 'centenarian');
@@ -372,7 +388,7 @@ export function continueAs(childId) {
   const inherit = {};
   ['smarts', 'strength', 'agility', 'charisma', 'luck'].forEach(k => {
     const other = partner?.stats?.[k] ?? ri(30, 70);
-    inherit[k] = (old.stats[k] + other) / 2 + ri(-15, 15);
+    inherit[k] = geneMix(old.stats[k], other, 0.65, 8);
   });
   // traits: each parent trait has a chance to pass down (rarer = less likely), plus a fresh roll
   const passed = old.traits.filter(t => !['bloodstained', 'jailbird', 'nobody', 'duplicate', 'centenarian', 'author'].includes(t) && chance(0.35));

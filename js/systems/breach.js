@@ -41,7 +41,7 @@ export function breachLost(c, rank, res) {
   const t = breachTier(rank), notes = [];
   const dmg = ri(22, 34) + (res.fled ? 0 : 6); stat(c, 'health', -dmg); notes.push(`-${dmg} Health`);
   ensureBody(c); const hit = hitBody(c, { amount: 40 + t * 3, type: pick(['cut', 'blunt', 'burn']), ratio: 2 }); if (hit.text) notes.push(hit.text.toLowerCase());
-  const fameLoss = Math.round((c.fame || 0) * (res.fled ? 0.2 : 0.12)); c.fame = Math.max(0, (c.fame || 0) - fameLoss); if (fameLoss) notes.push(`Fame -${fameLoss.toLocaleString()}`);
+  const fameLoss = Math.max(0, Math.round((c.fame || 0) * (res.fled ? 0.2 : 0.12))); c.fame = (c.fame || 0) - fameLoss; if (fameLoss) notes.push(`Fame -${fameLoss.toLocaleString()}`);
   const loss = Math.round(Math.max(0, c.money) * 0.15); if (loss) { money(c, -loss); notes.push(`${fmtMoney(c, loss)} in damages`); }
   stat(c, 'stress', 22); stat(c, 'happiness', -18);
   const dead = ri(40, 400) * (t + 1);

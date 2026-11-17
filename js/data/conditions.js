@@ -48,6 +48,7 @@ export function condTip(x) {
   const sev = x.sev || 1, L = [C.desc];
   const eff = Object.entries(C.eff || {}).map(([k, v]) => { const n = Math.round(v * sev); return `${n > 0 ? '+' : '−'}${Math.abs(n)} ${STAT_LBL[k] || k}`; });
   if (eff.length) L.push(`• Every year: ${eff.join(', ')}`);
+  if (x.id === 'corruption') L.push('• Walkers of the demonic path are immune to its yearly harm');
   if (C.qiMult && C.qiMult !== 1) L.push(`• Qi gain ${C.qiMult > 1 ? '+' : '−'}${Math.round(Math.abs(C.qiMult - 1) * 100)}%`);
   if (C.bleed) L.push(`• You take ${Math.round((C.bleed - 1) * 100)}% more damage in fights`);
   if (C.sudden) L.push(`• Raises your risk of sudden death (+${Math.round(C.sudden * 100)}% a year)`);

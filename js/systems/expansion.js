@@ -40,6 +40,9 @@ import { PRISON_ACTS, PRISON_CAT, lawYear } from './law.js';
 import { DARK_EVENTS, REHAB, addictionYear } from '../data/darkEvents.js';
 import { IDENTITY_ACTS, attractedTo, sexualityOf } from './selfhood.js';
 import { appearanceYear } from './appearance.js';
+import * as F8 from './fate.js';
+import { SECTS } from '../data/realms.js';
+import { ITEMS } from '../data/items.js';
 import { ambientLine } from '../data/storyPool.js';
 import { CATEGORIES } from '../data/activities.js';
 import { onBodyPath as onBodyPathQ } from './path.js';
@@ -56,6 +59,11 @@ SOCIAL.push(...FAMILY_SOCIAL, MOVE_IN, ...TRAINER_SOCIAL, ...AGENT_SOCIAL);
 { const d = SOCIAL.find(s => s.id === 'date'); if (d) { const r0 = d.run; d.run = (c, p) => attractedTo(p, c) ? r0(c, p) : { text: `${p.first} smiled kindly. "You're lovely — but you're not who I'm looking for."`, cls: 'bad' }; } } // everyone has a sexuality now
 for (const s of SOCIAL) s.run = withTaste(s.id, withFlavor(s.id, s.run), gainCloseP); // what you did, and whether THEY enjoyed it
 wrapSocial(SOCIAL); // v0.9.21 people can say no; each interaction has its own minigame
+SOCIAL.push(F8.ASSAULT, F8.MURDER); // v0.9.23 you can hurt anyone you know (added after wrapping: no declines, no flavour bonuses)
+for (const s of F8.DEMONIC_SECTS) if (!SECTS.some(x => x.id === s.id)) SECTS.push(s);
+for (const [id, it] of Object.entries(F8.DEMON_GEAR)) if (!ITEMS[id]) ITEMS[id] = it;
+ACTIVITIES.push(F8.SEARCH_PAST);
+{ const r0 = SACRIFICE.run; SACRIFICE.run = async c => { const r = await r0(c); if (r) { F8.addKarma(c, -25); F8.addInfamy(c, 400); c.demonPts = (c.demonPts || 0) + 20; } return r; }; }
 // ---- more names (fewer repeats)
 for (const cty of COUNTRIES) { const x = MORE_NAMES[cty.id]; if (x && !cty._more) { cty._more = 1; cty.m = [...new Set([...cty.m, ...x.m.split(' ')])]; cty.f = [...new Set([...cty.f, ...x.f.split(' ')])]; } }
 // v0.9.17 much bigger pools + city-specific names
@@ -166,6 +174,8 @@ HOOKS.yearEnd.push(async c => {
   once('century', c.age >= 100, { motif: 'tree', color: '#7fe3a0', lines: ['A hundred winters.', 'Most of the faces you knew are portraits now.'], title: 'One Hundred Years', sub: `${c.first} ${c.last}`, sound: 'milestone' });
   once('elder', (c.sectRank || 0) === 3, { motif: 'seal', color: '#c39bff', lines: ['They give you a seat at the long table.', 'Younger disciples bow when you pass.'], title: 'Elder', sub: 'Sect promotion', sound: 'milestone' });
 });
+HOOKS.death.push(c => { F8.rollFate(c); });
+HOOKS.yearEnd.push(async c => { if (c.alive) await F8.fateYear(c); });
 HOOKS.death.push(c => {
   const born = G.world.year - c.age;
   ui.cinematic?.({ motif: 'crack', color: '#b9b0c0', threads: 4, lines: [`${c.cause ? (c.cause[0].toUpperCase() + c.cause.slice(1)).replace(/^I /, 'You ').replace(/\bmy\b/g, 'your') : 'The end came'}.`, c.heirlooms?.length || c.people.some(p => ['Son', 'Daughter'].includes(p.role) && p.alive) ? 'What you leave behind waits for your heirs.' : 'With no heir, your bloodline — and all it carried — ends here.'], title: fullName(c), sub: `${born} – ${G.world.year} · aged ${c.age}`, sound: 'death', introSound: 'click' });
@@ -179,6 +189,7 @@ export async function installExpansion() {
   ui.arena = o => AR.arena(o); ui.arenaOn = () => S().arenaFights !== false;
   ui.bossPhase = (await import('../ui/render.js')).bossPhase;
   { const FU = await import('../ui/fableUI.js'); TABS.fables = FU.fablesTab; }
+  { const FTU = await import('../ui/fateUI.js'); TABS.blackmarket = FTU.blackMarketTab; const ch0 = TABS.character; TABS.character = function () { return [...[].concat(ch0.call(this)), FTU.fateCard(G.char)]; }; }
   { const BG = await import('../ui/breachGame.js'); ui.breach = (c, rank) => BG.playBreach(c, rank); }
   TABS.bloodline = P.bloodlineTab; TABS.factions = P.factionsTab;
   { const base = TABS.gates; TABS.gates = () => [...[base()].flat(), P.huntsPanel()]; }

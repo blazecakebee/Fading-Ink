@@ -10,8 +10,9 @@ import { effRealm, onBodyPath } from './path.js';
 import { gainHeirloom } from './heirlooms.js';
 
 // ---------------- Fame
-export const fameLabel = f => f >= 1e6 ? 'Mythic' : f >= 1e5 ? 'Legendary' : f >= 1e4 ? 'Famous' : f >= 1e3 ? 'Known' : 'Unknown';
-export function addFame(c, n, quiet) { n = Math.round(n); if (!n) return 0; c.fame = Math.max(0, (c.fame || 0) + n); if (!quiet && n >= 1000) ui.log(`Fame +${n.toLocaleString()} (${fameLabel(c.fame)}).`, 'good'); return n; }
+export const fameLabel = f => f < 0 ? (f <= -1e5 ? 'Reviled' : f <= -1e4 ? 'Infamous' : f <= -1e3 ? 'Notorious' : 'Disliked') : f >= 1e6 ? 'Mythic' : f >= 1e5 ? 'Legendary' : f >= 1e4 ? 'Famous' : f >= 1e3 ? 'Known' : 'Unknown';
+export function addFame(c, n, quiet) { n = Math.round(n); if (!n) return 0; if (c.demonic && n > 0) { n = -Math.round(n / 2); c.fame = (c.fame || 0) + n; if (!quiet && n <= -500) ui.log(`Infamy +${(-n).toLocaleString()} (${fameLabel(c.fame)}).`, 'bad'); return n; } // v0.9.23 the demonic path only earns notoriety
+  c.fame = (c.fame || 0) + n; if (!quiet && n >= 1000) ui.log(`Fame +${n.toLocaleString()} (${fameLabel(c.fame)}).`, 'good'); return n; }
 // old saves kept Fame on a 0–100 scale
 export function migrateFame(c) { if (!c.flags.fame2 ) { c.flags.fame2 = true; if ((c.fame || 0) <= 100) c.fame = (c.fame || 0) * 100; } }
 export const gateFame = tier => (tier + 1) * (tier + 1) * 150;
@@ -50,12 +51,12 @@ export const dropRelic = c => { const id = pick(Object.keys(RELICS)); addItem(c,
 // ---------------- yearly: invitations, unrest
 export function renownYear(c) {
   migrateFame(c); bountyBoard(c);
-  if ((c.fame || 0) >= 1e5 && !c.flags.elderInvite && c.sect !== 'own' && !onBodyPath(c) && c.qi.realm >= 3) {
+  if ((c.fame || 0) >= 1e5 && !c.demonic && !c.flags.elderInvite && c.sect !== 'own' && !onBodyPath(c) && c.qi.realm >= 3) {
     c.flags.elderInvite = true; const s = pick(SECTS.filter(x => x.kind !== 'gang') || SECTS);
     ui.choice?.({ title: 'An invitation', icon: 'crown', text: `Your name is known in every teahouse. ${s?.name || 'A great sect'} sends three elders to ask you to join them — not as a disciple, as an Elder.`, options: [{ label: 'Accept', value: true }, { label: 'Decline politely', value: false, ghost: true }] })
       .then(v => { if (v && s) { c.sect = s.id; c.sectRank = 3; ui.log(`I joined ${s.name} as an Elder.`, 'big'); } });
   }
-  if ((c.fame || 0) >= 1e5 && !c.flags.guildInvite) { c.flags.guildInvite = true; c.guild ||= { rank: 0, merit: 0, joined: G.world.year }; c.guild.rank = Math.max(c.guild.rank, 5); c.guild.elite = true;
+  if ((c.fame || 0) >= 1e5 && !c.demonic && !c.flags.guildInvite) { c.flags.guildInvite = true; c.guild ||= { rank: 0, merit: 0, joined: G.world.year }; c.guild.rank = Math.max(c.guild.rank, 5); c.guild.elite = true;
     ui.log('Guild Association officials came to my door: I\'m now an S-rank member with access to their secret Hunts.', 'big'); }
   if (c.ownSect && (c.fame || 0) < 1e4 && chance(0.06)) { const lost = Math.min(c.ownSect.disciples || 0, ri(2, 8)); c.ownSect.disciples = Math.max(0, (c.ownSect.disciples || 0) - lost); const m = Math.round(c.money * 0.08); money(c, -m);
     ui.log(`An elder of my sect betrayed me — nobody respects a sect master without a name. ${lost} disciples left with him, and ${fmtMoney(c, m)} from the treasury.`, 'bad'); }

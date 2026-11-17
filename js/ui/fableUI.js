@@ -27,7 +27,7 @@ export async function openFable(id) {
     choose(opts) {
       return new Promise(res => {
         act.replaceChildren(h('div', { class: 'fb-opts' }, opts.map((o, i) => h('button', { class: 'fb-opt' + (o.leave ? ' leave' : '') + (o.boss ? ' boss' : o.fight ? ' fight' : ''), onclick: () => {
-          fx('click'); act.replaceChildren(); feed.append(h('div', { class: 'fb-you' }, '› ' + o.label)); scroll(); res(i); } },
+          fx('click'); act.replaceChildren(); feed.append(h('div', { class: 'fb-you' }, '› ' + o.label)); scroll(); { const mem = ((c.fables ||= {}).memory ||= {}), L = (mem[F.name] ||= []); L.push(o.label); if (L.length > 12) L.shift(); } res(i); } },
           h('span', { class: 'fb-lbl' }, o.label),
           o.chance != null ? h('span', { class: 'fb-tag check', style: { '--p': fmtPct(o.chance) } }, `${o.stat} · ${fmtPct(o.chance)}`) :
           o.boss ? h('span', { class: 'fb-tag boss' }, '☠ Boss fight') : o.fight ? h('span', { class: 'fb-tag fight' }, '⚔ Fight') :

@@ -73,7 +73,7 @@ export const ACTIVITIES = [
   { id: 'pill', cat: 'cultivation', name: 'Consume Qi Pill', icon: 'pill', minAge: 6, need: c => c.inv.qi_pill > 0 && c.qi.realm >= 1, run: c => { const g = addItem(c, 'qi_pill', -1, 'best'); const q = Math.round(qiCap(c) * 0.4 * traitMult(c, 'pill') * QUALITY[g].mult); c.qi.qi = Math.min(qiCap(c), c.qi.qi + q); return { text: `The ${QUALITY[g].name.toLowerCase()} pill dissolved into warmth. +${q} Qi.`, cls: 'qi' }; } },
   { id: 'devour', cat: 'cultivation', name: 'Devour Demonic Core', icon: 'demon', minAge: 12, need: c => c.inv.demonic_core > 0, run: c => { addItem(c, 'demonic_core', -1); c.qi.qi = qiCap(c); stat(c, 'happiness', -15); earnTrait(c, 'kinslayer'); if (chance(0.5)) addCondition(c, 'corruption'); return { text: 'I swallowed the core. Something inside me grinned.', cls: 'bad', big: true }; } },
   { id: 'seek_sect', cat: 'cultivation', name: 'Seek a hidden sect', icon: 'manual', minAge: 12, need: c => c.qi.known && !c.sect, run: async c => {
-      const opts = SECTS.filter(s => (!s.req.trait || has(c, s.req.trait)) && !c.flags.exiled?.[s.id]);
+      const opts = SECTS.filter(s => (!s.req.trait || has(c, s.req.trait)) && !c.flags.exiled?.[s.id] && (!s.needDemonic || c.demonic) && !(c.demonic && s.align === 'orthodox'));
       if (!opts.length) return 'Word of my expulsions has spread. No sect will open its gates to me.';
       const s = pick(opts); const ok = Object.entries(s.req).every(([k, v]) => k === 'trait' || c.stats[k] >= v);
       if (!ok) return `I found the ${s.name}... they turned me away. (${Object.entries(s.req).map(([k, v]) => `${k} ${v}+`).join(', ')})`;
@@ -124,7 +124,7 @@ export const ACTIVITIES = [
   // ---- LEISURE
   { id: 'party', cat: 'leisure', name: 'Go to a party', icon: 'beer', minAge: 15, run: c => { stat(c, 'happiness', 8); stat(c, 'stress', -6); stat(c, 'happiness', 10); if (chance(0.5)) { const p = makePerson(c, { role: 'Friend', close: ri(30, 55) }); c.people.push(p); return `I met ${p.first} at a party and we hit it off.`; } return 'I danced until the lights came on.'; } },
   { id: 'vacation', cat: 'leisure', name: 'Go on vacation', icon: 'travel', minAge: 18, run: c => { const cost = priceFor(c, 1500 * country(c).econ); if (c.money < cost) return null; money(c, -cost); stat(c, 'happiness', 15); stat(c, 'stress', -20); stat(c, 'happiness', 18); return `I took a trip to ${pick(['the mountains of Wudang', 'a beach in Bali', 'Kyoto in autumn', 'Paris', 'a desert monastery'])}. (${fmtMoney(c, cost)})`; } },
-  { id: 'social_media', cat: 'leisure', name: 'Post on social media', icon: 'phone', minAge: 13, need: c => c.age >= ({ least: 20, developing: 18, emerging: 14, developed: 12 }[country(c).tier] || 12) || ['wealthy', 'rich', 'royal'].includes(c.wealth), run: c => { const g = Math.max(0, Math.round(ri(-2, 6) + (c.stats.looks + eff(c, 'charisma') - 100) / 20)); c.fame = Math.max(0, (c.fame || 0) + g * 100); if (g > 3) c.flags.viral = true; return g > 3 ? { text: `My post went viral! Fame +${g * 100}.`, cls: 'good' } : 'Nobody liked my post.'; } },
+  { id: 'social_media', cat: 'leisure', name: 'Post on social media', icon: 'phone', minAge: 13, need: c => c.age >= ({ least: 20, developing: 18, emerging: 14, developed: 12 }[country(c).tier] || 12) || ['wealthy', 'rich', 'royal'].includes(c.wealth), run: c => { const g = Math.max(0, Math.round(ri(-2, 6) + (c.stats.looks + eff(c, 'charisma') - 100) / 20)); c.fame = (c.fame || 0) + g * 100; if (g > 3) c.flags.viral = true; return g > 3 ? { text: `My post went viral! Fame +${g * 100}.`, cls: 'good' } : 'Nobody liked my post.'; } },
   { id: 'adopt_pet', cat: 'leisure', name: 'Adopt a pet', icon: 'pet', minAge: 10, need: c => !c.assets.some(a => a.type === 'pet'), run: c => { const kind = pick(['cat', 'dog', 'rabbit', 'crow', 'koi fish']); c.assets.push({ type: 'pet', name: `${pick(['Mochi', 'Ink', 'Bao', 'Pepper', 'Luna', 'Ghost'])} the ${kind}`, value: 0 }); stat(c, 'happiness', 10); return `I adopted a ${kind}.`; } },
 
   // ---- CRIME
@@ -157,7 +157,8 @@ export const ACTIVITIES = [
 async function crime(c, risk, loot, text, years) {
   const L = await import('../systems/law.js'); // v0.8.7: heat + country policing + standoffs
   const sc = c._mg; // v0.9.9 the minigame: clean work halves your odds of getting caught, a botch makes it far likelier
-  if (chance(L.caughtChance(c, risk) * (sc == null ? 1 : 1.5 - sc))) return L.standoff(c, years, text);
+  c.karma = Math.max(-200, (c.karma || 0) - Math.ceil(risk * 6)); // v0.9.23 every crime stains your karma a little
+  if (chance(L.caughtChance(c, risk) * (sc == null ? 1 : 1.5 - sc))) { c.fame = (c.fame || 0) - Math.round(150 + risk * 600); return L.standoff(c, years, text); }
   L.addHeat(c, Math.round(risk * 40 * (sc == null ? 1 : 1.3 - sc * 0.6)));
   const g = Math.round(ri(...loot) * wage(c) * (sc == null ? 1 : 0.7 + sc * 0.6)); money(c, g); c.flags.crimeWin = true; return { text: `${text}. Got away with ${fmtMoney(c, g)}.${(c.heat || 0) >= 45 ? ' (The Federal Authorities are looking into me.)' : ''}`, cls: 'good' };
 }

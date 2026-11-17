@@ -181,6 +181,7 @@ export const GUILD_RANKS = ['E', 'D', 'C', 'B', 'A', 'S', 'SS', 'SSS'];
 export const MERIT = [0, 60, 180, 400, 800, 1500, 3000, 6000];
 export function guildJoinReq(c) {
   const why = [];
+  if (c.demonic) why.push('not walk the demonic path — the Guild hunts your kind');
   if (c.age < 16) why.push('be 16 or older');
   if (eff(c, 'battle') < 30) why.push(`Battle Knowledge 30 (you have ${eff(c, 'battle') || 0})`);
   if (eff(c, 'strength') < 40) why.push(`Strength 40 (you have ${eff(c, 'strength')})`);

@@ -1,7 +1,7 @@
 // Live-update checker. Polls /version.json (uncached); when it differs from the running VERSION,
 // shows a notice, saves, refreshes the browser cache for every loaded file, then reloads.
 import { VERSION, CHANGELOG } from '../version.js';
-import { META, save } from './state.js';
+import { G, META, save } from './state.js';
 
 const POLL_MS = 60000;
 let shown = false;
@@ -9,7 +9,8 @@ let shown = false;
 async function remoteVersion() {
   try { const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return null; return (await r.json()).version; } catch { return null; }
 }
-const busy = () => document.querySelector('.fight') || document.querySelector('.modal-back .opts .btn:not(.ghost)');
+// v0.9.23 never refresh in the middle of anything: a year passing, an activity, a fight, a minigame, a cutscene, any open dialog or a Fable
+const busy = () => (window.__fiBusy || 0) > 0 || !!document.querySelector('.fight, .tg-wrap, .arena-wrap, .cine, .breach-modal, .br-wrap, .modal-back') || !!G.char?.fableRun;
 
 // GitHub Pages lets browsers cache files for ~10 minutes, so force-refresh every loaded script/style first.
 async function hardReload() {

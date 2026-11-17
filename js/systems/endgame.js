@@ -39,7 +39,7 @@ export const HUNTS = [
     stages: ['Before the first dawn', 'The world\'s skeleton', 'The womb of chaos', 'The beast wakes', 'Origin'], pay: 5000000, items: { ascend_pill: 3, dao_pill: 4, bloodline_essence: 5, celestial_sword: 1 }, heir: 'mythicChance', desc: 'It was here before the heavens. It would like them back.' },
 ];
 export const HUNT = Object.fromEntries(HUNTS.map(x => [x.id, x]));
-export const huntOpen = (c, H) => effRealm(c) >= H.minEq && (!H.elite || !!c.guild?.elite);
+export const huntOpen = (c, H) => effRealm(c) >= H.minEq && (!H.elite || (!!c.guild?.elite && !c.demonic));
 export function startHunt(c, id) { if (c.hunt) return null; const H = HUNT[id]; c.hunt = { id, stage: 0, began: G.world.year, last: null };
   ui.cinematic?.({ motif: 'mountain', color: H.color, lines: [H.desc, 'You will not be home for a long time.'], title: H.name, sub: 'The hunt begins', sound: 'heavy' });
   return { text: `I took up the hunt: ${H.name}. ${H.stages.length} stages — one a year, if I survive.`, cls: 'big', big: true }; }

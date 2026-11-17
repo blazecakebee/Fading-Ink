@@ -3,6 +3,8 @@ import { h, icon } from './dom.js';
 import { G, META, save } from '../core/state.js';
 import { portraitFor } from './portrait.js';
 import { openModal } from './modal.js';
+import * as FT from '../systems/fate.js';
+import { ui } from '../core/bus.js';
 import { fx } from './fx.js';
 import { fullName, continueAs, newLife, willInfo, fmtMoney } from '../systems/life.js';
 import { realmName } from '../systems/cultivation.js';
@@ -37,6 +39,26 @@ export function renderLegacy() {
   ];
 }
 
+// v0.9.23 reincarnation & cursed objects
+function reincarnate(old) {
+  FT.rememberPastLife(old); G.world.year += 1;
+  const c = newLife({ country: undefined }); FT.reincarnateBirth(c); G.ui.tab = 'life'; render(); save();
+  pickCard(c);
+}
+function pickCard(c) {
+  const cards = FT.reincCards(c);
+  const m = openModal([h('h2', { class: 'display' }, '☯ Echoes of a past life'), h('p', { class: 'muted' }, 'Something of who you were comes back with you. Choose one. (A reincarnated soul also gains ×1.2 to everything — and can never reincarnate again.)'),
+    h('div', { class: 'reinc-cards' }, cards.map(cd => h('button', { class: 'reinc-card' + (cd.tier ? ' t-' + cd.tier : ''), onclick: () => { FT.applyCard(c, cd); ui.log(`From my past life: ${cd.name}. ${cd.desc}`, 'trait'); m.close(); save(); render(); } },
+      h('div', { class: 'small muted' }, cd.trait ? `${cd.tier} trait` : 'Soul echo'), h('b', {}, cd.name), h('div', { class: 'small' }, cd.desc))))], { dismiss: false });
+}
+function becomeCursed(old) {
+  const object = FT.OBJECTS[Math.floor(Math.random() * FT.OBJECTS.length)], dormant = 5 + Math.floor(Math.random() * 55);
+  const prev = { name: fullName(old), object, realm: old.qi.realm };
+  G.world.year += dormant;
+  const c = newLife({ country: undefined }); c.log = [];
+  ui.log(`For ${dormant} years I waited inside a ${object}. Then someone picked me up.`, 'death');
+  FT.possessBirth(c, prev); G.ui.tab = 'life'; render(); save();
+}
 export function deathScreen() {
   const c = G.char; if (c.alive) return;
   const kids = c.people.filter(p => ['Son', 'Daughter'].includes(p.role) && p.alive);
@@ -47,6 +69,8 @@ export function deathScreen() {
     h('div', { style: { margin: '8px 0' } }, c.traits.map(traitChip)),
     h('div', { class: 'opts' },
       ...kids.map(k => h('button', { class: 'btn', onclick: () => { m.close(); continueAs(k.id); G.ui.tab = 'life'; render(); } }, 'Continue as ', h('b', {}, k.first), ` (${k.role.toLowerCase()}, age ${k.age})`)),
+      c.fate?.reincarnate ? h('button', { class: 'btn fate-reinc', onclick: () => { m.close(); reincarnate(c); } }, '☯ Reincarnate', h('span', { class: 'small muted' }, ' — your soul finds a new body (once)')) : null,
+      c.fate?.cursed ? h('button', { class: 'btn fate-curse', onclick: () => { m.close(); becomeCursed(c); } }, '⛧ Become a cursed object', h('span', { class: 'small muted' }, ' — and possess whoever finds you')) : null,
       h('button', { class: 'btn ghost', onclick: () => { m.close(); G.world.year += 1; newLife(); G.ui.tab = 'life'; render(); } }, 'Start a brand-new life'),
       h('button', { class: 'btn ghost', onclick: () => { m.close(); G.ui.tab = 'legacy'; render(); } }, 'Spend legacy points first')),
   ], { dismiss: false });

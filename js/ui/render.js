@@ -50,13 +50,14 @@ import { OMENS } from '../data/legacyTree.js';
 import { flagEl } from './flags.js';
 import { svgMap, osmLink } from './worldMap.js';
 import { net, hostRoom, joinRoom, leave, sendChat, doCoopAction, COOP_ACTIONS, coopTick, voteInfo, voteAgeUp, inCoopRoom, resonance } from '../net/coop.js';
+import { relState, HOSTILE_OK, FRACTURED_OK } from '../systems/fate.js';
 
 // v0.9.0 grouped, collapsible drawers (Life stays on top, always visible)
 export const NAV = [
   ['Self & Body', [['life', 'Life', 'life'], ['status', 'Status', 'robe'], ['character', 'Character', 'character'], ['health', 'Health', 'doctor'], ['bloodline', 'Bloodline', 'legacy'], ['wardrobe', 'Wardrobe & Armory', 'robe']]],
   ['Progression', [['skills', 'Skills & Traits', 'skills'], ['cultivation', 'Cultivation', 'cultivation'], ['fables', 'Fables', 'manual'], ['severed', 'Severed Path', 'fist'], ['crafting', 'Crafting & Gear', 'anvil']]],
   ['World & Social', [['people', 'People', 'people'], ['factions', 'Sect & Guild', 'crown'], ['world', 'World', 'world'], ['chronicle', 'Chronicle', 'study'], ['legacy', 'Legacy & Family', 'legacy'], ['coop', 'Co-op', 'people']]],
-  ['Economy & Action', [['gates', 'Dungeons & Gates', 'gates'], ['inventory', 'Inventory', 'bag'], ['career', 'Career', 'career'], ['education', 'Education', 'education'], ['assets', 'Assets & Market', 'assets'], ['market', 'Stock Market', 'stocks']]],
+  ['Economy & Action', [['gates', 'Dungeons & Gates', 'gates'], ['inventory', 'Inventory', 'bag'], ['blackmarket', 'Black Market', 'market'], ['career', 'Career', 'career'], ['education', 'Education', 'education'], ['assets', 'Assets & Market', 'assets'], ['market', 'Stock Market', 'stocks']]],
   ['Game', [['achievements', 'Achievements', 'trophy'], ['updates', 'Update Log', 'letter'], ['settings', 'Settings', 'settings']]],
 ];
 
@@ -70,7 +71,9 @@ export function logLine(text, cls = '') {
 }
 
 // ---------- action runner: spends budget, handles repeat-FX rule
-export async function runActivity(a, el, opt = {}) {
+// v0.9.23 the update checker never reloads while an activity is running
+export async function runActivity(a, el, opt = {}) { window.__fiBusy = (window.__fiBusy || 0) + 1; try { return await runActivity0(a, el, opt); } finally { window.__fiBusy = Math.max(0, window.__fiBusy - 1); } }
+async function runActivity0(a, el, opt = {}) {
   const c = G.char; if (!c.alive) return;
   const snap = { ...c.stats, qi: c.qi.qi, money: c.money }, at = el?.getBoundingClientRect?.(); if (el) { el.classList.remove('act-pop'); void el.offsetWidth; el.classList.add('act-pop'); }
   const cost = a.cost === 's' ? 'social' : 'actions';
@@ -169,11 +172,11 @@ function sidebar() {
   const badge = id => id === 'coop' && net.status === 'reconnecting' ? '…' : id === 'coop' && net.status === 'online' ? net.peers.size + 1 : id === 'gates' && c.gates.length ? c.gates.length : id === 'cultivation' && c.qi.realm && c.qi.qi >= qiCap(c) ? '!' : null;
   const curLabel = NAV.flatMap(([, it]) => it).find(([id]) => id === G.ui.tab)?.[1] || 'Menu';
   $('#sidebar').classList.toggle('open', !!G.ui.navOpen);
-  const shut = (META.settings.navShut ||= { Game: true }), vis = it => it.filter(([id]) => (id !== 'cultivation' || (!onBodyPath(c) && (c.qi.known || META.bestRealm > 0))) && (id !== 'severed' || canSeeSevered(c)) && (id !== 'fables' || (c.fame || 0) >= 1e5 || !!c.fables || !!c.fableRun));
+  const shut = (META.settings.navShut ||= { Game: true }), vis = it => it.filter(([id]) => (id !== 'cultivation' || (!onBodyPath(c) && (c.qi.known || META.bestRealm > 0))) && (id !== 'severed' || canSeeSevered(c)) && (id !== 'fables' || (c.fame || 0) >= 1e5 || !!c.fables || !!c.fableRun) && (id !== 'blackmarket' || !!c.demonic));
   $('#sidebar').replaceChildren(h('button', { class: 'nav-toggle', onclick: () => { fx('click'); G.ui.navOpen = !G.ui.navOpen; render(); } }, h('span', {}, '☰ ', curLabel), h('span', { class: 'muted' }, G.ui.navOpen ? 'Close ▴' : 'All tabs ▾')), ...NAV.flatMap(([g, items]) => { const its = vis(items), here = its.some(([id]) => id === G.ui.tab), closed = shut[g] && !here;
     const b = its.reduce((n, [id]) => n + (badge(id) ? 1 : 0), 0);
     return [h('button', { class: 'nav-group' + (closed ? ' shut' : ''), onclick: () => { fx('click'); shut[g] = !shut[g]; save(); render(); } }, h('span', {}, g), closed && b ? h('span', { class: 'badge' }, b) : null, h('span', { class: 'chev' }, closed ? '▸' : '▾')),
-    ...(closed ? [] : its.filter(([id]) => (id !== 'cultivation' || (!onBodyPath(c) && (c.qi.known || META.bestRealm > 0))) && (id !== 'severed' || canSeeSevered(c)) && (id !== 'fables' || (c.fame || 0) >= 1e5 || !!c.fables || !!c.fableRun)).map(([id, label, ic]) => h('button', { class: 'nav-btn' + (G.ui.tab === id ? ' active' : ''), title: label, onclick: () => { fx('click'); G.ui.tab = id; G.ui.navOpen = false; render(); window.innerWidth <= 760 && document.getElementById('center').scrollIntoView({ behavior: 'smooth' }); } },
+    ...(closed ? [] : its.filter(([id]) => (id !== 'cultivation' || (!onBodyPath(c) && (c.qi.known || META.bestRealm > 0))) && (id !== 'severed' || canSeeSevered(c)) && (id !== 'fables' || (c.fame || 0) >= 1e5 || !!c.fables || !!c.fableRun) && (id !== 'blackmarket' || !!c.demonic)).map(([id, label, ic]) => h('button', { class: 'nav-btn' + (G.ui.tab === id ? ' active' : ''), title: label, onclick: () => { fx('click'); G.ui.tab = id; G.ui.navOpen = false; render(); window.innerWidth <= 760 && document.getElementById('center').scrollIntoView({ behavior: 'smooth' }); } },
       icon(ic), h('span', { class: 'lbl' }, label), badge(id) ? h('span', { class: 'badge' }, badge(id)) : null))),
     ...(g === 'Game' && !closed ? [h('button', { class: 'nav-btn nav-menu', title: 'Save & return to the main menu', onclick: () => { fx('click'); G.ui.navOpen = false; ui.toMenu?.(); } }, icon('life'), h('span', { class: 'lbl' }, 'Main Menu'))] : [])]; }));
 }
@@ -192,7 +195,7 @@ function rightCol() {
     h('div', { class: 'box' }, h('h3', {}, 'Your Stats'), h('div', { class: 'realm-line' }, icon('cultivation', 'sm'), ' ', h('b', {}, c.qi.known || onBodyPath(c) ? realmName(c) : 'Realm: ???')), h('div', { class: 'stats' },
       ...[['fist', 'Strength', effShow(c, 'strength')], ['combat', 'Battle IQ', effShow(c, 'battle')], ['kick', 'Agility', effShow(c, 'agility')], ['people', 'Charisma', effShow(c, 'charisma')], ['star', 'Luck', s.luck],
         ['combat', 'Power', power(c).toFixed(1)], ['trophy', 'Fights won', c.wins], ['gates', 'Gates', c.gatesCleared],
-        ['market', 'Gold', fmtMoney(c, c.money)], ['bell', 'Fame', (c.fame || 0).toLocaleString()]].map(([ic, k, v]) => h('div', {}, icon(ic, 'sm'), k, h('b', {}, v))))),
+        ['market', 'Gold', fmtMoney(c, c.money)], (c.fame || 0) < 0 ? ['bell', 'Infamy', (-c.fame).toLocaleString()] : ['bell', 'Fame', (c.fame || 0).toLocaleString()]].map(([ic, k, v]) => h('div', {}, icon(ic, 'sm'), k, h('b', {}, v))))),
     (c.conditions || []).length ? h('div', { class: 'box' }, h('h3', {}, 'Conditions'), c.conditions.map(x => h('span', { class: 'chip', ...condTip(x), style: { '--tc': 'var(--bad)', cursor: 'pointer' }, onclick: () => { G.ui.tab = 'health'; render(); } }, COND_BY_ID[x.id].name))) : null,
     h('div', { class: 'box' }, h('h3', {}, 'Traits'), c.traits.length ? c.traits.map(traitChip) : h('span', { class: 'muted' }, 'None yet.')),
     h('div', { class: 'box' }, h('h3', {}, 'Personality'), (c.temper || []).length ? (c.temper || []).map(temperChip) : h('span', { class: 'muted' }, 'Not yet formed.')),
@@ -587,7 +590,8 @@ export const TABS = {
 async function personModal(p) {
   const c = G.char;
   if (p.coop) return coopPersonModal(p);
-  const opts = SOCIAL.filter(s => p.alive && c.alive && c.age >= (s.age || 0) && (!s.need || s.need(c, p)));
+  const rs = relState(p), okIds = rs === 'hostile' ? HOSTILE_OK : rs === 'fractured' ? FRACTURED_OK : null; // v0.9.23 enemies won't train with you
+  const opts = SOCIAL.filter(s => p.alive && c.alive && c.age >= (s.age || 0) && (!s.need || s.need(c, p)) && (!okIds || okIds.includes(s.id)));
   const { indexCard } = await import('./conversation.js');
   const v = await choice({ title: `${p.first} ${p.last}`, portrait: indexCard(p),
     text: `${p.role}${bonds(c).best === p ? ' · ★ Best Friend' : ''} · Age ${p.age}${p.job ? ' · ' + p.job : ''}${p.realm ? ' · senses of Qi about them' : ''}${p.blessed ? ' · 🌸 blessed with longevity' : ''}${p.dna ? '\nGenes: ' + p.dna.map(geneName).join(', ') : ''}\nRelationship: ${relLabel(p)} (${p.close}%)${p.close >= 75 ? '\nThey might gift you something or teach you what they know.' : ''}${p.alive ? '' : '\nDeceased.'}\nSocial actions left: ${c.social}`,

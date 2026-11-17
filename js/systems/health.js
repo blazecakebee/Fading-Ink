@@ -66,7 +66,7 @@ export function healthYear(c) {
   for (const x of [...c.conditions]) {
     const C = COND_BY_ID[x.id]; x.years++;
     if (C.grows) x.sev = Math.min(3, x.sev + 0.4);
-    for (const [k, v] of Object.entries(C.eff)) stat(c, k, Math.round(v * x.sev));
+    if (!(c.demonic && C.kind === 'qi' && x.id === 'corruption')) for (const [k, v] of Object.entries(C.eff)) stat(c, k, Math.round(v * x.sev)); // v0.9.23 the demonic path is immune
     if (C.dur && x.years >= C.dur) { c.conditions = c.conditions.filter(y => y !== x); ui.log(`My ${C.name} passed.`, 'good'); }
   }
   // ---- genetic conditions waking up
