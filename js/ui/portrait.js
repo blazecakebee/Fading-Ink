@@ -42,7 +42,7 @@ const CLOTHES = ['#3b4a7a', '#7a2f3b', '#2f6b55', '#5a3b7a', '#d9d4c7', '#2b2b33
 export function randomGenes(gender) {
   return {
     seed: ri(1, 1e9), skin: ri(0, SKINS.length - 1), hairColor: pick(NATURAL_HAIR),
-    eye: chance(0.03) ? ri(7, 8) : ri(0, 6), style: pick(HAIR_STYLES[gender]), looks: clamp(Math.round(30 + Math.random() * 45 + (chance(0.1) ? 25 : 0))), brow: chance(0.5) ? ri(1, 7) : 0, mouth: chance(0.4) ? ri(1, 7) : 0, eyes: chance(0.3) ? ri(1, 5) : 0, mark: chance(0.15) ? ri(1, 7) : 0,
+    eye: chance(0.03) ? ri(7, 8) : ri(0, 6), style: pick(HAIR_STYLES[gender]), looks: clamp(Math.round(30 + Math.random() * 45 + (chance(0.1) ? 25 : 0))), brow: chance(0.5) ? ri(1, 7) : 0, mouth: chance(0.4) ? ri(1, 7) : 0, eyes: chance(0.3) ? ri(1, 5) : 0, mark: chance(0.15) ? (gender === 'M' ? pick([1, 2, 3, 4, 5, 7]) : ri(1, 7)) : 0,
     freckles: chance(0.15), glasses: chance(0.1), mole: chance(0.12), build: rollBuild(),
     carriers: GENETIC_IDS.filter(() => chance(0.03)), // hidden genetic conditions
   };
@@ -53,7 +53,7 @@ export function mixGenes(a, b, gender) {
   const g = {
     seed: ri(1, 1e9), skin: clamp(Math.round((a.skin + b.skin) / 2 + (chance(0.5) ? 0.4 : -0.4)), 0, SKINS.length - 1),
     hairColor: chance(0.05) ? pick(NATURAL_HAIR) : from().hairColor, eye: chance(0.04) ? ri(0, 8) : from().eye,
-    style: pick(HAIR_STYLES[gender]), looks: clamp(Math.round((a.looks + b.looks) / 2 + ri(-18, 18))), brow: pick([a.brow, b.brow]) || 0, mouth: pick([a.mouth, b.mouth]) || 0, eyes: pick([a.eyes, b.eyes]) || 0, mark: chance(0.1) ? ri(1, 7) : 0, build: chance(0.2) ? rollBuild() : (from().build || rollBuild()),
+    style: pick(HAIR_STYLES[gender]), looks: clamp(Math.round((a.looks + b.looks) / 2 + ri(-18, 18))), brow: pick([a.brow, b.brow]) || 0, mouth: pick([a.mouth, b.mouth]) || 0, eyes: pick([a.eyes, b.eyes]) || 0, mark: chance(0.1) ? (gender === 'M' ? pick([1, 2, 3, 4, 5, 7]) : ri(1, 7)) : 0, build: chance(0.2) ? rollBuild() : (from().build || rollBuild()),
     freckles: from().freckles, glasses: chance(0.1), mole: chance(0.1),
     // each carried gene passes to a child half the time; rare fresh mutations
     carriers: [...new Set([...(a.carriers || []), ...(b.carriers || [])])].filter(() => chance(0.5)).concat(GENETIC_IDS.filter(() => chance(0.01))),
@@ -88,7 +88,9 @@ export function buildPortrait(genes, { age = 20, gender = 'F', realm = 0, hair =
   if (st === 'elder') hc = genes.hairColor === 'platinum' ? '#f4f2ee' : '#cfcfd6';
   const hcD = shade(hc, -0.28), hcL = shade(hc, 0.32);
   const style0 = hair?.style || genes.style; const style = HAIR_BASE[style0] || style0;
-  const brow = hair?.brow ?? genes.brow ?? 0, mouth = hair?.mouth ?? genes.mouth ?? 0, eyes = hair?.eyes ?? genes.eyes ?? 0, mark = hair?.mark ?? genes.mark ?? 0;
+  const brow = hair?.brow ?? genes.brow ?? 0, mouth = hair?.mouth ?? genes.mouth ?? 0, eyes = hair?.eyes ?? genes.eyes ?? 0, mark0 = hair?.mark ?? genes.mark ?? 0;
+  // v0.9.40 males only show blush if they picked it themselves in the mirror, never from birth genes
+  const mark = mark0 === 6 && gender === 'M' && hair?.mark !== 6 ? 0 : mark0;
   const eyeC = hair?.redEyes ? '#ff2a3a' : hair?.goldEyes ? '#ffd36f' : EYE_COLORS[genes.eye] || EYE_COLORS[0]; // v0.8.7 life can change your eyes
   const cloth = CLOTHES[Math.floor(R() * CLOTHES.length)], clothD = shade(cloth, -0.3);
   const accent = ['#ff6b8a', '#ffd166', '#6be0ff', '#ffffff', '#c7a6ff'][Math.floor(R() * 5)];

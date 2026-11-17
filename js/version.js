@@ -1,7 +1,10 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.39';
+export const VERSION = '0.9.40';
 export const CHANGELOG = [
+  { v: '0.9.40', date: '2026-11-17', title: 'No more rosy boys', notes: [
+    'Males are no longer born with blush marks. Existing male characters lose them too, unless you picked blush yourself in the mirror.',
+  ] },
   { v: '0.9.39', date: '2026-11-17', title: 'Fix', notes: [
     'Fixed: clicking a gene in the Awakening tree (or a node in the Legacy tree) no longer draws a white box around it. Keyboard users still see a highlight on the node itself.',
     'Awakened genes now show a plain gold-on-dark check mark instead of a blue emoji checkbox.',
