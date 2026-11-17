@@ -1,7 +1,14 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.46';
+export const VERSION = '0.9.47';
 export const CHANGELOG = [
+  { v: '0.9.47', date: '2026-11-17', title: 'Treasury Hall', notes: [
+    'Sect wars are much rarer: they break out about a third as often, burn out on their own (30% a year), and you are called to the front at most every other year.',
+    'New Treasury tab in Sect & Guild: spend contribution on Qi, healing, breakthrough and medicine pills, incense, talismans, recipe scrolls and more. Better shelves open as you rise in rank.',
+    'Every sect now has three treasures nobody else can get: its own pill (taken on the spot, once a year), its own weapon (Inner rank) and its own armour or trinket (Core rank). 18 sects, 54 treasures.',
+    'Rank perks: Inner disciples get -10% Treasury prices and +4% Qi gain; Core disciples -20% and +8% Qi with +3% breakthrough chance; Elders -30%, +12% Qi, +5% breakthrough and +10% social gains.',
+    'Your graduating GPA now raises your wage in every job: about +6% per GPA point above 2.0 from secondary school and +9% from university (a perfect record is worth about +30%). A poor degree costs you a little.',
+  ] },
   { v: '0.9.46', date: '2026-11-17', title: 'Styles', notes: [
     'Every martial art now teaches its own moves. You unlock them as you climb the belts: one each at Yellow, Green, Brown and Black.',
     'Boxing: Uppercut, Weave, Liver Shot, Dempsey Roll. Karate: Mae Geri, Age Uke, Gyaku Zuki, Mawashi Geri. Taekwondo: Push Kick, Back Kick, Spinning Hook Kick, Double Roundhouse.',

@@ -13,6 +13,8 @@ import { REALMS, SECTS } from '../data/realms.js';
 import { ITEMS } from '../data/items.js';
 import { fmtMoney } from '../systems/life.js';
 import * as F from '../systems/factions.js';
+import * as ST from '../systems/sectTreasury.js';
+import { gearSprite } from './gearSprites.js';
 
 let R = null; // render() + runActivity() handed in by render.js to avoid a circular import
 export function bindPanels(render, runActivity) { R = { render, run: runActivity }; }
@@ -149,9 +151,29 @@ function missionCard(c, m) {
       h('button', { class: 'btn mini', disabled: m.done || c.actions <= 0 || !c.alive, onclick: () => R.run({ id: 'mission_' + m.org, cat: 'adventure', run: cc => F.runMission(cc, m) }) }, m.done ? 'Done ✓' : 'Go ⚡1')));
   el.style.setProperty('--dc', dc); return el;
 }
+// v0.9.47 sect treasury: spend contribution; rank perks
+function perksBox(c) {
+  const cur = c.sectRank || 0;
+  return h('div', { class: 'fac-grid small-cards' }, ST.RANK_PERKS.map((P, i) => h('div', { class: 'fac-mission' + (i === cur ? ' on' : ''), style: { opacity: i > cur ? 0.6 : 1, borderColor: i === cur ? 'var(--gold, #ffd36f)' : '' } },
+    h('b', {}, ['Outer Disciple', 'Inner Disciple', 'Core Disciple', 'Elder'][i], i === cur ? ' (you)' : i < cur ? ' ✓\uFE0E' : ''), h('ul', { class: 'muted small', style: { margin: '4px 0 0', paddingLeft: '16px' } }, P.lines.map(l => h('li', {}, l))))));
+}
+function treasuryBox(c) {
+  const T = ST.treasury(c); if (!T) return h('p', { class: 'muted' }, 'Only members of an established sect can use a treasury.');
+  const RN = ['Outer', 'Inner', 'Core', 'Elder'];
+  const card = o => { const it = ITEMS[o.id], ok = !o.locked && !o.done && (c.contrib || 0) >= o.cost;
+    return h('div', { class: 'fac-mission' + (o.kind !== 'item' ? ' sx' : ''), style: { opacity: o.locked ? 0.6 : 1 } }, h('div', { class: 'row', style: { gap: '8px' } }, it && it.type === 'gear' && typeof gearSprite === 'function' ? gearSprite(o.id, 32) : icon(o.icon || 'chest', 'lg'),
+      h('div', { class: 'grow' }, h('b', {}, o.name), h('div', { class: 'muted small' }, o.kind === 'pill' ? 'Sect pill · taken on the spot, once a year' : o.kind === 'gear' ? 'Sect exclusive · one per disciple' : 'Treasury stock'))),
+      h('div', { class: 'small' }, o.desc || ''),
+      h('button', { class: 'btn mini', style: { marginTop: 'auto' }, disabled: !ok, onclick: () => R.run({ id: 'sect_buy', cost: 'free', run: cc => ST.redeem(cc, o) }) },
+        o.locked ? `${RN[o.rank]} rank needed` : o.done ? o.doneWhy : (c.contrib || 0) < o.cost ? `${o.cost} contribution` : `Take · ${o.cost} contribution`)); };
+  return h('div', {}, h('p', { class: 'muted small' }, `You have ${c.contrib || 0} contribution. Higher ranks unlock more shelves and pay less.`),
+    h('h3', { class: 'display fac-h' }, `Treasures of the ${F.sectLabel(c)}`), h('p', { class: 'muted small' }, 'Nobody outside your sect can get these.'), h('div', { class: 'fac-grid' }, T.excl.map(card)),
+    h('h3', { class: 'display fac-h' }, 'Treasury shelves'), h('div', { class: 'fac-grid' }, T.common.map(card)),
+    h('h3', { class: 'display fac-h' }, 'Rank perks'), perksBox(c));
+}
 export function factionsTab() {
   const c = G.char, B = F.boards(c), own = F.isOwn(c);
-  const tabs = [['overview', 'Overview', 'crown'], ...(c.sect ? [['missions', 'Missions', 'gates'], ['disciples', 'Disciples', 'people'], ['exchange', 'Relations', 'shop']] : []), ...(own ? [['halls', 'Halls', 'anvil']] : []), ['guild', 'Hunter Guild', 'combat']];
+  const tabs = [['overview', 'Overview', 'crown'], ...(c.sect ? [['missions', 'Missions', 'gates'], ...(ST.treasury(c) ? [['treasury', 'Treasury', 'chest']] : []), ['disciples', 'Disciples', 'people'], ['exchange', 'Relations', 'shop']] : []), ...(own ? [['halls', 'Halls', 'anvil']] : []), ['guild', 'Hunter Guild', 'combat']];
   let sub = G.ui.facTab || 'overview'; if (!tabs.some(t => t[0] === sub)) sub = 'overview';
   const nav = h('div', { class: 'fac-tabs' }, tabs.map(([k, v, ic]) => h('button', { class: sub === k ? 'on' : '', onclick: () => { G.ui.facTab = k; R.render(); } }, icon(ic, 'sm'), v, k === 'missions' ? h('span', { class: 'n' }, B.sect.filter(m => !m.done).length) : null)));
   const out = [h('h2', { class: 'display' }, 'Sect & Guild'), nav];
@@ -170,6 +192,7 @@ export function factionsTab() {
     out.push(c.guild ? guildHero() : facHero('?', 'Hunter Guild', 'Not a member yet — see the Hunter Guild tab.', null, 'var(--muted)'));
   }
   if (sub === 'missions') out.push(h('p', { class: 'muted small' }, 'Three missions a year, 1 action each. They earn contribution; failing them costs it.'), h('div', { class: 'fac-grid' }, B.sect.map(m => missionCard(c, m))));
+  if (sub === 'treasury') out.push(treasuryBox(c));
   if (sub === 'disciples') out.push(disciplesBox(c));
   if (sub === 'exchange') {
     F.ensureRels(c); const ex = F.exchange(c);

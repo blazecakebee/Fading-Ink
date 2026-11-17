@@ -4,7 +4,7 @@ import { ITEMS } from './items.js';
 import { GEAR_SPRITES } from '../ui/gearSprites.js';
 
 // sprite palettes: a (main), b (highlight), c (shade), h (handle), g (guard), x (accent)
-const MAT = {
+export const MAT = {
   steel: ['#b9c2cc', '#eef3f8', '#7a8590', '#5a3a1a', '#8a8f98', '#c9a23a'], bronze: ['#c98a3a', '#f0c27a', '#7a4a1a', '#5a3a1a', '#a06a2a', '#e0b050'],
   iron: ['#8a9098', '#c8ccd2', '#4a4f56', '#3a2a1a', '#6a6f78', '#a9b3bf'], wood: ['#9a6a3a', '#c99a6a', '#5a3a1a', '#3a2412', '#7a4a22', '#e0b050'],
   jade: ['#5fd38a', '#cfffe0', '#1f7a4a', '#2a4a3a', '#3fa36a', '#c9a23a'], gold: ['#e0b84a', '#fff0a8', '#9a7a1a', '#5a3a1a', '#c9a23a', '#fff4b0'],
@@ -13,8 +13,8 @@ const MAT = {
   silk: ['#6a4a9a', '#b89ae0', '#3a2a5a', '#2a1a3a', '#5a3a8a', '#ffd36f'], indigo: ['#2a3a7a', '#6a7ac8', '#141c3a', '#1a1a2a', '#24345e', '#e0e6ff'],
   silver: ['#d8dde6', '#ffffff', '#8a909a', '#3a3a4a', '#b8bec8', '#8fd0ff'], emerald: ['#2fa86a', '#9affc8', '#14583a', '#2a2a2a', '#c9a23a', '#ffffff'],
 };
-const ICON = { sword: 'broadsword', saber: 'saber', dagger: 'knife', twin: 'knife', glaive: 'broadsword', spear: 'broadsword', staff: 'feather', hammer: 'hammer', vest: 'robe', plate: 'chainmail', mail: 'chainmail', hide: 'claw', mantle: 'robe', robe: 'robe', amulet: 'amulet', beads: 'amulet', ring: 'ring', coin: 'market', fang: 'claw' };
-const SLOT = { sword: 'weapon', saber: 'weapon', dagger: 'weapon', twin: 'weapon', glaive: 'weapon', spear: 'weapon', staff: 'weapon', hammer: 'weapon', vest: 'armor', plate: 'armor', mail: 'armor', hide: 'armor', mantle: 'armor', robe: 'armor', amulet: 'necklace', beads: 'necklace', ring: 'ring', coin: 'charm', fang: 'charm' };
+export const ICON = { sword: 'broadsword', saber: 'saber', dagger: 'knife', twin: 'knife', glaive: 'broadsword', spear: 'broadsword', staff: 'feather', hammer: 'hammer', vest: 'robe', plate: 'chainmail', mail: 'chainmail', hide: 'claw', mantle: 'robe', robe: 'robe', amulet: 'amulet', beads: 'amulet', ring: 'ring', coin: 'market', fang: 'claw' };
+export const SLOT = { sword: 'weapon', saber: 'weapon', dagger: 'weapon', twin: 'weapon', glaive: 'weapon', spear: 'weapon', staff: 'weapon', hammer: 'weapon', vest: 'armor', plate: 'armor', mail: 'armor', hide: 'armor', mantle: 'armor', robe: 'armor', amulet: 'necklace', beads: 'necklace', ring: 'ring', coin: 'charm', fang: 'charm' };
 const L = (id, name, shape, mat, stats, price) => ({ id, name, shape, mat, stats, price });
 export const LOCAL = {
   cn: [L('cn_jian', 'Jian', 'sword', 'steel', { dmg: 0.3, agi: 4, qi: 0.03 }, 900), L('cn_dao', 'Dao Broadsword', 'saber', 'steel', { dmg: 0.34 }, 650), L('cn_guandao', 'Guandao', 'glaive', 'bronze', { dmg: 0.45, agi: -5 }, 1100), L('cn_meteor', 'Meteor Hammer', 'hammer', 'iron', { dmg: 0.3, agi: 3 }, 750), L('cn_silk', 'Silk Armour', 'vest', 'silk', { hp: 30, agi: 2 }, 600)],

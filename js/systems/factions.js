@@ -216,7 +216,7 @@ export async function factionsYear(c) {
   ensureRels(c);
   c.contrib ??= 0; c.sectRank ??= isOwn(c) ? 4 : 0;
   // relations drift a little each year
-  for (const s of others(c)) if (chance(0.12)) shiftRel(c, s.id, pick([-1, 1]));
+  for (const s of others(c)) if (chance(0.12)) { const d = pick([-1, 1]); if (d > 0 && c.sectRel[s.id] === 'hostile' && !chance(0.25)) continue; shiftRel(c, s.id, d); } // v0.9.47 drifting into open war is rarer
   const R = SECT_RANKS[c.sectRank];
   if (R.stipend) { const m = Math.round(R.stipend * wage(c)); money(c, m); if (c.sectRank >= 2) addItem(c, 'qi_pill'); ui.log(`${R.name} stipend from the ${sectLabel(c)}: ${fmtMoney(c, m)}${c.sectRank >= 2 ? ' and a Qi Gathering Pill' : ''}.`, 'qi'); }
   if (isOwn(c) || c.sect === 'guest') return;
@@ -233,7 +233,9 @@ export async function factionsYear(c) {
   }
   // sect war
   const enemy = others(c).find(s => c.sectRel[s.id] === 'war');
-  if (enemy && chance(0.7) && c.age >= 14) await sectWar(c, enemy);
+  // v0.9.47 wars are rarer: they burn out on their own, and you're only called up some years
+  if (enemy && chance(0.3)) { c.sectRel[enemy.id] = 'hostile'; ui.log(`The war between the ${sectLabel(c)} and the ${enemy.name} burned itself out. An uneasy peace.`, 'world'); return; }
+  if (enemy && chance(0.4) && c.age >= 14 && (c.flags.lastWarCall ?? -9) < G.world.year - 1) { c.flags.lastWarCall = G.world.year; await sectWar(c, enemy); }
 }
 export function oust(c, why, voluntary) {
   const name = sectLabel(c); (c.flags.exiled ||= {})[c.sect] = true;

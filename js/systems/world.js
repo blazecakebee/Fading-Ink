@@ -21,7 +21,7 @@ export const CONDITIONS = [
   { id: 'qi_drought', w: 4, news: () => 'Spiritual Qi thins mysteriously. Sects hoard pills; prices soar.', mods: { qi: 0.9, price: 1.25 } },
   { id: 'beast_tide', w: 5, news: () => 'A Beast Tide spills out of the mountains. Villages evacuate.', mods: {} },
   { id: 'plague', w: 3, news: () => 'A fever spreads through the cities. Hospitals overflow.', mods: { heal: -2 } },
-  { id: 'sect_war', w: 6, news: null, mods: {} },
+  { id: 'sect_war', w: 2, news: null, mods: {} }, // v0.9.47 was 6
   { id: 'golden_age', w: 3, news: () => 'Scholars call it a golden age: peace, good harvests and full schools.', mods: { study: 1.08, stressMult: 0.92 } },
 ];
 export function rollNews(c) {

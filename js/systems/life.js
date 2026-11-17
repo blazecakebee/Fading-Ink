@@ -1,4 +1,5 @@
 // Character creation, yearly aging loop, death, and generational inheritance.
+import { gpaOf } from './school.js';
 import { lull } from './luck.js';
 import { onBodyPath, bodyTier } from './path.js';
 import { workloadYear } from './workload.js';
@@ -251,7 +252,7 @@ async function ageUp0() {
   educationYear(c);
   if (c.job && !c.prison) {
     const job = CAREERS.find(j => j.id === c.job.id);
-    const pay = Math.round(job.pay * wage(c) * (c.job.raise || 1) * Math.min(1.6, 1 + c.job.years * 0.02) * (job.part ? 0.5 : 1) * traitMult(c, 'pay') * bondBonus(c, 'work') * (perk('f5') ? 1.1 : 1) * workMult(c)); // an injured body earns less
+    const pay = Math.round(job.pay * wage(c) * (c.job.raise || 1) * Math.min(1.6, 1 + c.job.years * 0.02) * (job.part ? 0.5 : 1) * traitMult(c, 'pay') * gradPay(c) * bondBonus(c, 'work') * (perk('f5') ? 1.1 : 1) * workMult(c)); // an injured body earns less
     money(c, pay); c.job.years++; c.job.perf = clamp(c.job.perf - ri(0, 6));
     ui.log(`Earned ${fmtMoney(c, pay)} as a ${job.name}.`);
     if (c.job.perf < 15 && chance(0.4)) { ui.log(`I was fired from my job as a ${job.name}.`, 'bad'); c.job = null; }
@@ -298,6 +299,11 @@ async function ageUp0() {
   save(); ui.refresh();
 }
 
+// v0.9.47 your graduating GPA follows you into every job: +6% pay per GPA point above 2.0 from school,
+// +9% per point from university (so a perfect record is worth about +30%). A poor degree costs a little.
+const gradPart = (g, k) => g == null ? 1 : g >= 2 ? 1 + (g - 2) * k : g < 1.5 ? 1 - k * 0.6 : 1;
+export function gradPay(c) { const e = c?.edu; if (!e) return 1; return gradPart(e.gpaHS, 0.06) * gradPart(e.gpaUni, 0.09); }
+function gradNote(g, k) { const m = gradPart(g, k); return m > 1.005 ? ` Employers will pay me ${Math.round((m - 1) * 100)}% more for it.` : m < 1 ? ` Employers won't be impressed (-${Math.round((1 - m) * 100)}% pay).` : ''; }
 function educationYear(c) {
   const e = c.edu;
   if (c.prison) return;
@@ -305,12 +311,12 @@ function educationYear(c) {
   if (c.age === 12) { const T = tierOf(c); if (chance(T.school) || ['middle', 'wealthy', 'rich', 'royal'].includes(c.wealth)) { e.school = 'Secondary School'; ui.log('I started secondary school.'); } else { e.school = null; ui.log('There was no secondary school my family could reach or afford. I started working instead.', 'bad'); } }
   if (c.age === 18 && !e.school && e.level === 0 && !c.flags.noSchoolNoted) { c.flags.noSchoolNoted = true; }
   if (c.age === 18 && e.school === 'Secondary School') {
-    if (e.grades >= 35) { e.level = 1; ui.log('I graduated from secondary school.', 'good'); } else ui.log('I failed to graduate from secondary school.', 'bad');
+    if (e.grades >= 35) { e.level = 1; e.gpaHS = +gpaOf(e.grades).toFixed(2); ui.log(`I graduated from secondary school with a ${e.gpaHS.toFixed(1)} GPA.${gradNote(e.gpaHS, 0.06)}`, 'good'); } else ui.log('I failed to graduate from secondary school.', 'bad');
     e.school = null;
   }
   if (e.school === 'University') {
     e.uniYears++;
-    if (e.uniYears >= 4) { e.level = 2; e.school = null; ui.log(`I graduated from university with a degree in ${e.major}!`, 'big'); ui.fx('milestone'); }
+    if (e.uniYears >= 4) { e.level = 2; e.school = null; e.gpaUni = +gpaOf(e.grades).toFixed(2); ui.log(`I graduated from university with a degree in ${e.major} and a ${e.gpaUni.toFixed(1)} GPA!${gradNote(e.gpaUni, 0.09)}`, 'big'); ui.fx('milestone'); }
   }
   if (e.school) (c.lastTrained ||= {}).smarts = c.age; // school keeps your mind in use (marks drift in school.js)
 }
