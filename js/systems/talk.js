@@ -54,8 +54,10 @@ export function respond(c, id, idx) {
   if (d < 0 && p.close >= 80) d = Math.ceil(d / 2); // old bonds bend instead of breaking
   if (d > 0) gainClose(c, p, d); else p.close = clamp(p.close + d);
   p.lastTalk = G.world.year; t.res = { d, surprise };
-  ui.log(`Me: “${pick(YOU[style] || ['…'])}”`, 'say me');
-  ui.log(`${p.first}: “${reply}” (${d >= 0 ? '+' : ''}${d} closeness${surprise ? ', not the reaction I expected' : ''})`, 'say ' + (d > 0 ? 'good' : d < 0 ? 'bad' : ''));
+  // v0.9.30 the reply goes right under what they said, not at the bottom of the year
+  const lines = [{ t: `Me: “${pick(YOU[style] || ['…'])}”`, c: 'say me' }, { t: `${p.first}: “${reply}” (${d >= 0 ? '+' : ''}${d} closeness${surprise ? ', not the reaction I expected' : ''})`, c: 'say ' + (d > 0 ? 'good' : d < 0 ? 'bad' : '') }];
+  const Y = [...(c.log || [])].reverse().find(y => y.lines.some(l => l.tk === id)), at = Y ? Y.lines.findIndex(l => l.tk === id) : -1;
+  if (at >= 0) Y.lines.splice(at + 1, 0, ...lines); else for (const l of lines) ui.log(l.t, l.c);
   return d;
 }
 // things left unanswered: bad news and complaints you ignored sting a little
