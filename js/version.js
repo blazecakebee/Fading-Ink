@@ -1,7 +1,10 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.40';
+export const VERSION = '0.9.41';
 export const CHANGELOG = [
+  { v: '0.9.41', date: '2026-11-17', title: 'Blue marble', notes: [
+    'The World icon is now an actual Earth: blue oceans, green continents and a couple of clouds, instead of a black ball.',
+  ] },
   { v: '0.9.40', date: '2026-11-17', title: 'No more rosy boys', notes: [
     'Males are no longer born with blush marks. Existing male characters lose them too, unless you picked blush yourself in the mirror.',
   ] },

@@ -59,7 +59,7 @@ body.compact .nav-btn { padding: 5px 8px; margin: 3px 0; font-size: .95rem; }
 body.icons-only .nav-btn span.lbl { display: none; }
 
 /* ---- sprite icons (CC0 pixel-art-atlas) */
-.icon { display: inline-block; width: 24px; height: 24px; flex: none; background-image: url('../assets/icons.png'); background-repeat: no-repeat; image-rendering: pixelated; vertical-align: middle; }
+.icon { display: inline-block; width: 24px; height: 24px; flex: none; background-image: url('../assets/icons.png?v=0941'); background-repeat: no-repeat; image-rendering: pixelated; vertical-align: middle; }
 .icon.lg { width: 40px; height: 40px; } .icon.xl { width: 72px; height: 72px; } .icon.sm { width: 18px; height: 18px; }
 
 /* ---- center: year card + feed */
