@@ -14,6 +14,7 @@ import { gearStats } from './crafting.js';
 import { SECTS, METHODS, RI } from '../data/realms.js';
 import { perk as perkC } from '../data/legacyTree.js';
 import { ITEMS } from '../data/items.js';
+import * as MR from './meridians.js';
 
 export const realmName = c => onBodyPath(c) ? `${bodyTier(c).name} (Severed)` : c.qi.realm === 0 ? 'Mortal' : `${REALMS[c.qi.realm].name} ${REALMS[c.qi.realm].stages > 1 ? 'Stage ' + c.qi.stage : ''}`.trim();
 export const qiCap = c => Math.round(REALMS[c.qi.realm].maxQi * (1 + (c.qi.stage - 1) * 0.7));
@@ -23,7 +24,7 @@ export const powerBonus = c => { const m = traitMult(c, 'power'); return m <= 1 
 
 export function qiGain(c, base) {
   const manual = Math.max(1, ...c.qi.manuals.map(m => MANUALS.find(x => x.id === m)?.qi || 1));
-  const aff = 0.5 + c.qi.affinity / 100; const merid = 1 + c.qi.meridians * 0.08;
+  const aff = 0.5 + c.qi.affinity / 100; const merid = MR.flowMult(c); // v0.9.32 +5% per open meridian (each one also has its own bonus)
   const stress = c.stats.stress > 60 ? 0.6 : 1;
   const sect = c.ownSect ? 1.1 : 1;
   const M = method(c); const meth = M.qi * (M.dual && bondBonus(c, 'qi') > 1 ? 1 + M.dual : 1);
@@ -43,23 +44,14 @@ export function meditate(c) {
   if (extra) return (c.qi.qi >= cap ? `Qi +${g}. My dantian is full.` : `Qi +${g} (${c.qi.qi}/${cap}).`) + extra;
   return c.qi.qi >= cap ? `Qi +${g}. My dantian is full. I can attempt a breakthrough.` : `I circulated my Qi. +${g} Qi (${c.qi.qi}/${cap}).`;
 }
-export function openMeridian(c) {
-  if (c.qi.meridians >= 12) return 'All twelve meridians are already open.';
-  const cost = 30 + c.qi.meridians * 25;
-  if (c.qi.qi < cost) return `I need ${cost} Qi to force open a meridian.`;
-  c.qi.qi -= cost; stat(c, 'health', -ri(2, 8));
-  if (chance(meridianInfo(c).p)) { c.qi.meridians++; ui.fx('milestone'); return `Agony, then light. Meridian ${c.qi.meridians}/12 opened.`; }
-  if (chance(0.2)) { addCondition(c, 'meridian_block', true); return 'The meridian collapsed inward. My meridians are BLOCKED — Qi gain halved until healed.'; }
-  return 'The meridian refused to open. My body aches.';
-}
+// v0.9.32 see meridians.js — progress-based, never lost
+export const openMeridian = c => MR.work(c, qiCap(c));
 
-export function meridianInfo(c) {
-  return { cost: 30 + c.qi.meridians * 25, p: clamp(0.55 + c.qi.affinity / 300 + traitVal(c, 'merid') + (method(c).merid || 0), 0.05, 0.97) };
-}
+export const meridianInfo = c => MR.attemptInfo(c, qiCap(c));
 export const meditateRange = c => [Math.round(qiGain(c, 10) * fatigueMult(c)), Math.round(qiGain(c, 18) * fatigueMult(c))];
 // Meridian fatigue: back-to-back meditation strains the meridians. Max 3 sessions a year; rest and other activities recover.
 export const MAX_MEDITATIONS = 3;
-export const fatigueMult = c => Math.max(0.3, 1 - 0.15 * (c.qi.fatigue || 0));
+export const fatigueMult = c => Math.max(0.3, 1 - ((c.qi.mer?.length || 0) >= 12 ? 0.08 : 0.15) * (c.qi.fatigue || 0)); // Grand Circulation tires you less
 
 // Everything the UI needs to explain a breakthrough before you try it.
 export function breakthroughInfo(c) {
@@ -130,9 +122,9 @@ export async function breakthrough(c) {
   if (major) { c.qi.realm++; c.qi.stage = 1; ui.fx('breakthrough', { major: true, realm: REALMS[c.qi.realm].name, color: REALMS[c.qi.realm].color }); stat(c, 'health', 30); stat(c, 'looks', 4);
     ui.log(`My limits shatter: stats can now reach ${REALMS[c.qi.realm].cap} (gains slow past ${Math.round(REALMS[c.qi.realm].cap * 0.7)}).`, 'qi');
     if (REALMS[c.qi.realm].id === 'immortal') earnTrait(c, 'author');
-    return `BREAKTHROUGH! I have entered ${REALMS[c.qi.realm].name}. My lifespan stretches before me.`; }
+    return `BREAKTHROUGH! I have entered ${REALMS[c.qi.realm].name}. My lifespan stretches before me. My body can now hold ${MR.maxOpen(c)} meridians open.${MR.breakthroughBonus(c, true)}`; }
   c.qi.stage++; ui.fx('breakthrough', { major: false }); stat(c, 'health', 5);
-  return `Breakthrough! ${R.name} Stage ${c.qi.stage}.`;
+  return `Breakthrough! ${R.name} Stage ${c.qi.stage}.${MR.breakthroughBonus(c, false)}`;
 }
 
 // Passive yearly cultivation bits

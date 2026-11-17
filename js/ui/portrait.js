@@ -296,7 +296,7 @@ export function buildPortrait(genes, { age = 20, gender = 'F', realm = 0, hair =
   if (realm >= 4) { const mc = elemColor || REALMS[realm].color; set(cx, top + 4, mc); set(cx - 1, top + 5, mc); set(cx, top + 5, '#ffffff'); set(cx, top + 6, mc); }
 
   if (hair?.scar && st !== 'infant') for (let i = 0; i < 3; i++) set(cx + 3 + i, eyeY + 1 + i, skinD); // a scar across the cheek
-  if (raw) return { g, st, skin, skinS, skinD, cloth, clothD, accent, hc, bodyTop, bottomHead, top0: top, bt, grown };
+  if (raw) return { g, st, skin, skinS, skinD, cloth, clothD, accent, hc, bodyTop, bottomHead, top0: top, bt, grown, eyeY };
   return finish(g, realm, elemColor, R);
 }
 
@@ -383,17 +383,50 @@ export function buildFullBody(genes, opts = {}) {
   if (gear.armor === 'dragon_vest') for (let y = top + 2; y < hip; y++) for (let x = cx - sw + 1; x < cx + sw - 1; x++) set(x, y, (x + y * 2) % 3 === 0 ? '#ffb347' : '#d9622b');
   if (gear.armor === 'padded_robe') for (let y = top + 2; y < hip; y += 3) for (let x = cx - sw + 1; x < cx + sw - 1; x++) set(x, y, shade(main, 0.2));
   // hat
-  if (O.hat) for (let x = cx - 7; x <= cx + 6; x++) { set(x, head.top0 ?? 4, O.hat.color); if (x > cx - 6 && x < cx + 5) set(x, (head.top0 ?? 4) - 1, O.hat.color); }
+  if (O.mask) drawMask(g, set, head, O.mask, cx);
+  if (O.hat) drawHat(set, head, O.hat, cx);
   // charm pendant
   if (gear.charm) { set(cx - 1, top + 3, gear.charm === 'jade_charm' ? '#5fd38a' : '#f2efe6'); set(cx, top + 3, gear.charm === 'jade_charm' ? '#3fa36a' : '#d8d2c2'); }
   // v0.8.7 necklace on the chest, ring on the left hand
   if (gear.necklace) { const nc = ITEMS_COL[gear.necklace] || '#e8e2d0'; set(cx - 2, top + 2, nc); set(cx + 1, top + 2, nc); set(cx - 1, top + 4, nc); set(cx, top + 4, '#ffffff'); }
   if (gear.ring && !gone('hand_l')) set(cx - sw - Math.ceil(aw / 2), top + armLen - 1, ITEMS_COL[gear.ring] || '#ffd36f');
   // weapon in right hand
-  if (gear.weapon && !gone('hand_r')) { const [blade, hilt] = GEAR_COLORS[gear.weapon] || GEAR_COLORS.iron_sword; const hx = cx + sw + 1, hy = top + armLen - 2;
+  if (gear.weapon && !gone('hand_r')) { const [blade, hilt] = GEAR_COLORS[gear.weapon] || (_ITEMS[gear.weapon]?.color ? [_ITEMS[gear.weapon].color, '#5a3a1a'] : GEAR_COLORS.iron_sword); const hx = cx + sw + 1, hy = top + armLen - 2;
     for (let y = hy - 12; y < hy - 1; y++) set(hx + 3, y, blade); set(hx + 3, hy - 13, shade(blade, 0.4));
     set(hx + 2, hy - 1, hilt); set(hx + 3, hy - 1, hilt); set(hx + 4, hy - 1, hilt); set(hx + 3, hy, hilt); set(hx + 3, hy + 1, hilt); }
   return finish(g, realm, elemColor, R);
+}
+// v0.9.33 hats come in shapes now, and masks cover the face
+function drawHat(set, head, H, cx) {
+  const t = head.top0 ?? 4, col = H.color, d = shade(col, -0.3), l = shade(col, 0.3), ey = head.eyeY ?? t + 9, row = (y, a, b, c2 = col) => { for (let x = a; x <= b; x++) set(x, y, c2); };
+  switch (H.hk) {
+    case 'cap': row(t - 1, cx - 5, cx + 4); row(t, cx - 6, cx + 5); row(t + 1, cx - 6, cx + 5, d); row(t + 2, cx - 1, cx + 9, d); break;
+    case 'beanie': row(t - 2, cx - 4, cx + 3); row(t - 1, cx - 6, cx + 5); row(t, cx - 7, cx + 6); row(t + 1, cx - 7, cx + 6, d); set(cx - 1, t - 3, l); set(cx, t - 3, l); break;
+    case 'wide': row(t + 1, cx - 11, cx + 10, d); row(t, cx - 8, cx + 7); row(t - 1, cx - 5, cx + 4); row(t - 2, cx - 3, cx + 2); row(t - 3, cx - 1, cx, l); break;
+    case 'crown': row(t, cx - 5, cx + 4); for (let x = cx - 5; x <= cx + 4; x += 3) { set(x, t - 1, col); set(x, t - 2, l); } set(cx - 1, t, '#ff4f6a'); set(cx, t, '#7fe3ff'); break;
+    case 'top': row(t, cx - 8, cx + 7); for (let y = t - 7; y < t; y++) row(y, cx - 5, cx + 4); row(t - 1, cx - 5, cx + 4, '#a8323e'); row(t - 7, cx - 5, cx + 4, l); break;
+    case 'brim': row(t, cx - 9, cx + 8, d); row(t - 1, cx - 5, cx + 4); row(t - 2, cx - 5, cx + 4); row(t - 3, cx - 4, cx + 3); set(cx - 1, t - 3, d); row(t - 1, cx - 5, cx + 4, shade(col, -0.45)); break;
+    case 'beret': row(t - 2, cx - 4, cx + 7); row(t - 1, cx - 6, cx + 8); row(t, cx - 6, cx + 6, d); set(cx + 2, t - 3, d); break;
+    case 'bucket': row(t - 2, cx - 4, cx + 3); row(t - 1, cx - 5, cx + 4); row(t, cx - 6, cx + 5); row(t + 1, cx - 8, cx + 7, d); break;
+    case 'guan': row(t - 1, cx - 2, cx + 1); row(t - 2, cx - 2, cx + 1); row(t - 3, cx - 1, cx, l); row(t - 2, cx - 5, cx + 4, '#c9a23a'); break;
+    case 'band': row(t + 2, cx - 7, cx + 6); set(cx + 7, t + 3, col); set(cx + 8, t + 4, d); break;
+    case 'hood': row(t - 2, cx - 6, cx + 5); row(t - 1, cx - 8, cx + 7); for (let y = t; y <= ey + 4; y++) { set(cx - 8, y, d); set(cx - 9, y, col); set(cx + 7, y, d); set(cx + 8, y, col); } row(t, cx - 8, cx + 7, d); break;
+    case 'turban': for (let y = t - 3; y <= t + 1; y++) row(y, cx - 7 + (y < t - 1 ? 2 : 0), cx + 6 - (y < t - 1 ? 2 : 0), (y + cx) % 2 ? col : d); set(cx, t - 1, '#c9a23a'); break;
+    default: for (let x = cx - 7; x <= cx + 6; x++) { set(x, t, col); if (x > cx - 6 && x < cx + 5) set(x, t - 1, col); }
+  }
+}
+function drawMask(g, set, head, M, cx) {
+  const ey = head.eyeY ?? 14, bot = head.bottomHead ?? 22, top = head.top0 ?? 5, col = M.color, d = shade(col, -0.35), hair = [head.hc, shade(head.hc, -0.28), shade(head.hc, 0.32)];
+  const face = (x, y) => g[y]?.[x] && !hair.includes(g[y][x]) && g[y][x] !== '#1b1222';
+  const fill = (y0, y1, c2) => { for (let y = y0; y <= y1; y++) for (let x = cx - 8; x <= cx + 7; x++) if (face(x, y)) set(x, y, c2); };
+  const eyes = c2 => { for (const ex of [cx - 6, cx + 2]) for (let i = 0; i < 4; i++) { set(ex + i, ey + 1, c2); if (i === 1 || i === 2) set(ex + i, ey + 2, c2); } };
+  switch (M.mk) {
+    case 'mouth': fill(ey + 3, bot - 1, col); for (let x = cx - 6; x <= cx + 5; x++) if (face(x, ey + 3)) set(x, ey + 3, d); break;
+    case 'full': fill(top + 3, bot, col); eyes('#14101c'); set(cx - 1, ey + 5, d); set(cx, ey + 5, d); set(cx - 6, ey + 3, '#d8323e'); set(cx + 5, ey + 3, '#d8323e'); set(cx - 1, top + 4, '#d8323e'); break;
+    case 'eyes': fill(ey - 1, ey + 2, col); eyes('#14101c'); set(cx - 8, ey - 2, d); set(cx + 7, ey - 2, d); break;
+    case 'shades': for (const ex of [cx - 6, cx + 2]) for (let i = -1; i < 5; i++) for (let y = ey; y <= ey + 2; y++) set(ex + i, y, y === ey && i === 0 ? '#ffffff88' : col === '#c9a23a' ? '#2a1a08' : '#0e0e14'); for (let x = cx - 1; x <= cx; x++) set(x, ey, col); break;
+    case 'veil': for (let y = ey + 3; y <= bot + 2; y++) for (let x = cx - 8; x <= cx + 7; x++) if (face(x, y) || (y > bot && x > cx - 7 && x < cx + 6)) set(x, y, (x + y) % 2 ? col : shade(col, -0.12)); break;
+  }
 }
 export function drawFullBody(canvas, genes, opts) {
   const grid = buildFullBody(genes, opts); canvas.width = 32; canvas.height = 64;

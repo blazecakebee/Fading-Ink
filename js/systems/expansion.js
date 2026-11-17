@@ -43,6 +43,7 @@ import { appearanceYear } from './appearance.js';
 import * as F8 from './fate.js';
 import * as PR8 from './property.js';
 import * as ASC_LINES from '../data/ascendLines.js';
+import '../data/localArms.js'; // v0.9.33 each country's own weapons
 import { SECTS } from '../data/realms.js';
 import { ITEMS } from '../data/items.js';
 import { ambientLine } from '../data/storyPool.js';
@@ -202,6 +203,7 @@ export async function installExpansion() {
         h('p', { class: 'small muted' }, 'Manuals teach some arts. Others you must comprehend yourself: every meditation gives a chance (better if the art matches your element), and reaching a new realm often brings a sudden insight. In battle your meridians hold ' + (80 + c.qi.realm * 35) + ' Qi; use Charge Qi to draw more from your dantian.'),
         known.map(id => row(id, true)), SK.QI_ARTS.filter(a => !known.includes(a.id)).map(a => row(a.id, false, `Not yet comprehended · needs ${(REALMS[a.realm] || {}).name || 'realm ' + a.realm}${a.elem === c.qi.elem ? ' · suits your element' : ''}`)));
       return [...out, box]; }; }
+  { const TU = await import('../ui/tradeUI.js'); TABS.trade = TU.tradeTab; }
   { const FTU = await import('../ui/fateUI.js'); TABS.blackmarket = FTU.blackMarketTab; const ch0 = TABS.character; TABS.character = function () { return [...[].concat(ch0.call(this)), FTU.fateCard(G.char)]; }; }
   { const BG = await import('../ui/breachGame.js'); ui.breach = (c, rank) => BG.playBreach(c, rank); }
   TABS.bloodline = P.bloodlineTab; TABS.factions = P.factionsTab;

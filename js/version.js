@@ -1,7 +1,23 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.31';
+export const VERSION = '0.9.33';
 export const CHANGELOG = [
+  { v: '0.9.33', date: '2026-11-17', title: 'Trade', notes: [
+    'New Trade tab (Economy & Action) with every merchant in town, a fitting mirror to try things on, and three sections: Arms & armour, Tailors, and Jewellers & goods.',
+    'Arms: the City Armory, your country\'s Master Smith (5 weapons and armour pieces you can only buy in that country — 150 in total, from Katanas and Khukuris to Macuahuitls, Shotels and Zweihänders), and a Travelling Arms Dealer who turns up some years with foreign steel at import prices.',
+    'Stock rotates every year. Things sell out, some years have shortages (+50% price) or surpluses (on sale), and the last one on the shelf costs more. Rare and local items are made in small numbers.',
+    'Tailors: Street Threads, Mrs. Fong\'s Corner Tailor, Golden Thread Atelier, Silk Road Couture (traditional dress and cultivator robes), Cobbler Wu\'s and The Mask & Millinery. Plus Silver Lotus Jewellers, Old Hu\'s Apothecary (pills and incense) and a Harbour Materials Trader.',
+    '15 new clothes in every category (tops, bottoms, dresses, outerwear, socks, shoes), 19 new hats with their own shapes (top hats, fedoras, berets, rice hats, cultivator guans, hoods, turbans, tiaras…) and a new Masks slot with 19 masks (kitsune, oni, hannya, opera, masquerade, veils, sunglasses, a jade mask…). They all show on your character.',
+    'Wardrobe & Armory now only manages what you own: wear or take off clothes, sell clothes you don\'t want, and see your gear on you.',
+  ] },
+  { v: '0.9.32', date: '2026-11-16', title: 'Meridians reworked', notes: [
+    'Meridians now each have a name and their own permanent bonus: Lung (+6% battle HP), Pericardium (+25 battle Qi), Heart (+2% breakthrough), Large Intestine (heal faster), Triple Burner (better Qi charging), Small Intestine (less stress), Stomach (stronger pills), Gallbladder (act first, more crits), Bladder (resist spirits), Spleen (+6% Qi), Liver (stronger Qi techniques) and Kidney (+2 years of life).',
+    'They form four circuits. Open all three meridians in a circuit for an extra bonus — Hand Yin: +30 battle Qi and cheaper techniques; Hand Yang: +5% combat power; Foot Yang: +8% training; Foot Yin: +5% Qi and a year of life. Open all twelve for Grand Circulation: +10% Qi, +3% breakthrough and less meditation fatigue.',
+    'Opening is now gradual and you never lose progress: each attempt (the acupoint minigame — play it well for more) fills a Channel Progress bar that stays put through failures and breakthroughs. When it fills, you choose which meridian opens.',
+    'Breakthroughs now help instead of hurting: +20 channel progress for a new stage, +60 for a new realm. Your realm decides how many meridians your body can hold open (3 / 5 / 7 / 9 / 11 / 12), so there is always something to open at each realm.',
+    'The cost is now a small slice of your Qi (6% of your capacity) instead of a flat amount, so working on meridians no longer wrecks your next breakthrough. A badly botched attempt can cost a little progress and sometimes block your meridians.',
+    'In battle every open meridian adds +5 battle Qi, on top of the named bonuses. Each open meridian also still adds +5% Qi gain and +1.5% breakthrough chance. The Cultivation tab shows every meridian, circuit and the progress bar.',
+  ] },
   { v: '0.9.31', date: '2026-11-16', title: 'Ascension flavour', notes: [
     'The "You have ascended to…" screen now has 35 different two-line passages instead of one, drawn from a shuffled deck so you see every one before any repeats. Reaching Immortal Ascension has its own four.',
   ] },

@@ -21,7 +21,7 @@ export const PRACTICE = {
   study:         { kind: 'focus',   cat: 'mind',   risk: 0.03 },
   work_hard:     { kind: 'stack',   cat: 'mind',   risk: 0.04 },
   meditate:      { kind: 'breath',  cat: 'qi',     risk: 0.04, kindFor: c => METHOD_GAME[method(c).id] || 'breath' }, // v0.9.13 each method has its own game
-  meridian:      { kind: 'trace',   cat: 'qi',     risk: 0.08 },
+  meridian:      { kind: 'trace',   scoreOnly: true }, // v0.9.32 the score decides how much channel progress you make
   hike:          { kind: 'balance', cat: 'body',   risk: 0.05 },
   coop_gym:      { kind: 'lift',    cat: 'body',   risk: 0.04, coop: true },   // same as the gym, on purpose
   coop_train:    { kind: 'breath',  cat: 'qi',     risk: 0.05, coop: true },   // same as meditation, on purpose

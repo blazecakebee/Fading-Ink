@@ -72,6 +72,7 @@ const MASKS = {
   socks: ['..XX..XX..', '..XX..XX..', '..XX..XX..', '..XX..XX..', '..XXX.XXX.', '..XXX.XXX.', '..........', '..........'],
   shoes: ['..........', '..........', '..........', 'XX....XX..', 'XXX...XXX.', 'XXXXX.XXXXX', 'XXXXX.XXXXX', '..........'],
   hat: ['..........', '...XXXX...', '..XXXXXX..', '..XXXXXX..', '..XXXXXX..', 'XXXXXXXXXX', '..........', '..........'],
+  mask: ['.XXXXXXXX.', 'XXXXXXXXXX', 'X..XXXX..X', 'XXXXXXXXXX', 'XXXXXXXXXX', '.XXX..XXX.', '..XXXXXX..', '...XXXX...'],
 };
 export function clothIcon(kind, color, size = 28) {
   const m = MASKS[kind] || MASKS.shirt, cv = document.createElement('canvas'); cv.width = 12; cv.height = 10; const ctx = cv.getContext('2d');
@@ -90,33 +91,35 @@ function previewBody(c, cv) {
   drawFullBody(cv, c.genes, { age: c.age, gender: c.gender, realm: c.qi.realm, hair: c.face ? { ...(c.hair || {}), ...c.face } : c.hair, outfit: outfitFor({ outfit }), gear, body: c.body, heightCm: heightNow(c) });
 }
 export function wardrobeTab() {
+  // v0.9.33 the wardrobe only manages what you own — buy from tailors and armourers in the Trade tab
   const c = G.char; c.closet ||= []; c.outfit ||= {};
   const slot = G.ui.wardSlot || 'top'; tryOn = null;
-  const price = it => priceFor(c, Math.round(it.price * country(c).econ));
-  const items = CLOTHES.filter(x => x.slot === slot);
+  const items = CLOTHES.filter(x => x.slot === slot && c.closet.includes(x.id));
   const cv = document.createElement('canvas'); Object.assign(cv.style, { width: '128px', height: '256px', imageRendering: 'pixelated' }); previewBody(c, cv);
-  const label = h('div', { class: 'muted small', style: { textAlign: 'center', minHeight: '2.4em' } }, 'Hover or tap an item to try it on.');
+  const label = h('div', { class: 'muted small', style: { textAlign: 'center', minHeight: '2.4em' } }, 'Hover an item to try it on.');
   const look = (t, name) => { tryOn = t; previewBody(c, cv); label.textContent = name ? `Trying on: ${name}` : 'Your current look'; };
   const hover = (t, name) => ({ onmouseenter: () => look(t, name), onmouseleave: () => look(null), onfocus: () => look(t, name) });
-  const card = it => { const own = c.closet.includes(it.id), on = c.outfit[it.slot] === it.id;
+  const wear = it => { const on = c.outfit[it.slot] === it.id; if (on) delete c.outfit[it.slot]; else { c.outfit[it.slot] = it.id; if (it.slot === 'dress') { delete c.outfit.top; delete c.outfit.bottom; } if (['top', 'bottom'].includes(it.slot)) delete c.outfit.dress; } R.render(); };
+  const card = it => { const on = c.outfit[it.slot] === it.id;
     return h('div', { class: 'card', style: { cursor: 'pointer', ...(on ? { borderColor: 'var(--accent2)' } : {}) }, ...hover({ slot: it.slot, id: it.id }, it.name), onclick: e => { if (e.target.tagName !== 'BUTTON') look({ slot: it.slot, id: it.id }, it.name); } },
-      h('div', { class: 'row', style: { alignItems: 'center', flexWrap: 'nowrap' } }, clothIcon(it.kind, it.color), h('div', {}, h('b', {}, it.name), h('div', { class: 'muted small' }, `Style ${'★'.repeat(Math.min(5, Math.ceil(it.style / 2))) || '·'}${own ? ' · owned' : ' · ' + fmtMoney(c, price(it))}`))),
+      h('div', { class: 'row', style: { alignItems: 'center', flexWrap: 'nowrap' } }, clothIcon(it.kind, it.color), h('div', {}, h('b', {}, it.name), h('div', { class: 'muted small' }, `Style ${'★'.repeat(Math.min(5, Math.ceil(it.style / 2))) || '·'}${on ? ' · wearing' : ''}`))),
       h('div', { class: 'row', style: { marginTop: '6px', gap: '6px' } },
-        own ? h('button', { class: 'btn mini' + (on ? ' ghost' : ''), onclick: () => { if (on) delete c.outfit[it.slot]; else { c.outfit[it.slot] = it.id; if (it.slot === 'dress') { delete c.outfit.top; delete c.outfit.bottom; } if (['top', 'bottom'].includes(it.slot)) delete c.outfit.dress; } R.render(); } }, on ? 'Take off' : 'Wear')
-          : h('button', { class: 'btn mini', disabled: c.money < price(it), onclick: () => R.run({ id: 'buy_clothes', cost: 'free', run: cc => { money(cc, -price(it)); cc.closet.push(it.id); cc.outfit[it.slot] = it.id; if (it.slot === 'dress') { delete cc.outfit.top; delete cc.outfit.bottom; } if (['top', 'bottom'].includes(it.slot)) delete cc.outfit.dress; stat(cc, 'happiness', 1 + Math.floor(it.style / 3)); return `I bought a ${it.name.toLowerCase()} and put it on.`; } }) }, 'Buy & wear'))); };
-  const armory = Object.entries(ITEMS).filter(([, it]) => it.shop);
+        h('button', { class: 'btn mini' + (on ? ' ghost' : ''), onclick: () => wear(it) }, on ? 'Take off' : 'Wear'),
+        h('button', { class: 'btn mini ghost', title: 'Sell to a second-hand shop for a fraction of the price', onclick: () => { const v = priceFor(c, Math.round(it.price * country(c).econ * 0.2)); c.closet = c.closet.filter(x => x !== it.id); if (on) delete c.outfit[it.slot]; money(c, v); R.render(); } }, 'Sell')));
+  };
+  const gearOwned = Object.entries(c.inv || {}).filter(([id, n]) => n > 0 && ITEMS[id]?.type === 'gear');
   const preview = h('div', { class: 'card ward-preview' }, h('b', {}, 'Fitting mirror'), h('div', { style: { display: 'flex', justifyContent: 'center', margin: '8px 0' } }, cv), label);
   return [h('h2', { class: 'display' }, 'Wardrobe & Armory'),
-    h('p', { class: 'muted' }, `Your outfit shows on your Status page. Style score ${outfitStyle(c)} → +${Math.min(15, outfitStyle(c))}% closeness gains. Dresses replace a top and bottom.`),
+    h('p', { class: 'muted' }, `Everything you own to wear. Style score ${outfitStyle(c)} → +${Math.min(15, outfitStyle(c))}% closeness gains. Dresses replace a top and bottom. Buy new things from tailors and armourers in the Trade tab.`),
     h('div', { class: 'ward-layout' }, preview, h('div', {},
-      h('div', { class: 'seg', style: { flexWrap: 'wrap', marginBottom: '10px' } }, Object.entries(CLOTH_SLOTS).map(([k, v]) => h('button', { class: slot === k ? 'on' : '', onclick: () => { G.ui.wardSlot = k; R.render(); } }, `${v} (${c.closet.filter(id => CLOTH_BY_ID[id]?.slot === k).length}/${CLOTHES.filter(x => x.slot === k).length})`))),
-      h('div', { class: 'grid2' }, items.map(card)),
-      h('h3', { class: 'display', style: { margin: '18px 0 6px' } }, 'Armory'),
-      h('p', { class: 'muted small' }, 'Everyday weapons and armour. Hover to see them on you. Legendary gear only drops in high-rank Gates. Equip gear from your Inventory.'),
-      h('div', { class: 'grid2' }, armory.map(([id, it]) => { const pr = priceFor(c, Math.round(it.price * country(c).econ));
-        return h('div', { class: 'card', style: { cursor: 'pointer' }, ...hover({ gear: id }, it.name), onclick: e => { if (e.target.tagName !== 'BUTTON') look({ gear: id }, it.name); } },
-          h('div', { class: 'row', style: { alignItems: 'center', flexWrap: 'nowrap' } }, h('span', { style: { background: '#0004', borderRadius: '8px', padding: '3px', marginRight: '8px', display: 'inline-flex' } }, gearSprite(id, 40)), h('div', {}, h('b', {}, it.name), h('div', { class: 'muted small' }, `${it.desc} · ${fmtMoney(c, pr)}${c.inv[id] ? ` · owned ×${c.inv[id]}` : ''}`))),
-          h('button', { class: 'btn mini', style: { marginTop: '6px' }, disabled: c.money < pr || c.age < 12, onclick: () => R.run({ id: 'buy_gear', cost: 'free', run: cc => { money(cc, -pr); addItem(cc, id); return `I bought a ${it.name}.`; } }) }, 'Buy')); }))))];
+      h('div', { class: 'seg', style: { flexWrap: 'wrap', marginBottom: '10px' } }, Object.entries(CLOTH_SLOTS).map(([k, v]) => h('button', { class: slot === k ? 'on' : '', onclick: () => { G.ui.wardSlot = k; R.render(); } }, `${v} (${c.closet.filter(id => CLOTH_BY_ID[id]?.slot === k).length})`))),
+      items.length ? h('div', { class: 'grid2' }, items.map(card)) : h('div', { class: 'card muted' }, `You don't own any ${CLOTH_SLOTS[slot].toLowerCase()}. `, h('button', { class: 'btn mini', onclick: () => { G.ui.tab = 'trade'; G.ui.tradeGroup = 'tailors'; R.render(); } }, 'Visit the tailors')),
+      h('h3', { class: 'display', style: { margin: '18px 0 6px' } }, 'Your gear'),
+      h('p', { class: 'muted small' }, 'Weapons, armour and jewellery you own. Hover to see them on you; equip them from your Inventory.'),
+      gearOwned.length ? h('div', { class: 'grid2' }, gearOwned.map(([id, n]) => { const it = ITEMS[id], eq = Object.values(c.gear || {}).includes(id);
+        return h('div', { class: 'card', style: { cursor: 'pointer', ...(eq ? { borderColor: 'var(--accent2)' } : {}) }, ...hover({ gear: id }, it.name) },
+          h('div', { class: 'row', style: { alignItems: 'center', flexWrap: 'nowrap' } }, h('span', { style: { background: '#0004', borderRadius: '8px', padding: '3px', marginRight: '8px', display: 'inline-flex' } }, gearSprite(id, 40)), h('div', {}, h('b', {}, it.name, n > 1 ? ` ×${n}` : ''), h('div', { class: 'muted small' }, `${it.desc || ''}${eq ? ' · equipped' : ''}`)))); }))
+        : h('div', { class: 'card muted' }, 'No gear yet. ', h('button', { class: 'btn mini', onclick: () => { G.ui.tab = 'trade'; G.ui.tradeGroup = 'arms'; R.render(); } }, 'Visit the armourers'))))];
 }
 
 // ---------------- The Severed Path

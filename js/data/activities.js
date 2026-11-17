@@ -68,7 +68,7 @@ export const ACTIVITIES = [
 
   // ---- CULTIVATION (hidden until you know Qi exists)
   { id: 'meditate', cat: 'cultivation', name: 'Meditate / Gather Qi', icon: 'meditate', minAge: 4, need: c => (c.qi.medYear || 0) < 3, run: c => ({ text: meditate(c), cls: c.qi.known ? 'qi' : '' }) },
-  { id: 'meridian', cat: 'cultivation', name: 'Open a meridian', icon: 'lightning', minAge: 10, need: c => c.qi.realm >= 1, run: c => ({ text: openMeridian(c), cls: 'qi' }) },
+  { id: 'meridian', cat: 'cultivation', name: 'Open a meridian', icon: 'lightning', minAge: 10, need: c => c.qi.realm >= 1, run: async c => openMeridian(c) },
   { id: 'breakthrough', cat: 'cultivation', name: 'Attempt breakthrough', icon: 'star', minAge: 6, need: c => c.qi.realm >= 1 && c.qi.qi >= qiCap(c), run: async c => ({ text: await breakthrough(c), cls: 'qi', big: true }) },
   { id: 'pill', cat: 'cultivation', name: 'Consume Qi Pill', icon: 'pill', minAge: 6, need: c => c.inv.qi_pill > 0 && c.qi.realm >= 1, run: c => { const g = addItem(c, 'qi_pill', -1, 'best'); const q = Math.round(qiCap(c) * 0.4 * traitMult(c, 'pill') * QUALITY[g].mult); c.qi.qi = Math.min(qiCap(c), c.qi.qi + q); return { text: `The ${QUALITY[g].name.toLowerCase()} pill dissolved into warmth. +${q} Qi.`, cls: 'qi' }; } },
   { id: 'devour', cat: 'cultivation', name: 'Devour Demonic Core', icon: 'demon', minAge: 12, need: c => c.inv.demonic_core > 0, run: c => { addItem(c, 'demonic_core', -1); c.qi.qi = qiCap(c); stat(c, 'happiness', -15); earnTrait(c, 'kinslayer'); if (chance(0.5)) addCondition(c, 'corruption'); return { text: 'I swallowed the core. Something inside me grinned.', cls: 'bad', big: true }; } },

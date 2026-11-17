@@ -11,6 +11,7 @@ import { transmigratorMods, relicQi } from './renown.js';
 import { fableMods } from './fables.js';
 import { fateMods } from './fate.js';
 import { propertyMods } from './property.js';
+import { meridianMods } from './meridians.js';
 
 export function attuned(c) {
   const list = (c.heirlooms || []).filter(x => x && typeof x === 'object' && HEIRLOOMS[x.id]);
@@ -28,7 +29,7 @@ export function sources(c) {
   if (c.flags?.stormBorn) out.push({ breakthrough: 0.03 });
   if (c.fables) out.push(...fableMods(c));
   if (c.omens?.length) out.push(...omenMods(c)); // v0.9.11 birth blessings & curses // Fable titles (all stack) and what the Fables did to you
-  out.push(...fateMods(c), ...propertyMods(c)); // v0.9.23 reincarnation, demonic path, tainted Qi, unstable Qi after regression
+  out.push(...fateMods(c), ...propertyMods(c), ...meridianMods(c)); // v0.9.23 reincarnation, demonic path, tainted Qi, unstable Qi after regression
   const st = outfitStyle(c); if (st) out.push({ social: 1 + Math.min(15, st) / 100 });
   const lib = c.ownSect?.halls?.library; if (lib) out.push({ qi: 1 + lib * 0.04 });
   const n = G.world?.news; if (n && n.year === G.world.year && n.mods) out.push(n.mods);

@@ -205,7 +205,7 @@ export function maxActions(c) { return Math.min(8, ACTIONS_PER_YEAR + [16, 25, 3
 export function maxSocial(c) { return Math.min(6, SOCIAL_PER_YEAR + [18, 30].filter(a => c.age >= a).length + traitVal(c, 'extraSocial')); }
 export function beginYear(c) {
   c.log.push({ age: c.age, year: G.world.year, lines: [] });
-  c.maxActions = maxActions(c); c.qi.medYear = 0; c.qi.fatigue = Math.max(0, (c.qi.fatigue || 0) - 2); c.actions = c.maxActions; c.maxSocial = maxSocial(c); c.social = c.maxSocial; c.usedThisYear = 0;
+  c.maxActions = maxActions(c); c.qi.medYear = 0; c.qi.merYear = 0; c.qi.fatigue = Math.max(0, (c.qi.fatigue || 0) - 2); c.actions = c.maxActions; c.maxSocial = maxSocial(c); c.social = c.maxSocial; c.usedThisYear = 0;
 }
 
 // ---- yearly aging ----------------------------------------------------------

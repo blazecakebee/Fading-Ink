@@ -27,6 +27,7 @@ import { combatFx, qiColors, qiOf, qiSfx } from '../systems/qitype.js';
 import { QI } from '../data/qitypes.js';
 import { qiBurst, qiBadge } from './qiBadge.js';
 import { playMoveFx, floatNum } from './moveFx.js';
+import { meridianCombat } from '../systems/meridians.js';
 const MOVE_COL = { fire: '#ff6a3d', water: '#4fb3ff', lightning: '#b18cff', eye: '#8fa8ff', star: '#ffe08a', demon: '#ff3a4a', metal: '#d0d6e0', heart: '#ff6fa8', skull: '#e9e6df', cultivation: '#7fe3ff' };
 import { PLAYER_HP, ENEMY_HP, ENEMY_DMG, GEAR_DMG, SEVERED_EDGE, realmScale, enemyScale, enemyPct, playerPct, qiStat, enemyQiStat } from '../systems/combatcore.js';
 
@@ -46,7 +47,9 @@ export function fight(enemyDef, opts = {}) {
     if (QF.hp) me.maxHp = Math.round(me.maxHp * (1 + QF.hp));
     // v0.9.25 battle Qi: your meridians can only hold so much at once. The rest stays in your dantian and must be charged.
     const qiUser = !onBodyPath(c) && c.qi.realm >= 1, stored = isFinite(c.qi.qi) ? Math.max(0, c.qi.qi) : 1e6;
-    me.maxQi = qiUser ? 80 + c.qi.realm * 35 : 1; me.qi = Math.min(stored, me.maxQi); me.reserve = stored - me.qi; me.charges = 0; me.dry = false; me.exhaust = 0; me.reflect = 0;
+    const MC = qiUser ? meridianCombat(c) : { qi: 0, hp: 0, charge: 1, seize: 0, crit: 0, tech: 1, cost: 1 }; // v0.9.32 open meridians matter in battle
+    if (MC.hp) { me.maxHp = Math.round(me.maxHp * (1 + MC.hp)); me.hp = me.maxHp; }
+    me.maxQi = qiUser ? 80 + c.qi.realm * 35 + MC.qi : 1; me.qi = Math.min(stored, me.maxQi); me.reserve = stored - me.qi; me.charges = 0; me.dry = false; me.exhaust = 0; me.reflect = 0;
     me.hp = me.maxHp;
     const ePow = REALMS[enemyDef.realm || 0].power * (enemyDef.kind === 'spirit' ? traitMult(c, 'spiritBane') ** -1 : 1);
     const sc = enemyDef.sparring || opts.tribulation ? 1 : enemyScale(enemyDef.id, enemyDef.realm);
@@ -113,13 +116,13 @@ export function fight(enemyDef, opts = {}) {
         if (k === 'charge') { const why = me.dry ? 'meridians seized' : me.exhaust > 0 ? `exhausted (${me.exhaust})` : me.reserve <= 0 ? 'dantian empty' : me.qi >= me.maxQi ? 'full' : `+${Math.min(Math.round(me.reserve), Math.round(me.maxQi * 0.5))} Qi`;
           return h('button', { class: 'btn charge', disabled: me.dry || me.exhaust > 0 || me.reserve <= 0 || me.qi >= me.maxQi, title: 'Spend your turn drawing Qi from your dantian. The enemy gets a free attack, and your meridians may seize.', onclick: () => turn('charge') }, icon('meditate', 'sm'), 'Charge Qi', h('small', {}, why)); }
         if (k === 'flee') return h('button', { class: 'btn', style: { background: '#6a6a72' }, onclick: () => turn('flee') }, icon('travel', 'sm'), 'Flee');
-        const mv = MOVES[k]; const can = me.stam >= Math.max(0, mv.cost) && (!mv.qi || me.qi >= mv.qi);
-        return h('button', { class: 'btn', disabled: !can, onclick: () => turn(k) }, icon(mv.icon, 'sm'), mv.name, mv.qi ? h('small', {}, `${mv.qi} Qi`) : mv.cost > 0 ? h('small', {}, `${mv.cost} sta`) : null);
+        const mv = MOVES[k]; const can = me.stam >= Math.max(0, mv.cost) && (!mv.qi || me.qi >= Math.round(mv.qi * MC.cost));
+        return h('button', { class: 'btn', disabled: !can, onclick: () => turn(k) }, icon(mv.icon, 'sm'), mv.name, mv.qi ? h('small', {}, `${Math.round(mv.qi * MC.cost)} Qi`) : mv.cost > 0 ? h('small', {}, `${mv.cost} sta`) : null);
       }));
     }
     function attack(att, def, mvKey, attIsMe) {
       const mv = MOVES[mvKey];
-      att.stam = clamp(att.stam - mv.cost); if (mv.qi && attIsMe) att.qi -= mv.qi;
+      att.stam = clamp(att.stam - mv.cost); if (mv.qi && attIsMe) att.qi -= Math.round(mv.qi * MC.cost);
       const defPf0 = attIsMe ? ui.enPf : ui.mePf, attPf0 = attIsMe ? ui.mePf : ui.enPf, fxCol = attIsMe && mv.stat === 'qi' ? qCol[0] : MOVE_COL[mv.icon] || (attIsMe ? '#ffd36f' : '#ff7a6a');
       if (mv.guard || mv.armor || mv.heal || mv.reflect) playMoveFx(mvKey, attPf0, attPf0, fxCol);
       if (mv.heal) { const n = Math.round(att.maxHp * mv.heal); att.hp = Math.min(att.maxHp, att.hp + n); floatNum(attPf0, '+' + n, '#7fe3a0'); return `${attIsMe ? 'You' : en.name} used ${mv.name} and recovered ${n} HP.`; }
@@ -136,12 +139,12 @@ export function fight(enemyDef, opts = {}) {
       dmg *= attIsMe ? P.me : P.them * en.dmgK;
       if (attIsMe && onBodyPath(c) && ((enemyDef.realm || 0) > 0 || enemyDef.kind === 'spirit')) dmg *= SEVERED_EDGE; // Qi users can't sense the Severed coming
       const qiMove = attIsMe && mv.stat === 'qi';
-      if (qiMove) { dmg *= 1 + (QF.dmg || 0); if (QF.holy && (enemyDef.kind === 'spirit' || /demon|ghost|blood|corrupt/.test(enemyDef.id || ''))) dmg *= 1 + QF.holy; }
+      if (qiMove) { dmg *= (1 + (QF.dmg || 0)) * MC.tech; if (QF.holy && (enemyDef.kind === 'spirit' || /demon|ghost|blood|corrupt/.test(enemyDef.id || ''))) dmg *= 1 + QF.holy; }
       if (att.weakT > 0) dmg *= 0.75; // weakened by soul chains / pressure points / a titan's grip
       if (mv.shatter) { if (def.guard || def.armor) dmg *= 1.25; def.guard = false; def.armor = 0; }
       const pierce = mv.pierce || (qiMove && chance(QF.pierce || 0));
       if (def.guard && !pierce) { dmg *= 0.5; def.guard = false; } if (def.armor && !pierce) { dmg *= 0.5; def.armor--; }
-      const crit = chance(0.08 + (attIsMe ? (c.stats.luck + gs.luck) / 1000 + me.bk / 2000 + (qiMove ? QF.crit || 0 : 0) : 0)); if (crit) dmg *= 1.7;
+      const crit = chance(0.08 + (attIsMe ? (c.stats.luck + gs.luck) / 1000 + me.bk / 2000 + (qiMove ? QF.crit || 0 : 0) + MC.crit : 0)); if (crit) dmg *= 1.7;
       if (enemyDef.sparring && attIsMe === false) dmg *= 0.7;
       dmg = Math.max(1, Math.round(dmg)); def.hp -= dmg; att.mom = Math.min(3, att.mom + (mv.mom || 1)); def.mom = 0;
       if (mv.drain) att.hp = Math.min(att.maxHp, att.hp + dmg * mv.drain);
@@ -207,10 +210,10 @@ export function fight(enemyDef, opts = {}) {
       }
       // initiative: faster fighter acts first; momentum shown with chevrons
       if (k === 'charge') { // v0.9.25 you stand still and draw Qi up: the enemy always gets its swing first
-        const gain = Math.min(Math.round(me.reserve), Math.round(me.maxQi * 0.5), me.maxQi - Math.round(me.qi)); me.qi += gain; me.reserve -= gain; me.charges++;
+        const gain = Math.min(Math.round(me.reserve), Math.round(me.maxQi * 0.5 * MC.charge), me.maxQi - Math.round(me.qi)); me.qi += gain; me.reserve -= gain; me.charges++;
         playMoveFx('_charge', ui.mePf, ui.mePf, qCol[0]); floatNum(ui.mePf, `+${gain} Qi`, qCol[0]);
         let line = `You sink into your dantian and draw up ${gain} Qi.`;
-        if (chance(0.12 + 0.12 * (me.charges - 1))) { me.dry = true; line += ' Your meridians seize up — you can\'t charge again this fight.'; }
+        if (chance(Math.max(0.03, 0.12 + 0.12 * (me.charges - 1) + MC.seize))) { me.dry = true; line += ' Your meridians seize up — you can\'t charge again this fight.'; }
         else if (me.reserve <= 0) line += ' Your dantian is empty now.';
         const hit = await enemyTurn(true); log.textContent = line + ' ' + hit; draw();
         if (fatal) me.hp = 0; return afterTurn([line, hit]);

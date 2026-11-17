@@ -13,6 +13,7 @@ import { COND_BY_ID, condTip } from '../data/conditions.js';
 import * as LIC from '../systems/license.js';
 import * as PUI from './propertyUI.js';
 import * as TALK from '../systems/talk.js';
+import * as MRD from '../systems/meridians.js';
 import * as PRX from '../systems/practice.js';
 import * as SCH from '../systems/school.js';
 import * as WL from '../systems/workload.js';
@@ -59,7 +60,7 @@ export const NAV = [
   ['Self & Body', [['life', 'Life', 'life'], ['status', 'Status', 'robe'], ['character', 'Character', 'character'], ['health', 'Health', 'doctor'], ['bloodline', 'Bloodline', 'legacy'], ['wardrobe', 'Wardrobe & Armory', 'robe']]],
   ['Progression', [['skills', 'Skills & Traits', 'skills'], ['cultivation', 'Cultivation', 'cultivation'], ['fables', 'Fables', 'manual'], ['severed', 'Severed Path', 'fist'], ['crafting', 'Crafting & Gear', 'anvil']]],
   ['World & Social', [['people', 'People', 'people'], ['factions', 'Sect & Guild', 'crown'], ['world', 'World', 'world'], ['chronicle', 'Chronicle', 'study'], ['legacy', 'Legacy & Family', 'legacy'], ['coop', 'Co-op', 'people']]],
-  ['Economy & Action', [['gates', 'Dungeons & Gates', 'gates'], ['inventory', 'Inventory', 'bag'], ['blackmarket', 'Black Market', 'market'], ['career', 'Career', 'career'], ['education', 'Education', 'education'], ['assets', 'Assets & Market', 'assets'], ['market', 'Stock Market', 'stocks']]],
+  ['Economy & Action', [['gates', 'Dungeons & Gates', 'gates'], ['inventory', 'Inventory', 'bag'], ['trade', 'Trade', 'shop'], ['blackmarket', 'Black Market', 'market'], ['career', 'Career', 'career'], ['education', 'Education', 'education'], ['assets', 'Assets & Market', 'assets'], ['market', 'Stock Market', 'stocks']]],
   ['Game', [['achievements', 'Achievements', 'trophy'], ['updates', 'Update Log', 'letter'], ['settings', 'Settings', 'settings']]],
 ];
 
@@ -257,6 +258,17 @@ async function runMany(list, el) { // runs a list of activities in order while a
     await runActivity(a, null, P ? { score: scores[id] } : {}); done++; }
   gainPopups(c, snap, at); if (done) toast(`Did ${done} action${done > 1 ? 's' : ''}.`);
 }
+// v0.9.32 the twelve meridians: what's open, what each does, the four circuits and the progress bar
+function meridianPanel(c) {
+  if (!c.qi.known || (c.qi.realm || 0) < 1) return null; MRD.ensureMer(c);
+  const done = MRD.circuitsDone(c), info = meridianInfo(c);
+  return h('div', { class: 'mer-panel' }, h('div', { class: 'row', style: { justifyContent: 'space-between' } }, h('b', {}, `Meridians ${c.qi.mer.length}/12`), h('span', { class: 'small muted' }, `Your realm can hold ${MRD.maxOpen(c)} open`)),
+    c.qi.mer.length < 12 ? h('div', { class: 'mer-prog', title: 'Channel progress — never lost' }, h('i', { style: { width: Math.min(100, info.prog / info.need * 100) + '%' } }), h('span', {}, `${info.prog}/${info.need}`)) : null,
+    h('div', { class: 'mer-circuits' }, Object.entries(MRD.CIRCUITS).map(([k, C]) => h('div', { class: 'mer-circ' + (done.includes(k) ? ' done' : '') },
+      h('div', { class: 'small' }, h('b', {}, C.name), done.includes(k) ? ' ✓' : ''), h('div', { class: 'small muted' }, C.desc),
+      MRD.MERIDIANS.filter(m => m.circuit === k).map(m => h('div', { class: 'mer-node' + (MRD.has(c, m.id) ? ' on' : '') }, h('i'), h('span', {}, m.name), h('small', {}, m.desc)))))),
+    c.qi.mer.length >= 12 ? h('div', { class: 'small', style: { color: 'var(--qi)', marginTop: '6px' } }, `✦ ${MRD.GRAND.name}: ${MRD.GRAND.desc}`) : h('div', { class: 'small muted', style: { marginTop: '6px' } }, `Every open meridian also adds +5% Qi gain, +1.5% breakthrough chance and +5 battle Qi. Open all twelve for ${MRD.GRAND.name}.`));
+}
 // v0.9.29 the portrait frame grows more ornate with every realm (or Severed body tier)
 import { BODY_TIERS as _BT } from '../data/bodypath.js';
 function realmFrame(c, el) {
@@ -380,7 +392,7 @@ export const TABS = {
       h('button', { class: 'btn', disabled: !can(a), onclick: () => runActivity(a) }, `${title || a.name} (⚡1)`)); };
     const cards = [
       card('meditate', 'Meditate', [!q.manuals.length ? 'Without a manual you only calm your mind (-Stress).' : `Gathers about ${mLo}–${mHi} Qi using the ${M.name}.`, M.side ? 'Method effect: ' + M.desc : null, `Sessions this year: ${q.medYear || 0}/3. Meridian fatigue ${Math.round((q.fatigue || 0) * 10) / 10} → gains ×${fatigueMult(c).toFixed(2)} (do other things to recover).`, '-5 Stress.', q.realm === 0 && q.manuals.length ? 'Fill your Qi to enter Qi Condensation on your next birthday.' : null]),
-      q.realm >= 1 ? card('meridian', 'Open a meridian', [`Costs ${mi.cost} Qi and 2–8 Health.`, `Success chance: ${pc(mi.p)}.`, 'Each open meridian: +8% Qi gain and +1.5% breakthrough chance.', 'On failure: 20% risk of Blocked Meridians (halves Qi gain until healed).']) : null,
+      q.realm >= 1 ? card('meridian', 'Work on your meridians', mi.open >= 12 ? ['All twelve meridians are open — Grand Circulation.'] : mi.open >= mi.max ? [`Your realm can hold ${mi.max} open meridians. Break through to open more.`, `Progress saved: ${mi.prog}/${mi.need}.`] : [`Costs ${mi.cost} Qi and 1–4 Health.`, `Channel progress ${mi.prog}/${mi.need} — never lost, not even on a breakthrough. A better minigame means more progress.`, `When the bar fills, you choose which meridian opens (${mi.open}/${mi.max} at this realm).`, mi.tired < 1 ? `Repeating it this year: progress ×${mi.tired.toFixed(2)}.` : null, 'Breakthroughs widen your channels: +20 progress (+60 for a new realm).']) : null,
       q.realm >= 1 ? card('breakthrough', bi.major ? `Break into ${bi.next?.name || '—'}` : `Break to Stage ${q.stage + 1}`, [
         `Success chance: ${pc(bi.p)}.`, bi.trib ? `⚡ A Heavenly Tribulation (${bi.trib} bolts) must be survived first.` : null,
         'On success: Qi resets, +Health, more power and lifespan.', 'On failure: lose half your Qi, some Health, 40% risk of Qi Deviation Sickness.', ...bi.blockers.map(b => '⛔ ' + b)],
@@ -395,7 +407,7 @@ export const TABS = {
       h('div', { class: 'year-card', style: { marginTop: '10px' } }, h('h2', { class: 'display', style: { color: R.color } }, realmName(c)),
         bar('Qi', q.qi, 'var(--qi)', 'cultivation', qiCap(c), `${q.qi}/${qiCap(c)}`),
         h('div', { class: 'row' }, h('span', {}, icon(el.icon, 'sm'), ` ${el.name} affinity ${q.affinity}`), h('span', { class: 'muted' }, `· Power ×${power(c).toFixed(2)} · Lifespan ~${lifespan(c)}y (grows with every stage)`)),
-        h('div', { style: { marginTop: '10px' } }, 'Meridians ', h('span', { class: 'meridians' }, Array.from({ length: 12 }, (_, i) => h('i', { class: i < q.meridians ? 'on' : '' }))))),
+        meridianPanel(c)),
       h('div', { class: 'grid2', style: { marginTop: '14px' } }, cards),
       h('h3', { class: 'display', style: { margin: '18px 0 8px' } }, `Cultivation methods (${methods.length}/${METHODS.length})`),
       h('p', { class: 'muted small' }, 'You meditate with one method at a time. Learn more from close friends who cultivate, sects, Gates and the Ghost Market.'),
