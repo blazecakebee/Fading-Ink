@@ -11,10 +11,10 @@ export const GAMES = {
   stride:  { title: 'Find your stride',  how: 'Tap LEFT and RIGHT alternately, in time with the pulse.' },
   kata:    { title: 'Follow the kata',   how: 'Watch the stances, then repeat them in order.' },
   react:   { title: 'Read the strike',   how: 'Tap the matching direction (or press WASD / arrow keys) before the strike lands. 4 strikes.' },
-  breath: { title: 'Follow the breath', how: 'Press and keep your finger on the glowing orb as it circles. Stay with it.' },
+  breath: { title: 'Breathe', how: 'Hold while the circle grows (breathe in). Let go while it shrinks (breathe out).' },
   trace:   { title: 'Trace the meridian', how: 'Tap each acupoint while it glows.' },
   order:   { title: 'Speed reading',     how: 'Tap the numbers in order, 1 to 6, as fast as you can.' },
-  focus:   { title: 'Hold your focus',   how: 'Hold anywhere to lift the dot, let go to drop it. Stay in the gold band.' },
+  focus:   { title: 'Flash cards',       how: 'Is the sum right or wrong? Tap RIGHT or WRONG. 5 cards, faster is better.' },
   stack:   { title: 'Stack the work',    how: 'Tap to drop each sliding block onto the stack. Line them up.' },
   pour:    { title: 'Pour the mould',    how: 'Hold to pour molten metal, let go at the gold line. 3 moulds.' },
   sneak:   { title: 'Don\'t get seen',   how: 'Hold to creep forward — but only while the eye is closed.' },
@@ -31,7 +31,7 @@ export const GAMES = {
   m_lotus:   { title: 'Lotus Heart Sutra',    how: 'Each petal opens slowly. Tap it only once it is fully open — never before.' },
   m_sword: { title: 'Sword Intent', how: 'Swipe one clean cut along the dashed line. 3 cuts — match the angle.' },
   m_star: { title: 'Starfall', how: 'Drag the bowl to catch falling stars.' },
-  m_dual: { title: 'Yin and Yang', how: 'Hold YIN while the dark side glows, YANG while the light side glows, both when both glow.' },
+  m_dual: { title: 'Yin and Yang', how: 'A dark or light orb appears. Tap YIN for dark, YANG for light. 6 orbs.' },
   m_void:    { title: 'Void Stillness',       how: 'Press and hold, and do not move at all. Stillness is everything. Ignore what you see.' },
   m_souls: { title: 'Myriad Souls', how: 'Drag the red-eyed vengeful souls into the cauldron. Leave the pale ones alone.' },
   m_blood: { title: 'Blood Sea', how: 'Hold to draw blood-Qi. Let go before the heart bursts — it trembles when you are close. 3 draws.' },
@@ -48,8 +48,9 @@ const clamp01 = v => Math.max(0, Math.min(1, v));
 const rnd = (a, b) => a + Math.random() * (b - a);
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
+const REWORKED = new Set(['breath', 'focus', 'm_dual']); // v0.9.48 show the new instructions once, even if you saw the old ones
 // v0.9.24 the first time you meet a game, its instructions come first
-export function playTrain(kind, diff = 1, title, ctx = {}) { return howTo('tg:' + (GAMES[kind] ? kind : 'lift'), { title: (GAMES[kind] || GAMES.lift).title }).then(() => playTrain0(kind, diff, title, ctx)); }
+export function playTrain(kind, diff = 1, title, ctx = {}) { const hk = GAMES[kind] ? kind : 'lift'; return howTo('tg:' + hk + (REWORKED.has(hk) ? '@2' : ''), { title: (GAMES[kind] || GAMES.lift).title }).then(() => playTrain0(kind, diff, title, ctx)); }
 function playTrain0(kind, diff = 1, title, ctx = {}) {
   return new Promise(resolve => {
     const I = GAMES[kind] || GAMES.lift;
@@ -126,17 +127,17 @@ const GAMEFNS = {
     on(window, 'keydown', e => { if (e.repeat) return; const k = e.key.startsWith('Arrow') ? e.key : WASD[e.key.toLowerCase()]; if (k) { e.preventDefault(); hit(k); } });
     later(next, 450);
   },
-  // basic meditation: keep your finger on an orb that circles and changes direction
-  breath({ stage, diff, done, on, loop, el, local }) {
-    const dur = 4.2, path = el('tg-path'), orb = el('tg-orb2'), bar = el('tg-timer'); bar.append(h('i'));
-    let held = false, px = -1, py = -1, a = Math.random() * 6, dir = 1, flip = rnd(1, 2), t = 0, good = 0;
-    const set = e => { [px, py] = local(e); };
-    on(stage, 'pointerdown', e => { e.preventDefault(); held = true; set(e); try { stage.setPointerCapture(e.pointerId); } catch (x) {} }); on(stage, 'pointermove', e => { if (held) set(e); });
-    on(window, 'pointerup', () => { held = false; }); on(window, 'pointercancel', () => { held = false; });
-    loop(dt => { t += dt; flip -= dt; if (flip <= 0) { dir *= -1; flip = rnd(0.9, 1.8) * (1.2 - diff * 0.4); } a += dir * dt * (0.9 + diff * 0.9);
-      const ox = 0.5 + Math.cos(a) * 0.3, oy = 0.5 + Math.sin(a) * 0.36; orb.style.left = ox * 100 + '%'; orb.style.top = oy * 100 + '%';
-      const near = held && Math.hypot((px - ox) * 1.8, py - oy) < 0.13 + (1 - diff) * 0.06; if (near) good += dt; orb.classList.toggle('in', near);
-      bar.firstChild.style.width = Math.max(0, 1 - t / dur) * 100 + '%'; if (t >= dur) { done(good / dur * 1.15); return false; } });
+  // v0.9.48 basic meditation, simplified: breathe with the circle. Hold while it grows, let go while it shrinks.
+  breath({ stage, diff, done, on, loop, el }) {
+    const dur = 6, period = 2.6 - diff * 0.5, ring = el('tg-lung'), word = el('tg-lungw'), bar = el('tg-timer'); bar.append(h('i'));
+    let held = false, t = 0, good = 0;
+    on(stage, 'pointerdown', e => { e.preventDefault(); held = true; }); on(window, 'pointerup', () => { held = false; }); on(window, 'pointercancel', () => { held = false; });
+    on(window, 'keydown', e => { if (e.code === 'Space') { e.preventDefault(); held = true; } }); on(window, 'keyup', e => { if (e.code === 'Space') held = false; });
+    loop(dt => { t += dt; const ph = (t % period) / period, inhale = ph < 0.5, size = inhale ? ph * 2 : 2 - ph * 2;
+      ring.style.transform = `scale(${0.35 + size * 0.65})`; word.textContent = inhale ? 'Breathe in… (hold)' : 'Breathe out… (let go)';
+      const edge = Math.min(ph, Math.abs(ph - 0.5), 1 - ph) < 0.04; const ok = edge || held === inhale; if (ok) good += dt;
+      ring.classList.toggle('in', ok); bar.firstChild.style.width = Math.max(0, 1 - t / dur) * 100 + '%';
+      if (t >= dur) { done(good / dur * 1.1); return false; } });
   },
   // meridians: acupoints light up one by one; tap each while lit
   async trace({ stage, diff, done, on, flash, pips, isDone }) {
@@ -156,16 +157,20 @@ const GAMEFNS = {
       on(b, 'pointerdown', e => { e.preventDefault(); if (i === next) { b.classList.add('done'); mark(next - 1, 1); fx('click'); if (++next > n) done(clamp01(1.15 - t / limit * 0.6 - errs * 0.12)); } else { errs++; flash(false); } }); }
     loop(dt => { t += dt; if (t > limit * 1.6) { done((next - 1) / n * 0.5); return false; } });
   },
-  // school study: hold to keep a dot inside a drifting band
-  focus({ stage, diff, done, on, loop, el }) {
-    const dur = 3.8, band = 0.16 + (1 - diff) * 0.16; let y = 0.2, v = 0, held = false, t = 0, inside = 0;
-    const col = el('tg-col'), b = el('tg-band', col), mk = el('tg-dot', col), bar = el('tg-timer'); bar.append(h('i'));
-    on(stage, 'pointerdown', e => { e.preventDefault(); held = true; }); on(window, 'pointerup', () => { held = false; }); on(window, 'pointercancel', () => { held = false; });
-    on(window, 'keydown', e => { if (e.code === 'Space') { e.preventDefault(); held = true; } }); on(window, 'keyup', e => { if (e.code === 'Space') held = false; });
-    loop(dt => { t += dt; const bc = 0.5 + Math.sin(t * (0.9 + diff * 0.9)) * 0.28;
-      v += (held ? 1.9 : -1.6) * dt * (0.8 + diff * 0.4); v *= 0.92; y = clamp01(y + v * dt * 3); const ins = Math.abs(y - bc) < band / 2; if (ins) inside += dt;
-      b.style.bottom = (bc - band / 2) * 100 + '%'; b.style.height = band * 100 + '%'; mk.style.bottom = y * 100 + '%'; mk.classList.toggle('in', ins); bar.firstChild.style.width = Math.max(0, 1 - t / dur) * 100 + '%';
-      if (t >= dur) { done(inside / dur * 1.15); return false; } });
+  // v0.9.48 studying, simplified: flash cards. Is it right or wrong? 5 cards, quick answers score best.
+  async focus({ stage, diff, done, on, flash, pips, isDone }) {
+    const n = 5, mark = pips(n), card = h('div', { class: 'tg-card' }), Tb = h('button', { class: 'tg-tf yes' }, '✓\uFE0E Right'), Fb = h('button', { class: 'tg-tf no' }, '✗\uFE0E Wrong');
+    stage.append(card, h('div', { class: 'tg-feet' }, Fb, Tb)); let sc = 0, answer = null;
+    const ask = () => { const big = diff > 0.7, a = 2 + Math.floor(Math.random() * (big ? 11 : 8)), b = 2 + Math.floor(Math.random() * (big ? 11 : 8)), op = Math.random() < 0.5 ? '+' : '×';
+      const real = op === '+' ? a + b : a * b, truth = Math.random() < 0.5, shown = truth ? real : real + (Math.random() < 0.5 ? -1 : 1) * (1 + Math.floor(Math.random() * (op === '×' ? a : 3)));
+      card.textContent = `${a} ${op} ${b} = ${shown}`; return shown === real; };
+    function press(v) { if (answer) { const a = answer; answer = null; a(v); } }
+    on(Tb, 'pointerdown', e => { e.preventDefault(); press(true); }); on(Fb, 'pointerdown', e => { e.preventDefault(); press(false); });
+    on(window, 'keydown', e => { if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'y') press(true); if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'n') press(false); });
+    for (let k = 0; k < n; k++) { if (isDone()) return; const truth = ask(), t0 = performance.now(), limit = 3000 - diff * 900;
+      const pick = await new Promise(res => { const id = setTimeout(() => { answer = null; res(null); }, limit); answer = v => { clearTimeout(id); res(v); }; });
+      const right = pick === truth, s = right ? clamp01(1.15 - (performance.now() - t0) / limit * 0.5) : 0; sc += s; mark(k, right ? s : 0); flash(right); card.textContent = ''; await wait(180); }
+    done(sc / n);
   },
   // working harder: drop sliding blocks onto a stack
   stack({ stage, diff, done, loop, tapStage, flash, pips, el }) {
@@ -339,17 +344,18 @@ Object.assign(GAMEFNS, {
         if (it.y > 0.82) { it.done = true; if (Math.abs(it.x - bx) < 0.1 + (1 - diff) * 0.04) { got++; it.e.classList.add('gone'); fx('click'); } else it.e.classList.add('lost'); } }
       if (t >= dur) { done(total ? got / total : 0.5); return false; } });
   },
-  // hold one or both sides as yin and yang glow
-  m_dual({ stage, diff, done, on, loop, el }) {
-    const dur = 4.4, Y = h('button', { class: 'tg-yy yin' }, '☯ YIN'), G = h('button', { class: 'tg-yy yang' }, 'YANG ☯'); stage.append(h('div', { class: 'tg-feet' }, Y, G)); const bar = el('tg-timer'); bar.append(h('i'));
-    const hold = { L: new Set(), R: new Set() }, kb = { L: false, R: false }; let want = 'L', next = 0.9, t = 0, good = 0;
-    const bind = (b, side) => { on(b, 'pointerdown', e => { e.preventDefault(); hold[side].add(e.pointerId); try { b.setPointerCapture(e.pointerId); } catch (x) {} }); on(b, 'pointerup', e => hold[side].delete(e.pointerId)); on(b, 'pointercancel', e => hold[side].delete(e.pointerId)); };
-    bind(Y, 'L'); bind(G, 'R');
-    on(window, 'keydown', e => { if (e.key === 'a' || e.key === 'ArrowLeft') kb.L = true; if (e.key === 'd' || e.key === 'ArrowRight') kb.R = true; }); on(window, 'keyup', e => { if (e.key === 'a' || e.key === 'ArrowLeft') kb.L = false; if (e.key === 'd' || e.key === 'ArrowRight') kb.R = false; });
-    loop(dt => { t += dt; next -= dt; if (next <= 0) { const opts = diff > 0.6 ? ['L', 'R', 'B'] : ['L', 'R']; want = opts.filter(x => x !== want)[Math.floor(Math.random() * (opts.length - 1))]; next = rnd(0.7, 1.1) * (1.2 - diff * 0.35); }
-      Y.classList.toggle('glow', want === 'L' || want === 'B'); G.classList.toggle('glow', want === 'R' || want === 'B');
-      const L = hold.L.size > 0 || kb.L, R = hold.R.size > 0 || kb.R, ok = want === 'B' ? L && R : want === 'L' ? L && !R : R && !L; if (ok) good += dt; Y.classList.toggle('on', L); G.classList.toggle('on', R);
-      bar.firstChild.style.width = Math.max(0, 1 - t / dur) * 100 + '%'; if (t >= dur) { done(good / (dur - 0.5) * 1.1); return false; } });
+  // v0.9.48 yin and yang, simplified: a dark or light orb appears. Tap the matching side. 6 orbs.
+  async m_dual({ stage, diff, done, on, flash, pips, isDone }) {
+    const n = 6, mark = pips(n), orb = h('div', { class: 'tg-yyorb' }), Y = h('button', { class: 'tg-yy yin' }, '● YIN'), G = h('button', { class: 'tg-yy yang' }, 'YANG ○');
+    stage.append(orb, h('div', { class: 'tg-feet' }, Y, G)); let sc = 0, answer = null;
+    const press = v => { if (answer) { const a = answer; answer = null; a(v); } };
+    on(Y, 'pointerdown', e => { e.preventDefault(); press('yin'); }); on(G, 'pointerdown', e => { e.preventDefault(); press('yang'); });
+    on(window, 'keydown', e => { if (e.key === 'a' || e.key === 'ArrowLeft') press('yin'); if (e.key === 'd' || e.key === 'ArrowRight') press('yang'); });
+    for (let k = 0; k < n; k++) { if (isDone()) return; await wait(250 + Math.random() * 300); const want = Math.random() < 0.5 ? 'yin' : 'yang', t0 = performance.now(), limit = 1500 - diff * 500;
+      orb.className = 'tg-yyorb show ' + want;
+      const got = await new Promise(res => { const id = setTimeout(() => { answer = null; res(null); }, limit); answer = v => { clearTimeout(id); res(v); }; });
+      const ok = got === want, s = ok ? clamp01(1.2 - (performance.now() - t0) / limit * 0.6) : 0; sc += s; mark(k, s); flash(ok); orb.className = 'tg-yyorb'; }
+    done(sc / n);
   },
   // stillness: hold and don't move while distractions flash
   m_void({ stage, diff, done, on, loop, el }) {

@@ -1,7 +1,13 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.47';
+export const VERSION = '0.9.48';
 export const CHANGELOG = [
+  { v: '0.9.48', date: '2026-11-17', title: 'Clearer minigames', notes: [
+    'Basic meditation is simpler: hold while the circle grows (breathe in), let go while it shrinks (breathe out).',
+    'Yin-Yang Dual Cultivation is simpler: a dark or light orb appears; tap YIN for dark, YANG for light. 6 orbs.',
+    'Studying is now flash cards: is the sum right or wrong? 5 cards, quick correct answers score best.',
+    'Each of these shows its new instructions once, even if you saw the old ones. Rewards are unchanged.',
+  ] },
   { v: '0.9.47', date: '2026-11-17', title: 'Treasury Hall', notes: [
     'Sect wars are much rarer: they break out about a third as often, burn out on their own (30% a year), and you are called to the front at most every other year.',
     'New Treasury tab in Sect & Guild: spend contribution on Qi, healing, breakthrough and medicine pills, incense, talismans, recipe scrolls and more. Better shelves open as you rise in rank.',
