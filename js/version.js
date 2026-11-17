@@ -1,7 +1,13 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.43';
+export const VERSION = '0.9.44';
 export const CHANGELOG = [
+  { v: '0.9.44', date: '2026-11-17', title: 'Awkward presents', notes: [
+    'Gifts give less: about +4 to +9 closeness instead of a flat +15, before the minigame.',
+    'Each extra gift to the same person in a year counts for less (half, then a quarter).',
+    'Gifts can land badly and cost closeness. That\'s more likely with people you barely know, when you keep showering them with presents, when you fumble the minigame, or with a big age gap outside family.',
+    'Family is a bit more forgiving, and a perfect first gift sometimes hits exactly right for a bonus.',
+  ] },
   { v: '0.9.43', date: '2026-11-17', title: 'Hotfix', notes: [
     'Fixed the game showing only empty boxes after 0.9.42 (a broken line stopped it from loading).',
   ] },

@@ -169,7 +169,20 @@ export const SOCIAL = [
   { id: 'talk', emoji: '💬', name: 'Conversation (A/B/C/D)', icon: 'letter', run: async (c, p) => (await import('../ui/conversation.js')).converse(c, p) },
   { id: 'time', emoji: '🍵', name: 'Spend time', icon: 'tea', run: (c, p) => { gainClose(c, p, ri(5, 14)); stat(c, 'stress', -4); return `I spent the afternoon with ${p.first} ${pick(['at the tea house', 'at the arcade', 'by the river', 'watching a movie'])}.`; } },
   { id: 'compliment', emoji: '✨', name: 'Compliment', icon: 'star', run: (c, p) => { const ok = c._soc != null ? c._soc >= 0.4 || chance(0.2) : chance(0.75); gainClose(c, p, (ok ? 6 : -4)); return ok ? `${p.first} blushed at my compliment.` : `${p.first} thought my compliment was weird.`; } },
-  { id: 'gift', emoji: '🎁', name: 'Give a gift', icon: 'gift', age: 6, run: (c, p) => { const cost = Math.round(40 * country(c).econ); if (c.money < cost) return null; money(c, -cost); gainClose(c, p, 15); return `I gave ${p.first} a gift.`; } },
+  // v0.9.44 gifts: smaller gain, worse each time in the same year, and they can land badly (too soon, too much, wrong person)
+  { id: 'gift', emoji: '🎁', name: 'Give a gift', icon: 'gift', age: 6, run: (c, p) => { const cost = Math.round(40 * country(c).econ); if (c.money < cost) return null; money(c, -cost);
+    if (p.giftYear !== G.world.year) { p.giftYear = G.world.year; p.giftN = 0; } const n = p.giftN++, sc = c._soc ?? 0.5;
+    const kin = ['Father', 'Mother', 'Son', 'Daughter', 'Brother', 'Sister', 'Spouse', 'Partner', 'Grandfather', 'Grandmother'].includes(p.role);
+    let weird = 0.08 + n * 0.14 + (p.close < 20 ? 0.3 : p.close < 40 ? 0.12 : 0) + (sc < 0.35 ? 0.15 : 0) - (kin ? 0.06 : 0) - (sc >= 0.8 ? 0.06 : 0);
+    if (!kin && p.age >= 18 && c.age >= 18 && Math.abs(p.age - c.age) > 15 && p.close < 50) weird += 0.1;
+    if (chance(Math.max(0.03, Math.min(0.7, weird)))) { const loss = -ri(3, 8); gainClose(c, p, loss);
+      const why = p.close < 30 ? pick([`"Why are you giving me this? We barely know each other."`, `${p.first} held it like it might bite. "…Thanks?"`, `${p.first} looked around, unsure if this was a prank.`])
+        : n > 0 ? pick([`"Another one? You don't have to keep doing this. It's a bit much."`, `${p.first} sighed. "What do you want from me?"`, `"Okay, this is getting weird."`])
+        : pick([`${p.first} forced a smile. It was clearly not their taste.`, `"Oh. You… shouldn't have. Really."`, `${p.first} re-gifted it to someone else the next day. I found out.`]);
+      return { text: `🎁 I gave ${p.first} a gift. ${why} (${loss})`, cls: 'bad' }; }
+    const gain = Math.max(1, Math.round(ri(4, 9) * (n === 0 ? 1 : n === 1 ? 0.5 : 0.25)));
+    if (n === 0 && sc >= 0.8 && chance(0.25)) { gainClose(c, p, gain + 6); return { text: `🎁 I gave ${p.first} a gift and it was exactly right. They kept touching it all day.`, cls: 'good' }; }
+    gainClose(c, p, gain); return `🎁 I gave ${p.first} a gift.${n > 0 ? ' They seemed less surprised this time.' : ''}`; } },
   { id: 'train_together', emoji: '🏋️', name: 'Train together', icon: 'gym', age: 10, run: (c, p) => { stat(c, 'strength', g(c, 2, 3)); stat(c, 'agility', g(c, 1, 2)); gainClose(c, p, 6); return `${p.first} and I trained together.`; } },
   { id: 'spar_p', emoji: '⚔️', name: 'Spar', icon: 'combat', age: 8, run: async (c, p) => { const r = await fight(c, 'bully', { name: p.first, hp: 30 + p.age, str: p.stats.strength, agi: p.stats.agility, realm: p.realm, sparring: true }); gainClose(c, p, 3);
       // sparring with someone teaches you: more from people stronger than you, and cultivators may pass on a technique
