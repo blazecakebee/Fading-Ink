@@ -969,3 +969,8 @@ body.mo-shake #center { animation: brShake .35s; }
 .tg-heart2 { position: absolute; left: 14%; top: 22%; font-size: 2.4rem; } .tg-them { position: absolute; right: 14%; top: 18%; font-size: 2.6rem; transition: transform .2s; } .tg-them.look { transform: scale(1.15); }
 .tg-nervebar { position: absolute; left: 10%; right: 10%; bottom: 22px; height: 14px; border-radius: 99px; background: #ffffff12; overflow: hidden; }
 .tg-nervefill { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, #5fd38a, #ffb02e, #e05555); } .tg-nervezone { position: absolute; left: 0; top: -2px; bottom: -2px; border-right: 2px solid #fff; }
+/* v0.9.22 argument game: let the stage grow so all three answers fit */
+.tg-stage.tg-s_temper { height: auto; min-height: 0; display: block; padding: 22px 10px 12px; }
+.tg-s_temper .tg-quiz { position: static; margin: 8px 0 12px; }
+.tg-s_temper .tg-qopts { position: static; display: grid; gap: 8px; }
+.tg-s_temper .tg-qopt { height: auto; min-height: 46px; padding: 10px 12px; line-height: 1.3; }

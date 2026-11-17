@@ -1,7 +1,10 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.21';
+export const VERSION = '0.9.22';
 export const CHANGELOG = [
+  { v: '0.9.22', date: '2026-11-16', title: 'Fix', notes: [
+    'Fixed: in the Argue minigame the third answer was cut off. The window now grows to fit all three answers, on PC and phones.',
+  ] },
   { v: '0.9.21', date: '2026-11-16', title: 'Work & People', notes: [
     'Every career has its own icon. 26 new professions: Barista, Farmer, Fisherman, Musician, Pro Athlete, Actor, Police Officer, Firefighter, Soldier, Electrician, Plumber, Mechanic, Head Chef, Airline Pilot, School Teacher, Journalist, Civil Servant, Financial Analyst, Psychologist, Pharmacist, Veterinarian, Data Scientist, Research Scientist, University Professor, Surgeon and Sect Alchemist (49 in total).',
     'DECISIONS AT WORK: most years your job puts a choice in front of you — a screaming customer, a bribe, a fudged audit, a burning building, an inside tip, a client who wants corners cut. Each field (service, retail, kitchens, trades, land, driving, security, rescue, office, finance, tech, medicine, law, creative, stage, teaching, research, press, cultivation) has its own scenarios, plus universal ones. Some choices show your odds. They can earn you raises (+12% salary), cash, performance — or get you fired.',
