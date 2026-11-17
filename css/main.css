@@ -1208,3 +1208,28 @@ body.reduce-motion .tt-node.buyable .tt-n-bg { animation: none; }
 .tt-node.buyable .tt-n-in { fill: color-mix(in srgb, var(--bc) 10%, #0d0a10); }
 .tt-link.cap { stroke: #ffffff12; } .tt-link.cap.lit { stroke: color-mix(in srgb, var(--bc) 45%, transparent); filter: none; }
 .tt-n-ico { fill: #ffd36f; } .tt-node.cap .tt-n-ico { font-size: 26px; }
+
+/* v0.9.36 radial Awakening tree */
+.gg-col { min-width: 0; }
+.gg-wrap { border: 1px solid var(--border-soft); border-radius: 12px; background: radial-gradient(circle at 50% 50%, rgba(127,232,255,.10), transparent 55%), rgba(0,0,0,.25); }
+.gg-svg { width: 100%; height: auto; display: block; max-height: 78vh; }
+.gg-link { stroke: color-mix(in srgb, var(--gc) 25%, transparent); stroke-width: 4; stroke-linecap: round; }
+.gg-link.cross { stroke-dasharray: 6 6; }
+.gg-link.lit { stroke: var(--gc); filter: drop-shadow(0 0 4px var(--gc)); }
+.gg-core { fill: #0d0a14; stroke: #7fe8ff; stroke-width: 3; filter: drop-shadow(0 0 12px #7fe8ff88); }
+.gg-core-t { font-size: 38px; } .gg-core-s { font: 800 13px var(--font-ui, sans-serif); fill: #ffd36f; }
+.gg-arm { font: 800 20px var(--font-ui, sans-serif); letter-spacing: .08em; text-transform: uppercase; paint-order: stroke; stroke: #0b0810; stroke-width: 3px; }
+.gg-node { cursor: pointer; }
+.gg-bg { fill: #15111c; stroke: color-mix(in srgb, var(--gc) 35%, #fff2); stroke-width: 3; transition: filter .15s; }
+.gg-ico { font: 800 16px var(--font-ui, sans-serif); fill: #fff; }
+.gg-name { font: 700 13px var(--font-ui, sans-serif); fill: #ffffffcc; paint-order: stroke; stroke: #0b0810; stroke-width: 3px; }
+.gg-node.locked { opacity: .5; }
+.gg-node.open .gg-bg { stroke: var(--gc); fill: color-mix(in srgb, var(--gc) 12%, #15111c); animation: ttPulse 1.6s ease-in-out infinite; }
+.gg-node.owned .gg-bg { fill: color-mix(in srgb, var(--gc) 50%, #15111c); stroke: #fff; filter: drop-shadow(0 0 6px var(--gc)); }
+.gg-node.neg .gg-bg { stroke-dasharray: 5 3; } .gg-node.neg .gg-ico { fill: #ff9a8a; }
+.gg-node.trans .gg-bg { stroke-width: 4; } .gg-node.trans .gg-ico { fill: #ffd36f; font-size: 18px; }
+.gg-node.sel .gg-bg { stroke: #fff; stroke-width: 5; }
+.gg-node:hover .gg-bg { filter: brightness(1.3) drop-shadow(0 0 6px var(--gc)); }
+.gg-node .gg-bg, .gg-node.open .gg-bg { --bc: var(--gc); }
+.gg-detail { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; border-left: 4px solid var(--gc, var(--accent)); }
+.gg-detail .btn { align-self: flex-start; }

@@ -33,6 +33,46 @@ function helix(n, max, pts) {
   svg.append(el('path', { d: path(0), class: 'strand a' }), el('path', { d: path(Math.PI), class: 'strand b' }));
   return h('div', { class: 'helix' }, h('div', { class: 'helix-head' }, h('span', { class: 'muted small' }, 'STRANDS'), h('b', {}, ` ${n}/${max}`)), svg, h('div', { class: 'muted small', style: { textAlign: 'center' } }, `${pts}◆ to spend`));
 }
+// v0.9.36 the Awakening tree as a radial graph: four arms (Body, Spirit, Mind, Blood) grow out of your core,
+// and cross-branch genes sit between the arms they need. Click a gene to see it and awaken it.
+function geneGraph(c, d) {
+  const NS = 'http://www.w3.org/2000/svg', el = (t, a = {}, txt) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; return e; };
+  const W = 1060, H = 1000, cx = W / 2, cy = H / 2, ANG = { body: -135, spirit: -45, mind: 45, blood: 135 }, col = Object.fromEntries(BRANCHES.map(b => [b.id, b.color]));
+  const pos = {};
+  for (const [id, g] of Object.entries(TREE_GENES)) if (g.branch !== 'cross') { const a = ANG[g.branch] * Math.PI / 180, r = 130 + g.row * 88; pos[id] = [cx + Math.cos(a) * r, cy + Math.sin(a) * r]; }
+  for (const [id, g] of Object.entries(TREE_GENES)) if (g.branch === 'cross') { const ps = g.req.map(r => pos[r]).filter(Boolean), mx = ps.reduce((s, p) => s + p[0], 0) / ps.length - cx, my = ps.reduce((s, p) => s + p[1], 0) / ps.length - cy, len = Math.hypot(mx, my) || 1, dist = ps.reduce((s, p) => s + Math.hypot(p[0] - cx, p[1] - cy), 0) / ps.length + 40; pos[id] = [cx + mx / len * dist, cy + my / len * dist]; }
+  const hex = (x, y, r) => Array.from({ length: 6 }, (_, i) => { const a = Math.PI / 180 * (60 * i - 30); return `${(x + r * Math.cos(a)).toFixed(1)},${(y + r * Math.sin(a)).toFixed(1)}`; }).join(' ');
+  const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, class: 'gg-svg' });
+  // arms & links
+  for (const [id, g] of Object.entries(TREE_GENES)) {
+    const from = g.req.length ? g.req : ['core'];
+    for (const r of from) { const [x1, y1] = r === 'core' ? [cx, cy] : pos[r], [x2, y2] = pos[id], lit = r === 'core' ? d.awakened.includes(id) : d.awakened.includes(r) && d.awakened.includes(id), c2 = g.branch === 'cross' ? '#ffd36f' : col[g.branch];
+      svg.append(el('line', { x1, y1, x2, y2, class: 'gg-link' + (lit ? ' lit' : '') + (g.branch === 'cross' ? ' cross' : ''), style: `--gc:${c2}` })); }
+  }
+  // the core
+  svg.append(el('circle', { cx, cy, r: 62, class: 'gg-core' }), el('text', { x: cx, y: cy - 6, class: 'gg-core-t', 'text-anchor': 'middle' }, '🧬'), el('text', { x: cx, y: cy + 22, class: 'gg-core-s', 'text-anchor': 'middle' }, `${d.points}◆ to spend`));
+  for (const b of BRANCHES) { const a = ANG[b.id] * Math.PI / 180, r = 130 + 4 * 88 + 56; svg.append(el('text', { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r + 6, class: 'gg-arm', 'text-anchor': 'middle', style: `fill:${b.color}` }, b.name)); }
+  // genes
+  const sel = G.ui.geneSel;
+  for (const [id, g] of Object.entries(TREE_GENES)) {
+    const st = geneState(c, id).state, [x, y] = pos[id], c2 = g.branch === 'cross' ? '#ffd36f' : col[g.branch], r = g.trans ? 34 : 29;
+    const gr = el('g', { class: `gg-node ${st}${g.neg ? ' neg' : ''}${g.trans ? ' trans' : ''}${sel === id ? ' sel' : ''}`, style: `--gc:${c2}`, tabindex: 0, role: 'button' });
+    gr.append(el('polygon', { points: hex(x, y, r), class: 'gg-bg' }), el('text', { x, y: y + 6, 'text-anchor': 'middle', class: 'gg-ico' }, st === 'owned' ? '✓' : g.neg ? '⚠' : g.trans ? '✦' : `${g.cost}◆`));
+    const nm = g.name.length > 17 ? g.name.slice(0, 16) + '…' : g.name; const side = g.branch === 'cross' ? 0 : Math.cos(ANG[g.branch] * Math.PI / 180) > 0 ? 1 : -1; // labels sit beside the node, away from the arm
+    gr.append(el('text', side ? { x: x + side * (r + 8), y: y + 5, 'text-anchor': side > 0 ? 'start' : 'end', class: 'gg-name' } : { x, y: y + r + 16, 'text-anchor': 'middle', class: 'gg-name' }, nm));
+    gr.append(el('title', {}, `${g.name}\n${g.desc}`));
+    gr.addEventListener('click', () => { G.ui.geneSel = id; R.render(); }); gr.addEventListener('keydown', e => { if (e.key === 'Enter') { G.ui.geneSel = id; R.render(); } });
+    svg.append(gr);
+  }
+  const g = sel && TREE_GENES[sel], st = g && geneState(c, sel);
+  const detail = g ? h('div', { class: 'card gg-detail', style: { '--gc': g.branch === 'cross' ? '#ffd36f' : col[g.branch] } },
+      h('b', {}, (g.trans ? '✦ ' : g.neg ? '⚠ ' : '') + g.name), h('div', { class: 'small' }, g.desc), h('div', { class: 'small muted' }, `Cost ${g.cost}◆ · Needs ${REALMS[g.realm]?.name || 'a high realm'}${g.req.length ? ' · after ' + g.req.map(r => TREE_GENES[r].name).join(' + ') : ''}`),
+      st.state === 'locked' ? h('div', { class: 'small', style: { color: '#ff9a8a' } }, '🔒 ' + st.why.join(' · ')) : null,
+      g.neg && st.state !== 'owned' ? h('div', { class: 'small', style: { color: '#ff9a8a' } }, 'This is a FLAW. You must accept it to reach the transcendent gene beyond.') : null,
+      h('button', { class: 'btn', disabled: st.state !== 'open', onclick: () => { const t = awaken(c, sel); if (t) R.run({ id: 'awaken', cost: 'free', run: () => ({ text: t, cls: g.neg ? 'bad' : 'qi' }) }); } }, st.state === 'owned' ? 'Awakened' : st.state === 'open' ? `Awaken · ${g.cost}◆` : 'Locked'))
+    : h('div', { class: 'card gg-detail muted small' }, 'Click a gene to read it and awaken it. Each arm grows outward from your core; the gold genes between arms need both sides.');
+  return h('div', { class: 'gg-col' }, h('div', { class: 'gg-wrap' }, svg), detail);
+}
 // ---------------- Bloodline tab
 export function bloodlineTab() {
   const c = G.char, d = ensureDna(c);
@@ -58,7 +98,7 @@ export function bloodlineTab() {
       h('div', { class: 'small', style: { marginTop: '6px' } }, h('b', {}, `${d.points}◆ Awakening points`), ` · ${d.awakened.length}/${MAX_AWAKENED} awakened slots · earn 1◆ for each new realm, 1◆ at 18, or refine Bloodline Essence.`)),
     h('h3', { class: 'display', style: { margin: '14px 0 6px' } }, 'Awakening tree'),
     h('p', { class: 'muted small' }, 'Branch outward to wake dormant genes. Deeper genes need higher realms — and the transcendent genes at the bottom demand you first accept a flaw (⚠).'),
-    h('div', { class: 'dna-wrap' }, h('div', { class: 'gene-tree' }, cols), helix(d.awakened.length, MAX_AWAKENED, d.points)), cross.length ? h('div', { style: { maxWidth: '260px', marginTop: '6px' } }, h('div', { class: 'muted small' }, 'Cross-branch'), ...cross) : null,
+    h('div', { class: 'dna-wrap' }, geneGraph(c, d), helix(d.awakened.length, MAX_AWAKENED, d.points)),
     h('h3', { class: 'display', style: { margin: '18px 0 6px' } }, 'Family heirlooms'),
     h('p', { class: 'muted small' }, `Only your ${MAX_ATTUNED} finest heirlooms are attuned at once. Each one has a small chance to be lost every time it passes to the next generation. Found in Gates (rarely), by luck at birth, or in old ruins — Mythic pieces are 1 in 1,000 finds.`),
     hl.length ? h('div', { class: 'grid2' }, hl.map(x => { const H = HEIRLOOMS[x.id], T = HEIRLOOM_TIERS[H.tier];

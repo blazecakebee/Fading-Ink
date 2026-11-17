@@ -1,7 +1,12 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.35';
+export const VERSION = '0.9.36';
 export const CHANGELOG = [
+  { v: '0.9.36', date: '2026-11-17', title: 'Awakening tree', notes: [
+    'The Bloodline Awakening tree is now a radial graph like the Legacy tree. Four arms grow out of your DNA core: Body, Spirit, Mind and Blood. The gold cross-branch genes sit between the two arms they need.',
+    'Lines light up as you awaken genes. Genes you can awaken pulse, flaws (⚠) have dashed edges, and transcendent genes (✦) are larger. Click a gene to read it, see what it needs, and awaken it.',
+    'The glowing DNA helix stays beside the tree, with one gold rung for every awakened gene.',
+  ] },
   { v: '0.9.35', date: '2026-11-17', title: 'The Legacy Tree', notes: [
     'The Legacy upgrades are now a real skill tree. The Legacy tab opens on a hub of five glowing hexes — Fortune, Cultivation, Body, Mind & Spirit and Destiny — around the Ultimate, each showing how much you\'ve unlocked and spent.',
     'Open a branch to see it as a node graph: hexagon nodes joined by lines that light up as you buy them. Nodes you can afford pulse. Drag to look around, zoom with − and +, and tap a node to read it and unlock it.',
