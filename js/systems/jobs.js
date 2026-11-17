@@ -19,8 +19,8 @@ export const agentOf = c => c.people.find(p => p.alive && p.agent);
 export const agentFee = (c, tier) => priceFor(c, Math.round(AGENTS[tier].fee * wage(c) / 0.32 * (perk('f8') ? 0.8 : 1)));
 
 export function eligible(c, j) {
-  return c.age >= j.minAge && c.age <= (j.maxAge || 99) && c.edu.level >= j.edu && (!j.major || j.major.includes(c.edu.major)) && (c.edu.school !== 'University' || j.part)
-    && Object.entries(j.stat || {}).every(([k, v]) => eff(c, k) >= v) && (!j.realm || c.qi.realm >= j.realm) && (!j.license || hasLicense(c));
+  return c.age >= j.minAge && c.age <= (j.maxAge || 99) && c.edu.level >= j.edu && (!j.major || j.major.includes(c.edu.major) || j.major.includes(c.edu.gradMajor)) && (!/Univers|Master|Doctoral/.test(c.edu.school || '') || j.part) && (!j.trade || (c.edu.trades || []).includes(j.trade)) && (!j.stat?.looks || c.stats.looks >= j.stat.looks)
+    && Object.entries(j.stat || {}).every(([k, v]) => k === 'looks' || eff(c, k) >= v) && (!j.realm || c.qi.realm >= j.realm) && (!j.license || hasLicense(c));
 }
 // this year's openings: each job is hiring with some chance (rarer the better it pays), more with an agent
 export function jobBoard(c) {

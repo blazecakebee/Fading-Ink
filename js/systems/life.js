@@ -234,7 +234,7 @@ export async function ageUp() {
   educationYear(c);
   if (c.job && !c.prison) {
     const job = CAREERS.find(j => j.id === c.job.id);
-    const pay = Math.round(job.pay * wage(c) * Math.min(1.6, 1 + c.job.years * 0.02) * (job.part ? 0.5 : 1) * traitMult(c, 'pay') * bondBonus(c, 'work') * (perk('f5') ? 1.1 : 1) * workMult(c)); // an injured body earns less
+    const pay = Math.round(job.pay * wage(c) * (c.job.raise || 1) * Math.min(1.6, 1 + c.job.years * 0.02) * (job.part ? 0.5 : 1) * traitMult(c, 'pay') * bondBonus(c, 'work') * (perk('f5') ? 1.1 : 1) * workMult(c)); // an injured body earns less
     money(c, pay); c.job.years++; c.job.perf = clamp(c.job.perf - ri(0, 6));
     ui.log(`Earned ${fmtMoney(c, pay)} as a ${job.name}.`);
     if (c.job.perf < 15 && chance(0.4)) { ui.log(`I was fired from my job as a ${job.name}.`, 'bad'); c.job = null; }

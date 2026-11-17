@@ -34,13 +34,20 @@ export const GAMES = {
   m_void:    { title: 'Void Stillness',       how: 'Press and hold, and do not move at all. Stillness is everything. Ignore what you see.' },
   m_souls: { title: 'Myriad Souls', how: 'Drag the red-eyed vengeful souls into the cauldron. Leave the pale ones alone.' },
   m_blood: { title: 'Blood Sea', how: 'Hold to draw blood-Qi. Let go before the heart bursts — it trembles when you are close. 3 draws.' },
+  // v0.9.21 social minigames
+  s_mood:   { title: 'Read the room',       how: 'They react to what you say. Tap the reaction that fits their mood. 4 moments.' },
+  s_words:  { title: 'Find the words',      how: 'Tap the words in the right order to make a sincere compliment.' },
+  s_gift:   { title: 'Choose a gift',       how: 'Think about what they love, then pick the gift that suits them.' },
+  s_rope:   { title: 'Skip together',       how: 'Tap to jump each time the rope swings under your feet. Stay in sync.' },
+  s_temper: { title: 'Keep your temper',    how: 'They throw words at you. Pick how you answer — fast. Calm and fair wins arguments.' },
+  s_nerve:  { title: 'Find your nerve',     how: 'Hold to breathe and calm your heart. Let go to speak — when you are calm AND they are looking at you.' },
   balance: { title: 'Keep your footing', how: 'The wind pushes you off balance. Tap the side the dot is drifting towards to push it back into the green.' },
 };
 const clamp01 = v => Math.max(0, Math.min(1, v));
 const rnd = (a, b) => a + Math.random() * (b - a);
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
-export function playTrain(kind, diff = 1, title) {
+export function playTrain(kind, diff = 1, title, ctx = {}) {
   return new Promise(resolve => {
     const I = GAMES[kind] || GAMES.lift;
     const stage = h('div', { class: 'tg-stage tg-' + kind }), res = h('div', { class: 'tg-res' }), prog = h('div', { class: 'tg-prog' });
@@ -62,7 +69,7 @@ export function playTrain(kind, diff = 1, title) {
       setTimeout(() => { root.classList.remove('on'); setTimeout(() => root.remove(), 200); resolve(score); }, 650);
     }
     const G = GAMEFNS[kind] || GAMEFNS.lift;
-    G({ stage, diff, done, on, later, loop, tapStage, flash, pips, el, local, isDone: () => finished });
+    G({ stage, diff, done, on, later, loop, tapStage, flash, pips, el, local, ctx, isDone: () => finished });
   });
 }
 
@@ -374,5 +381,60 @@ Object.assign(GAMEFNS, {
     on(window, 'keydown', e => { if (e.code === 'Space' && !e.repeat) { e.preventDefault(); if (k < n && !burst) held = true; } }); on(window, 'keyup', e => { if (e.code === 'Space') release(); });
     loop(dt => { if (held && !burst) { v += dt * (0.3 + diff * 0.15); fill.style.height = Math.min(1, v) * 100 + '%'; const near = v / limit; heart.style.transform = `translate(-50%,0) scale(${1 + Math.max(0, near - 0.6) * 0.6}) rotate(${(Math.random() - 0.5) * Math.max(0, near - 0.65) * 40}deg)`;
         if (v >= limit) { burst = true; held = false; heart.textContent = '💥'; mark(k, 0); flash(false); fx('heavy'); if (++k >= n) { done(sc / n); return false; } setTimeout(reset, 500); } } });
+  },
+});
+
+// ---------- v0.9.21 social minigames (one per interaction)
+Object.assign(GAMEFNS, {
+  s_mood({ stage, diff, done, on, later, flash, pips, el }) {
+    const M = [['😢', 'sad', '🤗'], ['😡', 'angry', '🙏'], ['😂', 'laughing', '😄'], ['😳', 'embarrassed', '🙈'], ['🥳', 'excited', '🎉'], ['😴', 'tired', '☕'], ['😟', 'worried', '🫶']], n = 4, mark = pips(n), lim = 2.4 - diff * 0.6;
+    const face = el('tg-face'), opts = el('tg-qopts tg-q4'), bar = el('tg-timer'); bar.append(h('i')); let k = 0, sc = 0, tm = null;
+    const ask = () => { if (k >= n) return done(sc / n); const m = M[Math.floor(Math.random() * M.length)], others = M.filter(x => x !== m).sort(() => Math.random() - 0.5).slice(0, 3), ch = [m, ...others].sort(() => Math.random() - 0.5);
+      face.textContent = m[0]; face.classList.remove('pop'); void face.offsetWidth; face.classList.add('pop'); const t0 = performance.now();
+      const b = bar.firstChild; b.style.transition = 'none'; b.style.width = '100%'; void b.offsetWidth; b.style.transition = `width ${lim}s linear`; b.style.width = '0%';
+      opts.replaceChildren(...ch.map(x => { const bt = h('button', { class: 'tg-qopt big' }, x[2]); on(bt, 'pointerdown', e => { e.preventDefault(); clearTimeout(tm); const ok = x === m, s = ok ? clamp01(1.1 - (performance.now() - t0) / 1000 / lim * 0.5) : 0; sc += s; mark(k, s); flash(ok); k++; later(ask, 250); }); return bt; }));
+      clearTimeout(tm); tm = later(() => { mark(k, 0); flash(false); k++; ask(); }, lim * 1000); };
+    later(ask, 300);
+  },
+  s_words({ stage, diff, done, on, flash, pips, el, ctx }) {
+    const L = [['You', 'always', 'make', 'me', 'laugh'], ['I', 'admire', 'how', 'brave', 'you', 'are'], ['You', 'have', 'a', 'kind', 'heart'], ['Your', 'smile', 'lights', 'up', 'rooms'], ['You', 'are', 'really', 'good', 'at', 'this'], ['I', 'trust', 'you', 'completely']];
+    const line = L[Math.floor(Math.random() * L.length)].slice(0, diff > 0.8 ? 6 : 5), mark = pips(line.length); let k = 0, errs = 0; const t0 = performance.now();
+    const out = el('tg-sentence'), pool = el('tg-wordpool');
+    line.map((w, i) => ({ w, i })).sort(() => Math.random() - 0.5).forEach(({ w, i }) => { const b = h('button', { class: 'tg-word' }, w); pool.append(b);
+      on(b, 'pointerdown', e => { e.preventDefault(); if (b.disabled) return; if (line[k] === w) { b.disabled = true; out.append(h('span', {}, w + ' ')); mark(k, 1); k++; if (k >= line.length) done(1 - errs * 0.18 - Math.max(0, (performance.now() - t0) / 1000 - 5) * 0.05); } else { errs++; flash(false); if (errs >= 4) done(k / line.length * 0.4); } }); });
+  },
+  s_gift({ stage, done, on, flash, el, ctx }) {
+    const CAT = { tea: ['🍵', 'Fine tea set'], book: ['📚', 'Rare old book'], food: ['🍜', 'Street-food tour voucher'], cat: ['🐱', 'Cat café pass'], music: ['🎤', 'Karaoke night'], game: ['🎮', 'New video game'], chess: ['♟️', 'Carved chess set'], garden: ['🌱', 'Bonsai tree'], bike: ['🏍️', 'Riding jacket'], star: ['🔭', 'Small telescope'], art: ['🖌️', 'Calligraphy brushes'], film: ['🎬', 'Martial-arts film box set'] };
+    const MAP = [[/tea/, 'tea'], [/book/, 'book'], [/food|spicy/, 'food'], [/cat/, 'cat'], [/karaoke|music/, 'music'], [/video game/, 'game'], [/chess/, 'chess'], [/garden/, 'garden'], [/motorbike/, 'bike'], [/star/, 'star'], [/calligraph|paint|art/, 'art'], [/film|movie/, 'film'], [/rain|night market/, 'food']];
+    const likes = ctx.likes || '', right = (MAP.find(([re]) => re.test(likes)) || [0, 'tea'])[1];
+    const opts = [right, ...Object.keys(CAT).filter(k => k !== right).sort(() => Math.random() - 0.5).slice(0, 3)].sort(() => Math.random() - 0.5);
+    el('tg-quiz', stage, ctx.known ? `${ctx.name} loves ${likes}.` : `What would ${ctx.name || 'they'} like? (Talk to people to learn their tastes.)`);
+    const box = el('tg-qopts tg-q4'); opts.forEach(k => { const b = h('button', { class: 'tg-qopt big' }, h('div', {}, CAT[k][0]), h('small', {}, CAT[k][1])); on(b, 'pointerdown', e => { e.preventDefault(); const ok = k === right; flash(ok); done(ok ? 1 : 0.35); }); box.append(b); });
+  },
+  s_rope({ stage, diff, done, loop, tapStage, flash, pips, el }) {
+    const n = 6, mark = pips(n), rope = el('tg-rope'), me = el('tg-jumper', stage, '🧍'), pal = el('tg-jumper pal', stage, '🧍'); let a = Math.PI, k = 0, sc = 0, sp = 3 + diff * 1.5, air = 0, judged = -1;
+    tapStage(() => { if (air > 0) return; air = 0.42; me.classList.add('up'); setTimeout(() => me.classList.remove('up'), 380); });
+    loop(dt => { a += dt * sp; air = Math.max(0, air - dt); const turns = Math.floor((a - Math.PI) / (Math.PI * 2)); const ph = ((a % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      rope.style.transform = `scaleY(${Math.cos(a).toFixed(3)})`; pal.classList.toggle('up', Math.cos(a) > 0.75);
+      if (Math.cos(a) > 0.92 && judged !== turns) { judged = turns; const ok = air > 0.05; sc += ok ? 1 : 0; mark(k, ok ? 1 : 0); flash(ok); if (++k >= n) { done(sc / n); return false; } sp *= 1.04; } });
+  },
+  s_temper({ stage, diff, done, on, later, flash, pips, el }) {
+    const R = [['"You never listen to me!"', ['"You\'re right — I\'m listening now."', 2], ['"Neither do you."', 1], ['"Whatever."', 0]], ['"This is all your fault."', ['"Let\'s figure out what went wrong together."', 2], ['"Part of it, maybe."', 1], ['"Grow up."', 0]],
+      ['"You always do this!"', ['"Tell me what I keep doing."', 2], ['"Always? Really?"', 1], ['"And you\'re perfect?"', 0]], ['"I can\'t believe you."', ['"I hear you. I\'m sorry it hurt."', 2], ['"Let me explain."', 1], ['"Believe what you want."', 0]]];
+    const n = 3, mark = pips(n), lim = 3 - diff * 0.7, q = el('tg-quiz'), opts = el('tg-qopts tg-q1'), bar = el('tg-timer'); bar.append(h('i')); let k = 0, sc = 0, tm = null; const pool = R.slice().sort(() => Math.random() - 0.5);
+    const ask = () => { if (k >= n) return done(sc / n); const [line, ...ans] = pool[k]; q.textContent = line; const b = bar.firstChild; b.style.transition = 'none'; b.style.width = '100%'; void b.offsetWidth; b.style.transition = `width ${lim}s linear`; b.style.width = '0%';
+      opts.replaceChildren(...ans.slice().sort(() => Math.random() - 0.5).map(([t, v]) => { const bt = h('button', { class: 'tg-qopt' }, t); on(bt, 'pointerdown', e => { e.preventDefault(); clearTimeout(tm); sc += v / 2; mark(k, v / 2); flash(v >= 1); k++; later(ask, 250); }); return bt; }));
+      clearTimeout(tm); tm = later(() => { sc += 0.2; mark(k, 0.2); flash(false); k++; ask(); }, lim * 1000); };
+    later(ask, 300);
+  },
+  s_nerve({ stage, diff, done, on, loop, flash, el }) {
+    const heart = el('tg-heart2', stage, '💓'), meter = el('tg-nervebar'), fill = el('tg-nervefill', meter), zone = el('tg-nervezone', meter), them = el('tg-them', stage, '🙂');
+    let v = 0.75, held = false, t = 0, look = false, flip = 0.8, started = false; const calm = 0.3 + (1 - diff) * 0.1; zone.style.width = calm * 100 + '%';
+    const speak = () => { if (!held) return; held = false; const ok = v <= calm && look; const s = (v <= calm ? 0.55 : 0.15 * (1 - v)) + (look ? 0.45 : 0); flash(ok); done(s); };
+    on(stage, 'pointerdown', e => { e.preventDefault(); held = true; started = true; }); on(window, 'pointerup', speak); on(window, 'pointercancel', speak);
+    on(window, 'keydown', e => { if (e.code === 'Space' && !e.repeat) { e.preventDefault(); held = true; started = true; } }); on(window, 'keyup', e => { if (e.code === 'Space') speak(); });
+    loop(dt => { t += dt; flip -= dt; if (flip <= 0) { look = !look; them.textContent = look ? '🙂' : '🙄'; them.classList.toggle('look', look); flip = look ? 0.6 + Math.random() * 0.6 * (1.2 - diff * 0.4) : 0.7 + Math.random(); }
+      v = Math.max(0, Math.min(1, v + (held ? -0.28 : 0.12 + diff * 0.06) * dt + (Math.random() - 0.5) * dt * 0.3)); fill.style.width = v * 100 + '%'; heart.style.transform = `scale(${1 + v * 0.35})`;
+      if (t > 9) { done(0.2); return false; } });
   },
 });

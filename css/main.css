@@ -956,3 +956,16 @@ body.mo-shake #center { animation: brShake .35s; }
 .ed-bar { flex: 1; max-width: 46px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; cursor: help; } .ed-bar i { width: 100%; border-radius: 6px 6px 0 0; background: var(--gc); opacity: .85; } .ed-bar small { font-size: .7rem; color: var(--muted); padding: 2px 0; }
 .ed-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 4px 14px; margin-top: 10px; }
 .nav-btn.nav-menu { border-style: dashed; opacity: .9; }
+.job-emoji { display: inline-block; margin-right: 2px; }
+/* v0.9.21 social minigames */
+.tg-face { position: absolute; top: 12%; font-size: 3rem; } .tg-face.pop { animation: tgPop .3s; }
+.tg-q4 { grid-template-columns: repeat(4, 1fr) !important; } .tg-q1 { grid-template-columns: 1fr !important; top: 34%; bottom: 8px; }
+.tg-qopt.big { font-size: 1.6rem; height: 64px; display: grid; place-items: center; } .tg-qopt.big small { font-size: .6rem; line-height: 1.1; }
+.tg-sentence { position: absolute; top: 14%; left: 10px; right: 10px; text-align: center; font-weight: 700; min-height: 1.4em; color: var(--accent2); }
+.tg-wordpool { position: absolute; bottom: 14px; left: 8px; right: 8px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.tg-word { padding: 10px 14px; border-radius: 10px; border: 1px solid #ffffff2a; background: #ffffff10; color: #fff; font-weight: 700; } .tg-word:disabled { opacity: .2; }
+.tg-rope { position: absolute; left: 12%; right: 12%; top: 50%; height: 70px; margin-top: -35px; border: 3px solid #ffd36f; border-top: none; border-radius: 0 0 50% 50%; transform-origin: 50% 0; }
+.tg-jumper { position: absolute; bottom: 18%; left: 38%; font-size: 2rem; transition: transform .18s; } .tg-jumper.pal { left: 54%; } .tg-jumper.up { transform: translateY(-34px); }
+.tg-heart2 { position: absolute; left: 14%; top: 22%; font-size: 2.4rem; } .tg-them { position: absolute; right: 14%; top: 18%; font-size: 2.6rem; transition: transform .2s; } .tg-them.look { transform: scale(1.15); }
+.tg-nervebar { position: absolute; left: 10%; right: 10%; bottom: 22px; height: 14px; border-radius: 99px; background: #ffffff12; overflow: hidden; }
+.tg-nervefill { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, #5fd38a, #ffb02e, #e05555); } .tg-nervezone { position: absolute; left: 0; top: -2px; bottom: -2px; border-right: 2px solid #fff; }

@@ -1,7 +1,13 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.20';
+export const VERSION = '0.9.21';
 export const CHANGELOG = [
+  { v: '0.9.21', date: '2026-11-16', title: 'Work & People', notes: [
+    'Every career has its own icon. 26 new professions: Barista, Farmer, Fisherman, Musician, Pro Athlete, Actor, Police Officer, Firefighter, Soldier, Electrician, Plumber, Mechanic, Head Chef, Airline Pilot, School Teacher, Journalist, Civil Servant, Financial Analyst, Psychologist, Pharmacist, Veterinarian, Data Scientist, Research Scientist, University Professor, Surgeon and Sect Alchemist (49 in total).',
+    'DECISIONS AT WORK: most years your job puts a choice in front of you — a screaming customer, a bribe, a fudged audit, a burning building, an inside tip, a client who wants corners cut. Each field (service, retail, kitchens, trades, land, driving, security, rescue, office, finance, tech, medicine, law, creative, stage, teaching, research, press, cultivation) has its own scenarios, plus universal ones. Some choices show your odds. They can earn you raises (+12% salary), cash, performance — or get you fired.',
+    'New qualifications: Master\'s degrees (GPA 2.8+, 2 years, can switch field) and Doctorates (GPA 3.3+, 4 funded years, a stipend, and "Dr." if you pass), plus trade school certificates (Electrical, Plumbing, Mechanics, Culinary Arts, Aviation). 12 new majors: Psychology, Biology, Physics, Chemistry, Economics, Journalism, Education, Political Science, Pharmacy, Veterinary Science, Music and Philosophy.',
+    'Social interactions reworked: people can now turn you down — tired, busy, sick, too old for sparring, not close enough, or they just hate that kind of thing (a refusal costs no Social point). And each interaction has its own minigame: Spend time (read their mood), Compliment (put the words in the right order), Give a gift (pick what they would love), Train together (skip rope in sync), Argue (keep your temper), Ask out and Propose (find your nerve). How you play shapes how it lands.',
+  ] },
   { v: '0.9.20', date: '2026-11-16', title: 'Way home', notes: [
     'A "Main Menu" button now sits at the bottom of the Game section in the side menu. It saves your life and returns you to the main menu.',
   ] },

@@ -5,6 +5,7 @@ import { ri, pick, chance, clamp } from '../core/rng.js';
 import { stat, money, fmtMoney, country } from './life.js';
 import { makePerson, gainClose } from './people.js';
 import { eff } from './body.js';
+import { TRADES, MAJORS } from '../data/careers.js';
 
 // grades are 0..100. GPA: 35 → 0.0, 95 → 4.0. A real 4.0 needs near-perfect marks.
 export const gpaOf = g => Math.max(0, Math.min(4, (g - 35) / 15));
@@ -37,7 +38,7 @@ export function ensureSchool(c) {
   const e = c.edu; if (!e.school) return;
   if (!e.teacher || e.teacher.school !== e.school) { const p = makePerson(c, { age: ri(27, 60), role: 'Teacher' }); const [k, d] = pick(TEACH);
     e.teacher = { id: p.id, first: p.first, last: p.last, gender: p.gender, subject: pick(SUBJ), style: k, desc: d, close: ri(30, 55), school: e.school }; }
-  if (e.cohort !== e.school) { e.cohort = e.school; e.classSize = /Univers/.test(e.school) ? ri(80, 240) : ri(22, 36); e.records ||= [];
+  if (e.cohort !== e.school) { e.cohort = e.school; e.classSize = /Univers|Master|Doctoral|Trade/.test(e.school) ? ri(80, 240) : ri(22, 36); e.records ||= [];
     const have = c.people.filter(p => p.alive && p.role === 'Classmate').length;
     for (let i = have; i < 5; i++) { const p = makePerson(c, { age: c.age + ri(-1, 1), role: 'Classmate', close: ri(15, 50) }); p.grade = clamp(ri(30, 92)); c.people.push(p); } }
   for (const p of c.people) if (p.role === 'Classmate' && p.grade == null) p.grade = clamp(ri(30, 92));
@@ -52,6 +53,7 @@ export function rank(c) {
 // once a year, from life.js educationYear
 export function schoolLife(c) {
   const e = c.edu; if (!inSchool(c)) { if (!e.school) e.clubs = []; return; }
+  higherYear(c); if (!e.school) return;
   ensureSchool(c);
   e.grades = clamp(Math.round(e.grades + (natural(c) - e.grades) * 0.35 + ri(-3, 3))); // marks drift back toward your natural level
   if (e.teacher?.style === 'strict') e.grades = clamp(e.grades - 1); if (e.teacher?.style === 'brilliant' && eff(c, 'smarts') >= 60) e.grades = clamp(e.grades + 1);
@@ -85,4 +87,34 @@ export function applyScholarship(c) {
   if (chance(p)) { e.scholarship = true; const m = Math.round((/Univers/.test(e.school || '') ? 9000 : 2500) * country(c).econ); money(c, m); stat(c, 'happiness', 8); (e.awards ||= []).push(`Scholarship (age ${c.age})`);
     return { text: `I won a scholarship! ${fmtMoney(c, m)} towards my studies, and my name on the honour board. (${Math.round(p * 100)}%)`, cls: 'good', big: true }; }
   return { text: `My scholarship application was turned down. ${pick(['They wanted higher marks.', 'Hundreds applied for three places.', 'Maybe next year.'])} (${Math.round(p * 100)}%)`, cls: 'bad' };
+}
+
+// ---------- v0.9.21 higher education & trade school
+export const HIGHER = /Univers|Master|Doctoral|Trade School/;
+export const GRAD = {
+  id: 'grad_school', cat: 'school', name: "Apply for a master's degree", icon: 'education', minAge: 21, maxAge: 65, need: c => c.edu.level === 2 && !c.edu.school, run: async c => {
+    const g = gpaOf(c.edu.grades); if (g < 2.8 || eff(c, 'smarts') < 55) return { text: `My master's application was rejected (they wanted a GPA of 2.8+; mine was ${g.toFixed(2)}).`, cls: 'bad' };
+    const major = await ui.choice({ title: "Master's programme", icon: 'education', text: `Accepted! Two years. Continue in ${c.edu.major}, or switch field?`, options: [{ label: `Continue in ${c.edu.major}`, value: c.edu.major }, ...MAJORS.filter(m => m !== c.edu.major).map(m => ({ label: m, value: m }))] });
+    if (!major) return null; const fee = Math.round(12000 * country(c).econ); money(c, -fee * 2);
+    Object.assign(c.edu, { school: "Master's Program", gradMajor: major, gradYears: 0, grades: Math.max(45, c.edu.grades - 8) });
+    return { text: `I started a master's in ${major}. (Tuition ${fmtMoney(c, fee * 2)}${c.money < 0 ? ' — more student loans' : ''})`, cls: 'good', big: true }; } };
+export const PHD = {
+  id: 'phd', cat: 'school', name: 'Apply for a doctorate (PhD)', icon: 'study', minAge: 23, maxAge: 65, need: c => c.edu.level === 3 && !c.edu.school, run: async c => {
+    const g = gpaOf(c.edu.grades); if (g < 3.3 || eff(c, 'smarts') < 70) return { text: `My PhD application was rejected (GPA 3.3+ and real brilliance needed; mine was ${g.toFixed(2)}).`, cls: 'bad' };
+    if (!chance(0.6)) return { text: 'No professor had funding to take me on this year.', cls: 'bad' };
+    Object.assign(c.edu, { school: 'Doctoral Program', phdYears: 0, grades: Math.max(45, c.edu.grades - 10) });
+    return { text: `I was accepted into a fully funded PhD in ${c.edu.gradMajor || c.edu.major}. Four years of research ahead.`, cls: 'good', big: true }; } };
+export const TRADE = {
+  id: 'trade_school', cat: 'school', name: 'Enrol in trade school', icon: 'hammer', minAge: 16, maxAge: 70, need: c => !c.edu.school && c.age >= 16, run: async c => {
+    const have = c.edu.trades || [];
+    const t = await ui.choice({ title: 'Trade school', icon: 'hammer', text: 'Two years of hands-on training for a certificate. Electricians, plumbers, mechanics and chefs need one; pilots need Aviation.', options: [...Object.entries(TRADES).filter(([k]) => !have.includes(k)).map(([k, f]) => ({ label: `${k} · ${fmtMoney(c, f * country(c).econ)}`, value: k, disabled: c.money < f * country(c).econ * 0.5 })), { label: 'Never mind', value: null, ghost: true }] });
+    if (!t) return null; const fee = Math.round(TRADES[t] * country(c).econ); money(c, -fee);
+    Object.assign(c.edu, { school: 'Trade School', tradeField: t, tradeYears: 0 });
+    return { text: `I enrolled in trade school for ${t}. (${fmtMoney(c, fee)})`, cls: 'good' }; } };
+// progression, called each year from schoolLife
+function higherYear(c) {
+  const e = c.edu;
+  if (e.school === "Master's Program" && ++e.gradYears >= 2) { if (gpaOf(e.grades) >= 2) { e.level = 3; ui.log(`I earned my master's degree in ${e.gradMajor}!`, 'big'); ui.fx?.('milestone'); } else ui.log('I failed my master\'s thesis defence. Two years, and nothing to show for it.', 'bad'); e.school = null; }
+  else if (e.school === 'Doctoral Program') { money(c, Math.round(9000 * country(c).econ)); if (++e.phdYears >= 4) { if (gpaOf(e.grades) >= 2.5 || chance(0.5)) { e.level = 4; ui.log(`I defended my thesis. I'm Dr. ${c.last} now!`, 'big'); ui.fx?.('milestone'); } else ui.log('My committee rejected my thesis. I left without the doctorate.', 'bad'); e.school = null; } }
+  else if (e.school === 'Trade School' && ++e.tradeYears >= 2) { (e.trades ||= []).push(e.tradeField); ui.log(`I got my ${e.tradeField} certificate.`, 'good'); e.school = null; }
 }

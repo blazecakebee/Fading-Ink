@@ -29,6 +29,7 @@ import { fatigueMult, realmName, qiCap, power, learnManual, breakthroughInfo, me
 import { relLabel, isFamily, bonds, bondList, favor } from '../systems/people.js';
 import { traitVal, earnTrait, checkEarned } from '../systems/traits.js';
 import { ACTIVITIES, CATEGORIES, SOCIAL } from '../data/activities.js';
+import { jobEmoji } from '../data/careers.js';
 import { TRAITS, TIERS, TIER_ORDER, TRAIT_BY_ID } from '../data/traits.js';
 import { REALMS, ELEMENTS, MANUALS, SECTS } from '../data/realms.js';
 import { CAREERS, EDUCATION } from '../data/careers.js';
@@ -87,7 +88,7 @@ export async function runActivity(a, el, opt = {}) {
   const r = typeof res === 'string' ? { text: res } : res;
   if (a.name && !free) c.doing = { t: a.name, at: Date.now() };
   if (PR && roll) { const o = PRX.applyPractice(c, PID, psnap, roll); r.text = r.text.replace(/\s*(Strength|Agility|Battle Knowledge|Battle|Smarts|Charisma) \+\d+\.?/g, '').replace(/\s*\+[\d,]+ Qi\.?/g, '') + ' ' + o.text; if (o.cls && r.cls !== 'qi') r.cls = o.cls; if (o.big) r.big = true; if (o.tier === 'peak') fx('milestone'); else if (o.tier === 'mishap') fx('heavy'); }
-  if (!free) { c[cost]--; c.usedThisYear = (c.usedThisYear || 0) + 1; WL.addActLoad(c, a); }
+  if (!free && !r.refund) { c[cost]--; c.usedThisYear = (c.usedThisYear || 0) + 1; WL.addActLoad(c, a); }
   if (!free && traitVal(c, 'refund') && chance(traitVal(c, 'refund'))) { c[cost]++; r.text += ' (D̷U̷P̷L̷I̷C̷A̷T̷E̷D̷ — action refunded)'; }
   c.counts[a.id] = (c.counts[a.id] || 0) + 1; const n = c.counts[a.id];
   if (a.id !== 'meditate' && c.qi.fatigue) c.qi.fatigue = Math.max(0, c.qi.fatigue - 0.5);
@@ -439,7 +440,7 @@ export const TABS = {
     const c = G.char; const cur = c.job && CAREERS.find(j => j.id === c.job.id);
     // degree jobs need the matching major; university students can only work part-time
     return [h('h2', { class: 'display' }, 'Career'),
-      cur ? h('div', { class: 'year-card', style: { marginTop: '10px' } }, h('h3', {}, `${cur.name}`), h('div', {}, `Years: ${c.job.years} · Performance ${c.job.perf}%`), bar('Performance', c.job.perf, 'var(--good)'),
+      cur ? h('div', { class: 'year-card', style: { marginTop: '10px' } }, h('h3', {}, h('span', { class: 'job-emoji' }, jobEmoji(cur.id)), ` ${cur.name}`), h('div', {}, `Years: ${c.job.years} · Performance ${c.job.perf}%${c.job.raise > 1 ? ` · raises: +${Math.round((c.job.raise - 1) * 100)}%` : ''}`), bar('Performance', c.job.perf, 'var(--good)'),
         h('div', { class: 'row' }, h('button', { class: 'btn ghost', onclick: () => { logLine(`I quit my job as a ${cur.name}.`); c.job = null; render(); } }, 'Quit job')))
         : h('p', { class: 'muted' }, c.prison ? 'You are in prison.' : 'Unemployed.'),
       (() => { const A = J.agentOf(c);
@@ -452,8 +453,8 @@ export const TABS = {
       h('h3', { class: 'display', style: { margin: '16px 0 8px' } }, `Hiring this year (${J.listed(c).length} of ${CAREERS.length} jobs)`),
       J.listed(c).length ? null : h('p', { class: 'muted' }, 'Nobody is hiring right now. Try again next year, or get a job agent.'),
       h('div', { class: 'grid2' }, J.listed(c).map(j => { const ok = J.eligible(c, j), lead = J.jobBoard(c).leads.includes(j.id);
-        return h('div', { class: 'card' + (ok ? '' : ' locked') }, h('h4', {}, j.name, j.part ? h('span', { class: 'muted' }, ' (part-time)') : '', lead ? h('span', { class: 'grade', style: { background: '#7fd1ff' } }, 'Agent lead') : ''),
-        h('div', { class: 'muted' }, `${fmtMoney(c, j.pay * wage(c) * (j.part ? 0.5 : 1))}/yr · age ${j.minAge}+ · ${EDUCATION[j.edu]}${j.major ? ' in ' + j.major.join(' or ') : ''}${j.stat ? ' · ' + Object.entries(j.stat).map(([k, v]) => `${k} ${v}+`).join(', ') : ''}${j.realm ? ' · ' + REALMS[j.realm].name : ''}${j.license ? ' · driver\'s license' : ''}`),
+        return h('div', { class: 'card' + (ok ? '' : ' locked') }, h('h4', {}, h('span', { class: 'job-emoji' }, jobEmoji(j.id)), ' ', j.name, j.part ? h('span', { class: 'muted' }, ' (part-time)') : '', lead ? h('span', { class: 'grade', style: { background: '#7fd1ff' } }, 'Agent lead') : ''),
+        h('div', { class: 'muted' }, `${fmtMoney(c, j.pay * wage(c) * (j.part ? 0.5 : 1))}/yr · age ${j.minAge}+ · ${EDUCATION[j.edu]}${j.major ? ' in ' + j.major.join(' or ') : ''}${j.stat ? ' · ' + Object.entries(j.stat).map(([k, v]) => `${k} ${v}+`).join(', ') : ''}${j.realm ? ' · ' + REALMS[j.realm].name : ''}${j.license ? ' · driver\'s license' : ''}${j.trade ? ` · ${j.trade} certificate` : ''}`),
         h('div', { class: 'row', style: { marginTop: '8px' } }, h('button', { class: 'btn', disabled: !c.alive || c.prison || c.actions <= 0 || !ok || c.job?.id === j.id,
           onclick: () => runActivity({ id: 'apply_' + j.id, cat: 'work', run: async cc => { const b = J.jobBoard(cc); const r = await J.interview(cc, j); if (r.hired) { cc.job = { id: j.id, years: 0, perf: 50 }; b.ids = b.ids.filter(x => x !== j.id); b.leads = b.leads.filter(x => x !== j.id); } return r; } }) }, 'Apply (⚡1)'),
           ok ? h('span', { class: 'muted small' }, `${Math.round(J.hireChance(c, j) * 100)}% chance`) : h('span', { class: 'muted small' }, 'Not qualified'))); }))];
@@ -468,7 +469,8 @@ export const TABS = {
     const out = [h('h2', { class: 'display' }, 'Education'),
       h('div', { class: 'ed-tiles' }, tile('Currently', e.school ? (e.school + (e.private ? ' · private' : '')) : 'Not enrolled', e.scholarship && e.school ? '🎓 On a scholarship' : null), tile('Highest', EDUCATION[e.level]),
         tile('GPA', e.school || e.level ? `${g.toFixed(2)} (${SCH.letter(g)})` : '—', e.school ? `Your natural level: ${SCH.gpaOf(SCH.natural(c)).toFixed(2)}` : null),
-        R ? tile('Class rank', `#${R.r} of ${R.n}`, R.r <= Math.ceil(R.n * 0.1) ? 'Top 10%' : R.r > R.n * 0.75 ? 'Bottom quarter' : null) : null, e.major ? tile('Major', e.major, e.school === 'University' ? `Year ${e.uniYears + 1} of 4` : null) : null)];
+        R ? tile('Class rank', `#${R.r} of ${R.n}`, R.r <= Math.ceil(R.n * 0.1) ? 'Top 10%' : R.r > R.n * 0.75 ? 'Bottom quarter' : null) : null, e.major ? tile('Major', e.major + (e.gradMajor && e.gradMajor !== e.major ? ` · ${e.gradMajor}` : ''), e.school === 'University' ? `Year ${e.uniYears + 1} of 4` : e.school === "Master's Program" ? `Master's year ${e.gradYears + 1} of 2` : e.school === 'Doctoral Program' ? `PhD year ${e.phdYears + 1} of 4` : null) : null,
+        (e.trades || []).length || e.school === 'Trade School' ? tile('Certificates', (e.trades || []).join(', ') || '—', e.school === 'Trade School' ? `Training: ${e.tradeField} (year ${e.tradeYears + 1} of 2)` : null) : null)];
     if (e.school) {
       out.push(h('p', { class: 'muted small' }, 'Marks drift back toward your natural level each year (set by your Smarts, stress, teacher and school). Studying pushes you above it, but every extra point is harder to earn: a real 4.0 takes near-perfect marks.'));
       out.push(h('div', { class: 'grid2', style: { marginTop: '10px' } },

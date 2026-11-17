@@ -1,4 +1,5 @@
-// Jobs. pay is yearly in base units; multiplied by country economy. edu: 0 none, 1 high school, 2 university.
+// Jobs. pay is yearly in base units; multiplied by country economy. edu: 0 none, 1 high school, 2 university, 3 master's, 4 doctorate.
+// trade: needs that trade-school certificate. field: which workplace decisions it gets (systems/workEvents.js).
 export const CAREERS = [
   { id: 'paper', name: 'Paper Delivery', pay: 1500, minAge: 12, maxAge: 17, edu: 0, part: true },
   { id: 'cashier', name: 'Cashier', pay: 9000, minAge: 15, edu: 0, part: true },
@@ -23,6 +24,37 @@ export const CAREERS = [
   { id: 'hunter', name: 'Licensed Gate Hunter', pay: 70000, minAge: 18, edu: 0, realm: 1, desc: 'Clears Gates for the Hunter Association.' },
   { id: 'enforcer', name: 'Sect Enforcer', pay: 90000, minAge: 18, edu: 0, realm: 3 },
   { id: 'elder', name: 'Sect Elder', pay: 240000, minAge: 40, edu: 0, realm: 4 },
+  // v0.9.21 new professions
+  { id: 'barista', name: 'Barista', pay: 10000, minAge: 15, edu: 0, part: true },
+  { id: 'farmer', name: 'Farmer', pay: 18000, minAge: 16, edu: 0, stat: { strength: 30 } },
+  { id: 'fisher', name: 'Fisherman', pay: 17000, minAge: 16, edu: 0, stat: { strength: 30 } },
+  { id: 'musician', name: 'Musician', pay: 15000, minAge: 16, edu: 0, fame: true, stat: { charisma: 50 } },
+  { id: 'athlete', name: 'Pro Athlete', pay: 65000, minAge: 18, maxAge: 38, edu: 0, fame: true, stat: { agility: 70, strength: 60 } },
+  { id: 'actor', name: 'Actor', pay: 30000, minAge: 16, edu: 0, fame: true, stat: { charisma: 65, looks: 60 } },
+  { id: 'police', name: 'Police Officer', pay: 42000, minAge: 20, edu: 1, stat: { strength: 45, smarts: 40 } },
+  { id: 'firefighter', name: 'Firefighter', pay: 44000, minAge: 20, edu: 1, stat: { strength: 55, agility: 45 } },
+  { id: 'soldier', name: 'Soldier', pay: 36000, minAge: 18, edu: 0, stat: { strength: 50, agility: 40 } },
+  { id: 'electrician', name: 'Electrician', pay: 48000, minAge: 19, edu: 1, trade: 'Electrical' },
+  { id: 'plumber', name: 'Plumber', pay: 45000, minAge: 19, edu: 1, trade: 'Plumbing' },
+  { id: 'mechanic', name: 'Mechanic', pay: 40000, minAge: 19, edu: 1, trade: 'Mechanics' },
+  { id: 'chef', name: 'Head Chef', pay: 52000, minAge: 22, edu: 1, trade: 'Culinary Arts' },
+  { id: 'pilot', name: 'Airline Pilot', pay: 120000, minAge: 23, edu: 1, trade: 'Aviation', stat: { smarts: 60 } },
+  { id: 'schoolteacher', major: ['Education'], name: 'School Teacher', pay: 46000, minAge: 22, edu: 2, stat: { charisma: 45 } },
+  { id: 'journalist', major: ['Journalism', 'History'], name: 'Journalist', pay: 48000, minAge: 22, edu: 2, stat: { charisma: 45, smarts: 50 } },
+  { id: 'civil', major: ['Political Science', 'Law', 'Economics'], name: 'Civil Servant', pay: 55000, minAge: 22, edu: 2, stat: { smarts: 50 } },
+  { id: 'analyst', major: ['Economics', 'Business'], name: 'Financial Analyst', pay: 88000, minAge: 22, edu: 2, stat: { smarts: 65 } },
+  { id: 'psychologist', major: ['Psychology'], name: 'Psychologist', pay: 82000, minAge: 25, edu: 3, stat: { smarts: 60, charisma: 50 } },
+  { id: 'pharmacist', major: ['Pharmacy', 'Chemistry'], name: 'Pharmacist', pay: 95000, minAge: 24, edu: 3, stat: { smarts: 65 } },
+  { id: 'vet', major: ['Veterinary Science', 'Biology'], name: 'Veterinarian', pay: 85000, minAge: 25, edu: 3, stat: { smarts: 65 } },
+  { id: 'datasci', major: ['Computer Science', 'Physics', 'Economics'], name: 'Data Scientist', pay: 110000, minAge: 24, edu: 3, stat: { smarts: 72 } },
+  { id: 'researcher', major: ['Physics', 'Chemistry', 'Biology'], name: 'Research Scientist', pay: 92000, minAge: 27, edu: 4, stat: { smarts: 78 } },
+  { id: 'professor', name: 'University Professor', pay: 105000, minAge: 29, edu: 4, stat: { smarts: 75, charisma: 45 } },
+  { id: 'surgeon', major: ['Medicine'], name: 'Surgeon', pay: 210000, minAge: 29, edu: 4, stat: { smarts: 85, agility: 50 } },
+  { id: 'alchemist', major: ['Chemistry', 'Pharmacy'], name: 'Sect Alchemist', pay: 130000, minAge: 22, edu: 2, realm: 2 },
 ];
-export const EDUCATION = ['None', 'High School', 'University'];
-export const MAJORS = ['Medicine', 'Computer Science', 'Law', 'Business', 'Art', 'History', 'Engineering'];
+export const EDUCATION = ['None', 'High School', 'University', "Master's Degree", 'Doctorate'];
+export const MAJORS = ['Medicine', 'Computer Science', 'Law', 'Business', 'Art', 'History', 'Engineering', 'Psychology', 'Biology', 'Physics', 'Chemistry', 'Economics', 'Journalism', 'Education', 'Political Science', 'Pharmacy', 'Veterinary Science', 'Music', 'Philosophy'];
+export const TRADES = { 'Electrical': 3500, 'Plumbing': 3000, 'Mechanics': 3000, 'Culinary Arts': 4000, 'Aviation': 30000 };
+export const CAREER_EMOJI = { paper: '🗞️', cashier: '🛒', teahouse: '🍵', laborer: '🏗️', delivery: '📦', taxi: '🚕', cook: '🍳', guard: '🛡️', clerk: '🗂️', streamer: '🎥', nurse: '💉', engineer: '💻', lawyer: '⚖️', doctor: '🩺', accountant: '🧮', architect: '📐', historian: '🏛️', designer: '🎨', manager: '📊', tutor: '📝', hunter: '🗡️', enforcer: '👊', elder: '🏯',
+  barista: '☕', farmer: '🌾', fisher: '🎣', musician: '🎸', athlete: '🏅', actor: '🎬', police: '👮', firefighter: '🚒', soldier: '🪖', electrician: '⚡', plumber: '🔧', mechanic: '🔩', chef: '👨‍🍳', pilot: '✈️', schoolteacher: '🍎', journalist: '📰', civil: '🏢', analyst: '📈', psychologist: '🧠', pharmacist: '💊', vet: '🐾', datasci: '🤖', researcher: '🔬', professor: '🎓', surgeon: '🫀', alchemist: '⚗️' };
+export const jobEmoji = id => CAREER_EMOJI[id] || '💼';

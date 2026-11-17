@@ -5,6 +5,8 @@ import { ui } from '../core/bus.js';
 import { ri, pick, chance, clamp } from '../core/rng.js';
 import { HOOKS, stat, money, addItem, country, fmtMoney, fullName, wage } from './life.js';
 import { ACTIVITIES, SOCIAL } from '../data/activities.js';
+import { GRAD, PHD, TRADE } from './school.js';
+import { wrapSocial } from './socialPlay.js';
 import { EVENTS } from '../data/events.js';
 import { TRAITS, TRAIT_BY_ID } from '../data/traits.js';
 import { TRAITS2 } from '../data/traits2.js';
@@ -53,6 +55,7 @@ for (const t of TRAITS2) if (!TRAIT_BY_ID[t.id]) { TRAITS.push(t); TRAIT_BY_ID[t
 SOCIAL.push(...FAMILY_SOCIAL, MOVE_IN, ...TRAINER_SOCIAL, ...AGENT_SOCIAL);
 { const d = SOCIAL.find(s => s.id === 'date'); if (d) { const r0 = d.run; d.run = (c, p) => attractedTo(p, c) ? r0(c, p) : { text: `${p.first} smiled kindly. "You're lovely — but you're not who I'm looking for."`, cls: 'bad' }; } } // everyone has a sexuality now
 for (const s of SOCIAL) s.run = withTaste(s.id, withFlavor(s.id, s.run), gainCloseP); // what you did, and whether THEY enjoyed it
+wrapSocial(SOCIAL); // v0.9.21 people can say no; each interaction has its own minigame
 // ---- more names (fewer repeats)
 for (const cty of COUNTRIES) { const x = MORE_NAMES[cty.id]; if (x && !cty._more) { cty._more = 1; cty.m = [...new Set([...cty.m, ...x.m.split(' ')])]; cty.f = [...new Set([...cty.f, ...x.f.split(' ')])]; } }
 // v0.9.17 much bigger pools + city-specific names
@@ -61,6 +64,7 @@ for (const cty of COUNTRIES) { const x = NAMES3[cty.id]; if (x && !cty._more3) {
 // ---- martial arts schools replace the old all-you-can-eat class; private school, migration
 { const i = ACTIVITIES.findIndex(a => a.id === 'martial'); if (i >= 0) ACTIVITIES[i] = MARTIAL; else ACTIVITIES.push(MARTIAL); }
 { const i = ACTIVITIES.findIndex(a => a.id === 'doctor'); if (i >= 0) ACTIVITIES[i] = DOCTOR; else ACTIVITIES.push(DOCTOR); }
+ACTIVITIES.push(GRAD, PHD, TRADE); // v0.9.21 higher education & trades
 ACTIVITIES.push(SWITCH_ART, PRIVATE, MIGRATE, REJECT, ...BODY_ACTS, SACRIFICE, ...QI_ACTS, ...PRISON_ACTS, REHAB, ...IDENTITY_ACTS);
 if (!CATEGORIES.some(x => x.id === 'prison')) CATEGORIES.push(PRISON_CAT);
 // born without Qi at all
@@ -131,6 +135,8 @@ HOOKS.yearStart.push(c => { if (c.alive && Math.random() < 0.7) ui.log(ambientLi
 HOOKS.yearStart.push(c => { newsYear(c); portfolioYear(c); birthYear(c, haveChild); });
 HOOKS.yearEnd.push(async c => { if (c.alive) { trainersYear(c); jobsYear(c); gigYear(c); appearanceYear(c); addictionYear(c); if (!c.alive) return; temperYear(c, ui, stat); legacyYear(c); renownYear(c); await lawYear(c); if (!c.alive) return; if (inOtherworld(c)) await otherworldYear(c); if (!c.alive) return; if (!isFinite(c.qi.qi) || isNaN(c.qi.qi)) c.qi.qi = (await import('./cultivation.js')).qiCap(c); if (c.qi.realm >= 1 && !c.qiType && !onBodyPathQ(c)) awakenQi(c); } });
 HOOKS.birth.push(c => { rollTemper(c); legacyBirth(c); c.birthSex = c.gender; sexualityOf(c); ui.log(`Personality: ${c.temper.map(id => TEMPER[id].name).join(', ')}.`); });
+// v0.9.21 decisions at work
+HOOKS.yearEnd.push(async c => { if (c.alive) await (await import('./workEvents.js')).workEvent(c); });
 // v0.9.19 school life: marks drift, clubs, awards, report card
 HOOKS.yearEnd.push(async c => { if (c.alive) (await import('./school.js')).schoolLife(c); });
 // v0.9.15 the people in your life react, ask, drift and pay you back (runs after the year's other events)
