@@ -57,7 +57,7 @@ function geneGraph(c, d) {
   for (const [id, g] of Object.entries(TREE_GENES)) {
     const st = geneState(c, id).state, [x, y] = pos[id], c2 = g.branch === 'cross' ? '#ffd36f' : col[g.branch], r = g.trans ? 34 : 29;
     const gr = el('g', { class: `gg-node ${st}${g.neg ? ' neg' : ''}${g.trans ? ' trans' : ''}${sel === id ? ' sel' : ''}`, style: `--gc:${c2}`, tabindex: 0, role: 'button' });
-    gr.append(el('polygon', { points: hex(x, y, r), class: 'gg-bg' }), el('text', { x, y: y + 6, 'text-anchor': 'middle', class: 'gg-ico' }, st === 'owned' ? '✓' : g.neg ? '⚠' : g.trans ? '✦' : `${g.cost}◆`));
+    gr.append(el('polygon', { points: hex(x, y, r), class: 'gg-bg' }), el('text', { x, y: y + 6, 'text-anchor': 'middle', class: 'gg-ico' }, st === 'owned' ? '\u2713\uFE0E' : g.neg ? '\u26A0\uFE0E' : g.trans ? '✦' : `${g.cost}◆`));
     const nm = g.name.length > 17 ? g.name.slice(0, 16) + '…' : g.name; const side = g.branch === 'cross' ? 0 : Math.cos(ANG[g.branch] * Math.PI / 180) > 0 ? 1 : -1; // labels sit beside the node, away from the arm
     gr.append(el('text', side ? { x: x + side * (r + 8), y: y + 5, 'text-anchor': side > 0 ? 'start' : 'end', class: 'gg-name' } : { x, y: y + r + 16, 'text-anchor': 'middle', class: 'gg-name' }, nm));
     gr.append(el('title', {}, `${g.name}\n${g.desc}`));

@@ -1233,3 +1233,7 @@ body.reduce-motion .tt-node.buyable .tt-n-bg { animation: none; }
 .gg-node .gg-bg, .gg-node.open .gg-bg { --bc: var(--gc); }
 .gg-detail { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; border-left: 4px solid var(--gc, var(--accent)); }
 .gg-detail .btn { align-self: flex-start; }
+/* v0.9.39 no browser focus box around clicked tree nodes (keyboard focus still shows, on the node itself) */
+.gg-node:focus, .tt-node:focus, .tt-hex:focus { outline: none; }
+.gg-node:focus-visible .gg-bg, .tt-node:focus-visible .tt-n-bg, .tt-hex:focus-visible .tt-hex-bg { stroke: #fff; stroke-width: 5; }
+.gg-ico { font-family: var(--font-ui, sans-serif); font-variant-emoji: text; }
