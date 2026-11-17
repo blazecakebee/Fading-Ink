@@ -3,6 +3,7 @@
 // and touch the bright marks that appear to land hits. Each phase ends when you land enough hits or time runs out.
 // Between phases the enemy may leave an opening: press the attack, or catch your breath.
 import { S } from '../settings.js';
+import { howTo } from './howTo.js';
 import { sfx } from '../audio/sfx.js';
 
 const W = 640, H = 400;
@@ -56,7 +57,8 @@ const STYLES = {
 
 // ---- main entry: returns Promise<{ result: 'win'|'lose', bossLeft: 0..1, lives, livesMax }>
 // o: { title, phases: [names], color, style, difficulty 0..1.5, lives, hitsPerPhase, lines: { intro, phase: [..], opening, win, lose } }
-export function arena(o) {
+export function arena(o) { return howTo('arena').then(() => arena0(o)); } // v0.9.24
+function arena0(o) {
   return new Promise(done => {
     const fast = S().reduceMotion;
     const col = o.color || '#ff5a4a', phases = o.phases || ['Phase I', 'Phase II', 'Phase III'];

@@ -1,7 +1,11 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.23';
+export const VERSION = '0.9.24';
 export const CHANGELOG = [
+  { v: '0.9.24', date: '2026-11-16', title: 'How to Play', notes: [
+    'Every minigame now explains itself the first time you play it: the goal, what happens step by step, phone and PC controls, and what your result does. This covers all 35 action, meditation and social games, the 5 combat specials, boss and tribulation action phases, Gate Breaches and Fable locks.',
+    'Each set of instructions only appears once. Settings → "Show all minigame instructions again" brings them back, and you can turn them off entirely. The game itself still can\'t be skipped.',
+  ] },
   { v: '0.9.23', date: '2026-11-16', title: 'Fate', notes: [
     'Genetics: your starting Smarts, Strength, Agility, Charisma and Luck are now a blend of both parents and your own roll. Strong parents usually have strong kids, and most kids land around the average or a little above it. Heirs inherit the same way.',
     'Enemies and broken relationships: with someone who hates you, you can only talk, argue, or hurt them. With an ex or someone you\'ve drifted far from, you can also compliment them, give gifts or ask for money. No more training with your nemesis.',

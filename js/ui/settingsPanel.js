@@ -44,7 +44,7 @@ export function renderSettings() {
         toggle('Show icons', 'showIcons'), toggle('Icons-only navigation', 'iconsOnly'), toggle('Compact mode', 'compact'),
         toggle('Right stats panel', 'showRight'), toggle('Activity categories start open', 'autoOpenCats')),
       card('Gameplay', '🎲',
-        toggle('Show stat numbers', 'showNumbers'), toggle('Small alerts for good & bad moments', 'minorFx'), toggle('Show world news', 'showWorldNews'), toggle('Show hints', 'hints'),
+        toggle('Show stat numbers', 'showNumbers'), toggle('Small alerts for good & bad moments', 'minorFx'), toggle('Show world news', 'showWorldNews'), toggle('Show hints', 'hints'), toggle('Minigame instructions', 'mgInstructions', null, 'shown the first time you play each game'), h('button', { class: 'btn ghost', style: { margin: '4px 0 8px' }, onclick: () => import('./howTo.js').then(m => { m.resetHowTo(); toast?.('Every minigame will show its instructions again.'); }) }, '↺ Show all minigame instructions again'),
         toggle('Confirm age-up', 'confirmAgeUp', null, 'when you still have actions left')),
       card('Accessibility & effects', '✨',
         h('button', { class: 'btn ghost', style: { margin: '4px 0 8px' }, onclick: () => import('./guide.js').then(m => m.openGuide()) }, '📖 Open the starter guide'), toggle('Visual effects', 'fxOn'), toggle('Cinematic scenes (birth, breakthroughs, heirlooms)', 'cinematics'), toggle('Action phases (dodge boss attacks & lightning)', 'arenaFights'), toggle('Screen shake in combat', 'screenShake'), toggle('Reduce motion', 'reduceMotion'),

@@ -3,6 +3,7 @@
 import { h, icon } from './dom.js';
 import { openModal } from './modal.js';
 import { fx } from './fx.js';
+import { howTo } from './howTo.js';
 import { effRealm } from '../systems/path.js';
 import { GATE_RANKS } from '../data/combat.js';
 
@@ -22,7 +23,8 @@ const FOE = {
 };
 const RANK_MULT = { SSS: 1.15, X: 1.4, Z: 1.75 }, WAVES = { SSS: 3, X: 4, Z: 5 };
 
-export function playBreach(c, rank, opts = {}) {
+export function playBreach(c, rank, opts = {}) { return howTo('breach').then(() => playBreach0(c, rank, opts)); } // v0.9.24
+function playBreach0(c, rank, opts = {}) {
   return new Promise(resolve => {
     const R = GATE_RANKS.find(r => r.rank === rank) || GATE_RANKS[7], mult = RANK_MULT[rank] || 1, nWaves = WAVES[rank] || 3;
     const power = 1 + Math.min(0.25, (effRealm(c) || 0) / 16 * 0.25); // a strong cultivator's formations hit a little harder

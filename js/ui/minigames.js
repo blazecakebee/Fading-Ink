@@ -3,6 +3,7 @@
 import { h, icon } from './dom.js';
 import { sfx } from '../audio/sfx.js';
 import { ri } from '../core/rng.js';
+import { howTo } from './howTo.js';
 
 export const MINIS = {
   seal:      { name: 'Seal Talisman', icon: 'talisman', vs: 'spirits', how: 'Memorise the glowing runes, then press them in the same order.', win: 'Spirit sealed: it loses 30% of its HP and is stunned.' },
@@ -15,7 +16,8 @@ export const MINIS = {
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const RUNES = ['☰', '☱', '☲', '☳', '☴', '☵', '☶', '☷'];
 
-export function playMini(kind, box, difficulty = 1) {
+export function playMini(kind, box, difficulty = 1) { return howTo('mini:' + kind).then(() => playMini0(kind, box, difficulty)); } // v0.9.24
+function playMini0(kind, box, difficulty = 1) {
   const M = MINIS[kind];
   return new Promise(async resolve => {
     const done = ok => { sfx(ok ? 'win' : 'fail'); status.textContent = ok ? 'Success!' : 'Failed…'; setTimeout(() => resolve(ok), 700); };

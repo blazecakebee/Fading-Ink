@@ -27,7 +27,7 @@ export const THEMES = [
 export const DEFAULTS = {
   theme: 'amber', font: 'default', fontSize: 16, uiScale: 1, panelOpacity: 1, animSpeed: 1, portraitSize: 64,
   master: 0.8, music: 0.45, sfx: 0.7, station: 'sect', musicOn: true,
-  reduceMotion: false, showIcons: true, showNumbers: true, compact: false, iconsOnly: false, hints: true,
+  reduceMotion: false, mgInstructions: true, showIcons: true, showNumbers: true, compact: false, iconsOnly: false, hints: true,
   showRight: true, minorFx: true, showChronicle: true, showWorldNews: true, confirmAgeUp: true, highContrast: false, cbBars: false,
   fxOn: true, screenShake: true, uiSounds: true, autoOpenCats: false, cinematics: true, arenaFights: true,
 };

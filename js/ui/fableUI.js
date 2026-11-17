@@ -1,5 +1,6 @@
 // v0.9.4 Fable Quests: an immersive story window, the Fables tab, and the glyph-lock puzzle.
 import { h, icon } from './dom.js';
+import { howTo } from './howTo.js';
 import { openModal, toast } from './modal.js';
 import { fx } from './fx.js';
 import { G, save } from '../core/state.js';
@@ -36,7 +37,7 @@ export async function openFable(id) {
       });
     },
     puzzle(P, penalise) {
-      return new Promise(res => {
+      return howTo('fable:puzzle').then(() => new Promise(res => {
         let pick = [], tries = P.tries;
         const slots = h('div', { class: 'fb-slots' }), info = h('div', { class: 'muted small' });
         const draw = () => { slots.replaceChildren(...P.answer.map((_, i) => h('span', { class: 'fb-slot' + (pick[i] ? ' on' : '') }, pick[i] || ''))); info.textContent = `Tap the glyphs in the right order. Tries left: ${tries}. Each wrong order costs Health.`; };
@@ -50,7 +51,7 @@ export async function openFable(id) {
         draw(); act.replaceChildren(h('div', { class: 'fb-puzzle' }, slots, h('div', { class: 'fb-glyphs' }, btns), info,
           h('button', { class: 'btn ghost mini', onclick: () => { pick = []; btns.forEach(b => b.disabled = false); draw(); } }, 'Clear')));
         scroll();
-      });
+      }));
     },
     done(got, tier) {
       act.replaceChildren(h('div', { class: 'fb-reward' }, h('h3', {}, tier === 'best' ? 'Best ending' : tier === 'dark' ? 'It followed you home' : 'Fable complete'), h('ul', {}, got.map(g => h('li', {}, g)))));

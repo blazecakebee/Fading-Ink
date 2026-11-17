@@ -3,6 +3,7 @@
 // playTrain(kind, diff, title) → Promise<score 0..1>. diff 0.45..1 (mastery lowers it, never to zero).
 import { h } from './dom.js';
 import { fx } from './fx.js';
+import { howTo } from './howTo.js';
 
 export const GAMES = {
   lift:    { title: 'Clean form',        how: 'Tap when the bar is in the gold zone. 3 reps.' },
@@ -47,7 +48,9 @@ const clamp01 = v => Math.max(0, Math.min(1, v));
 const rnd = (a, b) => a + Math.random() * (b - a);
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
-export function playTrain(kind, diff = 1, title, ctx = {}) {
+// v0.9.24 the first time you meet a game, its instructions come first
+export function playTrain(kind, diff = 1, title, ctx = {}) { return howTo('tg:' + (GAMES[kind] ? kind : 'lift'), { title: (GAMES[kind] || GAMES.lift).title }).then(() => playTrain0(kind, diff, title, ctx)); }
+function playTrain0(kind, diff = 1, title, ctx = {}) {
   return new Promise(resolve => {
     const I = GAMES[kind] || GAMES.lift;
     const stage = h('div', { class: 'tg-stage tg-' + kind }), res = h('div', { class: 'tg-res' }), prog = h('div', { class: 'tg-prog' });

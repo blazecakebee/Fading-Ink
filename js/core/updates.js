@@ -10,7 +10,7 @@ async function remoteVersion() {
   try { const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return null; return (await r.json()).version; } catch { return null; }
 }
 // v0.9.23 never refresh in the middle of anything: a year passing, an activity, a fight, a minigame, a cutscene, any open dialog or a Fable
-const busy = () => (window.__fiBusy || 0) > 0 || !!document.querySelector('.fight, .tg-wrap, .arena-wrap, .cine, .breach-modal, .br-wrap, .modal-back') || !!G.char?.fableRun;
+const busy = () => (window.__fiBusy || 0) > 0 || !!document.querySelector('.fight, .tg-wrap, .howto-wrap, .arena-wrap, .cine, .breach-modal, .br-wrap, .modal-back') || !!G.char?.fableRun;
 
 // GitHub Pages lets browsers cache files for ~10 minutes, so force-refresh every loaded script/style first.
 async function hardReload() {
