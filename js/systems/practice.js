@@ -94,8 +94,9 @@ export function rollTier(c, id, score) {
   if (quick ? Math.random() < 0.2 : s < 0.35) return { tier: 'sloppy', s };
   return { tier: 'solid', s };
 }
-const MULT = { peak: 2.5, sloppy: 0.45, mishap: 0.2 };
-export const TRAIN_BUFF = 1.5; // v0.9.14 every minigame session gives 50% more than before (they take longer than a click)
+const MULT = { peak: 2.7, sloppy: 0.55, mishap: 0.3 }; // v0.9.42 a bad session stings less
+export const TRAIN_BUFF = 1.75; // v0.9.42 was 1.5, minigames are now on almost everything
+export const _TB_OLD = 1.5; // v0.9.14 every minigame session gives 50% more than before (they take longer than a click)
 const LBL = { grades: 'Grades', perf: 'Job performance', strength: 'Strength', agility: 'Agility', battle: 'Battle', smarts: 'Smarts', charisma: 'Charisma', qi: 'Qi' };
 
 // Called after the activity ran: scales what it gave you by tier, fatigue and accuracy, and applies mishaps.

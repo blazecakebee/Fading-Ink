@@ -88,7 +88,7 @@ async function runActivity0(a, el, opt = {}) {
   // v0.9.8 practice: optional micro-minigame, then a 4-tier outcome (peak / solid / sloppy / mishap)
   const PID = a.practice || a.id, PR = !free && (!a.canPractice || a.canPractice(c)) && PRX.practiceFor(PID); let roll = null, psnap = null;
   if (PR) { const score = opt.score !== undefined ? opt.score : await playTrain(PRX.gameKind(c, PID), PRX.difficulty(c, PID), a.name);
-    if (PR.scoreOnly) c._mg = score; else { roll = PRX.rollTier(c, PID, score); a._roll = roll; psnap = { ...c.stats, qi: c.qi.qi, grades: c.edu?.grades, perf: c.job?.perf }; } }
+    if (PR.scoreOnly) c._mg = score == null ? score : Math.min(1, score * 1.05 + 0.07); // v0.9.42 score-driven activities get a small boost else { roll = PRX.rollTier(c, PID, score); a._roll = roll; psnap = { ...c.stats, qi: c.qi.qi, grades: c.edu?.grades, perf: c.job?.perf }; } }
   let res; try { res = await a.run(c); } finally { delete c._mg; }
   if (res == null) { render(); return; } // cancelled / couldn't afford → no cost
   const r = typeof res === 'string' ? { text: res } : res;
