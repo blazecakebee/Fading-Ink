@@ -124,7 +124,7 @@ export function gainPopups(c, snap, at, mult = 1) {
 function topbar() {
   const c = G.char, cty = country(c);
   $('#topbar').replaceChildren(
-    h('div', { class: 'who' }, h('div', { class: 'mini' }, portraitFor(c, 64)),
+    h('div', { class: 'who' }, realmFrame(c, h('div', { class: 'mini' }, portraitFor(c, 64))),
       h('div', {}, h('div', { class: 'name display' }, flagEl(c.country, country(c).name), ' ', fullName(c)), h('div', { class: 'sub' }, `${c.qi.realm || onBodyPath(c) ? realmName(c) : 'Human'} · ${c.gender === 'F' ? 'Female' : 'Male'} · Age ${c.age} · ${lifeStage(c.age)}`), c.ownSect ? h('div', { class: 'clan' }, c.ownSect.emblem ? emblemSvg(c.ownSect.emblem, 18) : '👑', ` ${c.gender === 'F' ? 'Matriarch' : 'Patriarch'} of the ${c.ownSect.clan} Clan · ${c.ownSect.name}`) : null)),
     h('div', { class: 'center' }, h('div', {}, h('b', {}, `Year ${G.world.year}`), ' · ', h('span', { class: 'era' }, G.world.era)),
       h('div', { class: 'where' }, '📍 ', `${c.city}, ${cty.name}`)),
@@ -178,7 +178,7 @@ function sidebar() {
   $('#sidebar').replaceChildren(h('button', { class: 'nav-toggle', onclick: () => { fx('click'); G.ui.navOpen = !G.ui.navOpen; render(); } }, h('span', {}, '☰ ', curLabel), h('span', { class: 'muted' }, G.ui.navOpen ? 'Close ▴' : 'All tabs ▾')), ...NAV.flatMap(([g, items]) => { const its = vis(items), here = its.some(([id]) => id === G.ui.tab), closed = shut[g] && !here;
     const b = its.reduce((n, [id]) => n + (badge(id) ? 1 : 0), 0);
     return [h('button', { class: 'nav-group' + (closed ? ' shut' : ''), onclick: () => { fx('click'); shut[g] = !shut[g]; save(); render(); } }, h('span', {}, g), closed && b ? h('span', { class: 'badge' }, b) : null, h('span', { class: 'chev' }, closed ? '▸' : '▾')),
-    ...(closed ? [] : its.filter(([id]) => (id !== 'cultivation' || (!onBodyPath(c) && (c.qi.known || META.bestRealm > 0))) && (id !== 'severed' || canSeeSevered(c)) && (id !== 'fables' || (c.fame || 0) >= 1e5 || !!c.fables || !!c.fableRun) && (id !== 'blackmarket' || !!c.demonic)).map(([id, label, ic]) => h('button', { class: 'nav-btn' + (G.ui.tab === id ? ' active' : ''), title: label, onclick: () => { fx('click'); G.ui.tab = id; G.ui.navOpen = false; render(); window.innerWidth <= 760 && document.getElementById('center').scrollIntoView({ behavior: 'smooth' }); } },
+    ...(closed ? [] : its.filter(([id]) => (id !== 'cultivation' || (!onBodyPath(c) && (c.qi.known || META.bestRealm > 0))) && (id !== 'severed' || canSeeSevered(c)) && (id !== 'fables' || (c.fame || 0) >= 1e5 || !!c.fables || !!c.fableRun) && (id !== 'blackmarket' || !!c.demonic)).map(([id, label, ic]) => h('button', { class: 'nav-btn' + (G.ui.tab === id ? ' active' : ''), title: label, 'data-nav': id, onclick: () => { fx('click'); G.ui.tab = id; G.ui.navOpen = false; render(); window.innerWidth <= 760 && document.getElementById('center').scrollIntoView({ behavior: 'smooth' }); } },
       icon(ic), h('span', { class: 'lbl' }, label), badge(id) ? h('span', { class: 'badge' }, badge(id)) : null))),
     ...(g === 'Game' && !closed ? [h('button', { class: 'nav-btn nav-menu', title: 'Save & return to the main menu', onclick: () => { fx('click'); G.ui.navOpen = false; ui.toMenu?.(); } }, icon('life'), h('span', { class: 'lbl' }, 'Main Menu'))] : [])]; }));
 }
@@ -257,6 +257,16 @@ async function runMany(list, el) { // runs a list of activities in order while a
     await runActivity(a, null, P ? { score: scores[id] } : {}); done++; }
   gainPopups(c, snap, at); if (done) toast(`Did ${done} action${done > 1 ? 's' : ''}.`);
 }
+// v0.9.29 the portrait frame grows more ornate with every realm (or Severed body tier)
+import { BODY_TIERS as _BT } from '../data/bodypath.js';
+function realmFrame(c, el) {
+  const body = onBodyPath(c), R = body ? (c.bodyPath?.tier || 0) : (c.qi?.realm || 0); if (!R || !c.alive) return el;
+  const col = body ? _BT[R]?.color : REALMS[R]?.color, tier = R >= 12 ? 5 : R >= 10 ? 4 : R >= 7 ? 3 : R >= 4 ? 2 : 1;
+  el.classList.add('rf', 'rf' + tier); if (body) el.classList.add('rf-body'); el.style.setProperty('--rc', col || '#7fe3ff'); el.title = `${realmName(c)} — your frame changes as you ascend`;
+  if (tier >= 3) for (const k of ['tl', 'tr', 'bl', 'br']) el.append(h('i', { class: 'rf-corner ' + k }));
+  if (tier >= 4) el.append(h('i', { class: 'rf-aura' }));
+  return el;
+}
 // v0.9.28 react to what someone just told you
 function reactRow(c, id) {
   const t = TALK.talkOpen(c, id); if (!t) return null;
@@ -318,7 +328,7 @@ export const TABS = {
   character() {
     const c = G.char, cty = country(c);
     return [h('div', { class: 'row', style: { gap: '24px', alignItems: 'flex-start' } },
-      h('div', { class: 'pframe' }, portraitFor(c, Math.max(160, (META.settings.portraitSize || 64) * 2.5))),
+      realmFrame(c, h('div', { class: 'pframe' }, portraitFor(c, Math.max(160, (META.settings.portraitSize || 64) * 2.5)))),
       h('div', { style: { flex: 1, minWidth: '240px' } }, h('h2', { class: 'display', style: { fontSize: '2.2rem' } }, fullName(c)),
         h('table', { class: 'kv' }, [['Born', `${c.city}, ${cty.name} (year ${c.birthYear})`], ['Family wealth', WEALTH.find(w => w.id === c.wealth).name], ['Age', `${c.age} · ${lifeStage(c.age)}`],
           ['Expected lifespan', `~${lifespan(c)} years`], ['Hair', `${(c.hair?.style || c.genes.style)} · ${(c.hair?.color || c.genes.hairColor)}`], ['Base looks', c.genes.looks + ' (fixed at birth)'], ['Body type', `${{ lean: 'Lean', average: 'Average', chubby: 'Chubby' }[c.body?.build || c.genes.build || 'average']}${(c.body?.muscle || 0) >= 45 ? ' · broad from muscle' : ''} (training trims you down, idle years fill you out)`],

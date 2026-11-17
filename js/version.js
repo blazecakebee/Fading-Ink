@@ -1,7 +1,13 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.28';
+export const VERSION = '0.9.29';
 export const CHANGELOG = [
+  { v: '0.9.29', date: '2026-11-16', title: 'Alive', notes: [
+    'Portraits blink. Every face in the game — you, your family, friends, rivals — blinks now and then, sometimes twice in a row.',
+    'Your portrait frame now shows your cultivation realm (or Severed body tier) and grows more ornate as you ascend: a coloured edge at first, a double frame with a glow from realm 4, jewelled corners and a pulse from realm 7, a spinning aura from realm 10, and a rainbow halo at the very top.',
+    'Hovering over a section in the side menu animates its icon, and every section has its own animation: the candle flickers, hearts beat, the world spins, the hammer strikes, the Gates shake, coins flip and more.',
+    'Turning on Reduce motion in Settings stops the frame and menu animations, and portraits don\'t blink.',
+  ] },
   { v: '0.9.28', date: '2026-11-16', title: 'Tycoons & Talk', notes: [
     'The Assets tab now has Vendors instead of one shop: car dealerships (Budget Bob\'s Used Cars, Kestrel Motors, Ironhide Trucks, Hanzo Motorcycles, Velluto Luxury, Aurum Supercars), Bluewater Marina & Aviation (jet skis, yachts, private jets), estate agents (Cornerstone Realty, Lotus Heritage Homes, Skyline Estates), Greenfield Land & Agriculture, Old Man Wen the retiring factory owner, the Liquidators Guild, Meridian Commercial Brokers and Harbor Capital Investors.',
     'Dozens of new vehicles and homes. Luxury things (✨) make you happier every year but cost upkeep — insurance, maintenance and property tax are now charged yearly. A Cultivator\'s Mountain Retreat boosts Qi gain while you live there.',

@@ -70,7 +70,7 @@ function shade(hex, f) {
 function ageStage(age) { return age < 3 ? 'infant' : age < 13 ? 'child' : age < 18 ? 'teen' : age < 35 ? 'adult' : age < 58 ? 'middle' : 'elder'; }
 
 // Build a 32x32 grid of colors
-export function buildPortrait(genes, { age = 20, gender = 'F', realm = 0, hair = null, elemColor = null, headOnly = false, raw = false, build = null, muscle = 0 }) {
+export function buildPortrait(genes, { age = 20, gender = 'F', realm = 0, hair = null, elemColor = null, headOnly = false, raw = false, build = null, muscle = 0, blink = false }) {
   const R = seeded(genes.seed); const W = 32, H = 32;
   const g = Array.from({ length: H }, () => Array(W).fill(null));
   const set = (x, y, c) => { x = Math.round(x); y = Math.round(y); if (x >= 0 && y >= 0 && x < W && y < H && c) g[y][x] = c; };
@@ -207,6 +207,12 @@ export function buildPortrait(genes, { age = 20, gender = 'F', realm = 0, hair =
   if (st === 'middle' || st === 'elder') { set(eyeL - 1, eyeY + 2, skinS); set(eyeR + 4, eyeY + 2, skinS); }
   if (st === 'elder') { set(cx - 3, my - 1, skinS); set(cx + 2, my - 1, skinS); }
 
+  // v0.9.29 blink frame: lids closed, a soft lash curve
+  if (blink) for (const [ex, side] of [[eyeL, -1], [eyeR, 1]]) {
+    for (let y = eyeY - 1; y <= eyeY + 3; y++) for (let x = ex; x < ex + 4; x++) if (inHead(x, y)) set(x, y, y === eyeY - 1 ? skinS : skin);
+    for (let i = 0; i < 4; i++) set(ex + i, eyeY + (i === 0 || i === 3 ? 1 : 2), '#1d1424');
+    if (big) set(side < 0 ? ex - 1 : ex + 4, eyeY + 1, '#1d1424');
+  }
   // 5. front hair: crown, fringe, side locks
   if (st === 'infant') {
     for (let x = cx - 2; x <= cx + 1; x++) set(x, top, hc); set(cx, top - 1, hc); set(cx + 1, top - 2, hc);
@@ -396,6 +402,22 @@ export function drawFullBody(canvas, genes, opts) {
   return canvas;
 }
 
+// v0.9.29 every portrait blinks now and then (one shared timer for all of them)
+const BLINKERS = new Set(); let blinkTimer = null;
+function paint(canvas, grid) { const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, 32, 32); grid.forEach((row, y) => row.forEach((c, x) => { if (c) { ctx.fillStyle = c; ctx.fillRect(x, y, 1, 1); } })); }
+function startBlinking() {
+  if (blinkTimer) return;
+  blinkTimer = setInterval(() => {
+    if (document.hidden) return; const now = performance.now();
+    for (const cv of BLINKERS) {
+      if (!cv.isConnected) { if (cv._seen) BLINKERS.delete(cv); continue; } cv._seen = true;
+      if (now < cv._next) continue;
+      const b = cv._blink; if (!b) continue; paint(cv, b.closed);
+      setTimeout(() => paint(cv, b.open), 120 + Math.random() * 60);
+      cv._next = now + (Math.random() < 0.15 ? 350 : 2200 + Math.random() * 4500); // sometimes a quick double-blink
+    }
+  }, 120);
+}
 export function drawPortrait(canvas, genes, opts) {
   const grid = buildPortrait(genes, opts); canvas.width = 32; canvas.height = 32;
   const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, 32, 32);
@@ -406,7 +428,11 @@ export function drawPortrait(canvas, genes, opts) {
 export function portraitFor(p, size = 64, extra = {}) {
   const cv = document.createElement('canvas'); cv.className = 'portrait';
   cv.style.width = cv.style.height = size + 'px';
-  drawPortrait(cv, p.genes, { age: p.age, gender: p.gender, realm: p.qi ? p.qi.realm : p.realm || 0, hair: p.face ? { ...(p.hair || {}), ...p.face } : p.hair, elemColor: extra.elemColor, build: p.body?.build || p.build, muscle: p.body?.muscle || 0 });
+  const o = { age: p.age, gender: p.gender, realm: p.qi ? p.qi.realm : p.realm || 0, hair: p.face ? { ...(p.hair || {}), ...p.face } : p.hair, elemColor: extra.elemColor, build: p.body?.build || p.build, muscle: p.body?.muscle || 0 };
+  const open = buildPortrait(p.genes, o); cv.width = 32; cv.height = 32; paint(cv, open);
+  if (extra.blink !== false && !(typeof document !== 'undefined' && document.body?.classList.contains('reduce-motion'))) {
+    cv._blink = { open, closed: buildPortrait(p.genes, { ...o, blink: true }) }; cv._next = performance.now() + 800 + Math.random() * 4000; BLINKERS.add(cv); startBlinking();
+  }
   return cv;
 }
 
