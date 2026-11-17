@@ -3,6 +3,7 @@ import { h, icon } from './dom.js';
 import { G, META, save } from '../core/state.js';
 import { portraitFor } from './portrait.js';
 import { openModal } from './modal.js';
+import { talentTree } from './talentTree.js';
 import * as FT from '../systems/fate.js';
 import { ui } from '../core/bus.js';
 import { fx } from './fx.js';
@@ -30,7 +31,7 @@ export function renderLegacy() {
     !c.alive ? h('div', { class: 'year-card', style: { marginTop: '10px', textAlign: 'center' } }, h('b', {}, 'This life has ended.'), ' ', h('button', { class: 'btn', onclick: () => deathScreen() }, 'Continue your legacy →')) : null,
     h('div', { class: 'year-card', style: { marginTop: '10px' } }, h('h3', {}, `Legacy Points: ${META.legacy}`), h('div', { class: 'muted' }, `Lives lived: ${META.lives} · Highest realm ever: ${REALMS[META.bestRealm || 0]?.name}`),
       h('p', { class: 'muted' }, 'Earn points by living long, reaching realms, clearing Gates, winning fights, graduating, getting rich and unlocking achievements. Spend them in the skill tree below — upgrades apply to every future life.')),
-    legacyTree(),
+    talentTree(), // v0.9.35 the graphical skill tree
     blessingShop(),
     h('h3', { class: 'display', style: { margin: '18px 0 8px' } }, 'Family Tree'),
     h('div', { class: 'row', style: { justifyContent: 'center' } }, fam.map(p => node(p, p.role))),

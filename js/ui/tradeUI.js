@@ -39,15 +39,27 @@ export function tradeTab() {
         h('div', { class: 'small muted' }, desc), h('div', { class: 'small trade-stock ' + s.state + (s.left === 1 ? ' last' : '') }, TR.stockLabel(s))),
       h('button', { class: 'btn mini', disabled: !!why || !c.alive, 'data-tip': why || '', onclick: () => { const t = TR.buy(c, m, s); if (t) { fx('coin'); logLine(t, 'good'); save(); rerender(); } } }, s.left <= 0 ? '—' : fmtMoney(c, p)));
   };
+  // v0.9.34 categories: pick a kind of thing, and every merchant's matching stock is grouped under it
+  const SLOTS = { top: 'Tops', bottom: 'Bottoms', dress: 'Dresses', outer: 'Outerwear', shoes: 'Shoes', socks: 'Socks', hat: 'Hats', mask: 'Masks' };
+  const GEARC = { weapon: 'Weapons', armor: 'Armour', ring: 'Rings', necklace: 'Necklaces', charm: 'Charms' };
+  const catOf = (m, s) => m.kind === 'cloth' ? CLOTHES.find(x => x.id === s.id)?.slot : m.kind === 'gear' ? ITEMS[s.id]?.slot : m.id;
+  const CATS = grp === 'tailors' ? SLOTS : grp === 'arms' ? { weapon: 'Weapons', armor: 'Armour', ring: 'Jewellery', necklace: 'Jewellery', charm: 'Jewellery' } : { jeweller: 'Jewellery', apothecary: 'Pills & incense', materials: 'Materials' };
+  const catList = [...new Set(Object.values(CATS))], key = 'tradeCat_' + grp, cur = catList.includes(G.ui[key]) ? G.ui[key] : catList[0];
+  const inCat = (m, s) => CATS[catOf(m, s)] === cur;
+  const order = Object.keys(grp === 'tailors' ? SLOTS : GEARC);
   const merchants = TR.MERCHANTS.filter(m => m.group === grp).map(m => {
-    const st = TR.stockOf(c, m), name = TR.nameOf(c, m);
+    const name = TR.nameOf(c, m), st = TR.stockOf(c, m).filter(s => inCat(m, s)).sort((a, b) => order.indexOf(catOf(m, a)) - order.indexOf(catOf(m, b)) || TR.priceOf(c, m, a) - TR.priceOf(c, m, b));
+    if (!st.length && m.id !== 'dealer') return null;
     if (!st.length && m.id === 'dealer') return h('div', { class: 'card trade-merchant muted' }, h('div', { class: 'trade-head' }, h('span', { class: 'trade-ic' }, m.icon), h('div', {}, h('b', {}, name), h('div', { class: 'small' }, 'Not in town this year. Maybe next year.'))));
     return h('div', { class: 'card trade-merchant' }, h('div', { class: 'trade-head' }, h('span', { class: 'trade-ic' }, m.icon), h('div', {}, h('b', {}, name), h('div', { class: 'small muted' }, TR.blurbOf(c, m)))),
-      st.length ? st.map(s => row(m, s)) : h('div', { class: 'small muted' }, 'Nothing on the shelves this year.'));
-  });
+      st.length ? st.map(s => row(m, s)) : h('div', { class: 'small muted' }, 'Nothing of this kind this year.'));
+  }).filter(Boolean);
+  const catSeg = catList.length > 1 ? h('div', { class: 'seg trade-cats' }, catList.map(k => { const n = TR.MERCHANTS.filter(m => m.group === grp).reduce((t, m) => t + TR.stockOf(c, m).filter(s => CATS[catOf(m, s)] === k && s.left > 0).length, 0);
+    return h('button', { class: cur === k ? 'on' : '', onclick: () => { G.ui[key] = k; rerender(); } }, `${k} (${n})`); })) : null;
   return [h('h2', { class: 'display' }, 'Trade'),
     h('p', { class: 'muted' }, `Every merchant restocks once a year. Popular things sell out, rare things get pricier when they run low, and ${country(c).name}'s smiths make weapons you can't buy anywhere else.${discount(c) ? ` Your Charisma gets you ${Math.round(discount(c) * 100)}% off.` : ''} Manage what you own in Wardrobe & Armory and Inventory.`),
     h('div', { class: 'seg trade-seg' }, Object.entries(TR.TRADE_GROUPS).map(([k, v]) => h('button', { class: grp === k ? 'on' : '', onclick: () => { G.ui.tradeGroup = k; rerender(); } }, v))),
-    h('div', { class: 'ward-layout' }, h('div', { class: 'card ward-preview' }, h('b', {}, 'Fitting mirror'), h('div', { style: { display: 'flex', justifyContent: 'center', margin: '8px 0' } }, cv), label),
-      h('div', { class: 'grid2 trade-grid' }, merchants))];
+    catSeg,
+    h('div', { class: 'ward-layout' }, h('div', { class: 'card ward-preview trade-mirror' }, h('b', {}, 'Fitting mirror'), h('div', { style: { display: 'flex', justifyContent: 'center', margin: '8px 0' } }, cv), label),
+      merchants.length ? h('div', { class: 'trade-shops' }, merchants) : h('div', { class: 'card muted' }, `No merchant has any ${cur.toLowerCase()} this year.`))];
 }

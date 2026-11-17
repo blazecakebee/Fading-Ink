@@ -1148,3 +1148,63 @@ body.reduce-motion .nav-btn:hover .icon { animation: none !important; transform:
 .trade-item .btn { white-space: nowrap; }
 .trade-stock { opacity: .85; } .trade-stock.shortage, .trade-stock.last { color: #ffb36f; } .trade-stock.surplus { color: #7fe3a0; }
 .chip.trade-local { margin-left: 6px; font-size: .7rem; border-color: #c9a23a; color: #ffd36f; } .chip.trade-import { margin-left: 6px; font-size: .7rem; border-color: #6aa7e0; color: #9fd0ff; }
+/* v0.9.34 trade, organised */
+.trade-cats { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 12px; }
+.trade-cats button { flex: 1 1 auto; }
+.trade-shops { display: flex; flex-direction: column; gap: 12px; }
+.trade-shops .trade-merchant > .trade-item { display: inline-flex; }
+.trade-shops .trade-merchant { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px 14px; align-items: start; }
+.trade-shops .trade-head { grid-column: 1 / -1; border-bottom: 1px solid var(--border-soft); padding-bottom: 8px; }
+.trade-shops .trade-item { border-top: none; padding: 6px; border-radius: 8px; background: rgba(0,0,0,.12); }
+.trade-shops .trade-item:hover { background: rgba(255,255,255,.05); }
+.trade-mirror { position: sticky; top: 10px; align-self: start; }
+
+/* v0.9.35 Legacy skill tree */
+.tt { margin-top: 14px; }
+.tt-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.tt-pts { font-weight: 800; color: #ffd36f; font-size: 1.1rem; text-shadow: 0 0 10px #ffb02e66; }
+.tt-hub { width: 100%; max-width: 560px; display: block; margin: 0 auto; }
+.tt-hubline { stroke: color-mix(in srgb, var(--bc) 30%, transparent); stroke-width: 4; stroke-dasharray: 6 6; }
+.tt-hubline.lit { stroke: var(--bc); stroke-dasharray: none; filter: drop-shadow(0 0 4px var(--bc)); }
+.tt-hex { cursor: pointer; transition: transform .15s; transform-box: fill-box; transform-origin: center; }
+.tt-hex:hover, .tt-hex:focus { transform: scale(1.05); outline: none; }
+.tt-hex-bg { fill: color-mix(in srgb, var(--bc) 20%, #0d0a10); stroke: var(--bc); stroke-width: 4; filter: drop-shadow(0 0 8px color-mix(in srgb, var(--bc) 60%, transparent)); }
+.tt-hex-in { fill: #0d0a10cc; stroke: color-mix(in srgb, var(--bc) 40%, transparent); stroke-width: 1.5; }
+.tt-hex.on .tt-hex-bg { fill: color-mix(in srgb, var(--bc) 45%, #0d0a10); stroke-width: 5; }
+.tt-hex-ico { font-size: 30px; }
+.tt-hex-title { font: 800 17px var(--font-ui, sans-serif); fill: #fff; paint-order: stroke; stroke: #000; stroke-width: 3px; }
+.tt-hex-sub { font: 700 11.5px var(--font-ui, sans-serif); fill: #ffd36f; }
+.tt-hex-sub2 { font: 600 10px var(--font-ui, sans-serif); fill: #ffffffaa; }
+.tt-bar { gap: 10px; align-items: center; margin: 8px 0; flex-wrap: wrap; }
+.tt-wrap { overflow: auto; max-height: 70vh; border: 1px solid var(--border-soft); border-radius: 12px; background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--bc, #7fe3ff) 10%, transparent), transparent 60%), rgba(0,0,0,.25); cursor: grab; touch-action: pan-x pan-y; }
+.tt-wrap.drag { cursor: grabbing; user-select: none; }
+.tt-canvas { position: relative; }
+.tt-svg { display: block; }
+.tt-link { fill: none; stroke: #ffffff22; stroke-width: 3; }
+.tt-link.lit { stroke: var(--bc); stroke-width: 3.5; filter: drop-shadow(0 0 3px var(--bc)); }
+.tt-link.cap { stroke-dasharray: 4 5; }
+.tt-node { cursor: pointer; }
+.tt-n-bg { fill: #15111c; stroke: #ffffff33; stroke-width: 3; transition: filter .15s; }
+.tt-n-in { fill: #0d0a10; stroke: none; }
+.tt-n-ico { font-size: 20px; }
+.tt-n-name { font: 700 11px var(--font-ui, sans-serif); fill: #ffffffcc; paint-order: stroke; stroke: #0b0810; stroke-width: 3px; }
+.tt-n-pips { font: 10px sans-serif; fill: var(--bc); }
+.tt-node.locked { opacity: .45; }
+.tt-node.open .tt-n-bg { stroke: color-mix(in srgb, var(--bc) 60%, #fff3); }
+.tt-node.buyable .tt-n-bg { stroke: var(--bc); animation: ttPulse 1.6s ease-in-out infinite; }
+.tt-node.owned .tt-n-bg { fill: color-mix(in srgb, var(--bc) 35%, #15111c); stroke: var(--bc); }
+.tt-node.maxed .tt-n-bg { fill: color-mix(in srgb, var(--bc) 60%, #15111c); stroke: #fff; filter: drop-shadow(0 0 6px var(--bc)); }
+.tt-node.cap .tt-n-bg { stroke-width: 5; }
+.tt-node.cap.maxed .tt-n-bg { fill: #ffd36f55; stroke: #ffd36f; filter: drop-shadow(0 0 10px #ffd36f); }
+.tt-node.sel .tt-n-bg { stroke: #fff; stroke-width: 5; }
+.tt-node:hover .tt-n-bg { filter: brightness(1.3) drop-shadow(0 0 6px var(--bc)); }
+@keyframes ttPulse { 50% { filter: drop-shadow(0 0 8px var(--bc)); } }
+.tt-detail { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; border-left: 4px solid var(--bc, var(--accent)); }
+.tt-detail .btn { align-self: flex-start; }
+body.reduce-motion .tt-node.buyable .tt-n-bg { animation: none; }
+.tt-node.owned .tt-n-in { fill: color-mix(in srgb, var(--bc) 30%, #0d0a10); }
+.tt-node.maxed .tt-n-in { fill: color-mix(in srgb, var(--bc) 50%, #0d0a10); }
+.tt-node.cap.maxed .tt-n-in { fill: #ffd36f66; }
+.tt-node.buyable .tt-n-in { fill: color-mix(in srgb, var(--bc) 10%, #0d0a10); }
+.tt-link.cap { stroke: #ffffff12; } .tt-link.cap.lit { stroke: color-mix(in srgb, var(--bc) 45%, transparent); filter: none; }
+.tt-n-ico { fill: #ffd36f; } .tt-node.cap .tt-n-ico { font-size: 26px; }

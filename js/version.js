@@ -1,7 +1,16 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.33';
+export const VERSION = '0.9.35';
 export const CHANGELOG = [
+  { v: '0.9.35', date: '2026-11-17', title: 'The Legacy Tree', notes: [
+    'The Legacy upgrades are now a real skill tree. The Legacy tab opens on a hub of five glowing hexes — Fortune, Cultivation, Body, Mind & Spirit and Destiny — around the Ultimate, each showing how much you\'ve unlocked and spent.',
+    'Open a branch to see it as a node graph: hexagon nodes joined by lines that light up as you buy them. Nodes you can afford pulse. Drag to look around, zoom with − and +, and tap a node to read it and unlock it.',
+    'New ultimate goals: every branch ends in a Capstone that unlocks once you own 15 of its upgrades — Midas Dynasty, Heaven-Born, Titan\'s Lineage, Sage Lineage and Fate-Weaver. Earn all five to unlock The Eternal Bloodline: bonuses to Qi, training, study, salary, loot, combat power, lifespan and an extra Social point every year.',
+  ] },
+  { v: '0.9.34', date: '2026-11-17', title: 'Trade, organised', notes: [
+    'The Trade tab is sorted into categories. Tailors: Tops, Bottoms, Dresses, Outerwear, Shoes, Socks, Hats and Masks. Arms: Weapons, Armour and Jewellery. Goods: Jewellery, Pills & incense and Materials. Each button shows how many are in stock.',
+    'Pick a category and you see every merchant that sells it, with their items laid out in a tidy grid from cheapest to most expensive. Merchants with nothing of that kind are hidden.',
+  ] },
   { v: '0.9.33', date: '2026-11-17', title: 'Trade', notes: [
     'New Trade tab (Economy & Action) with every merchant in town, a fitting mirror to try things on, and three sections: Arms & armour, Tailors, and Jewellers & goods.',
     'Arms: the City Armory, your country\'s Master Smith (5 weapons and armour pieces you can only buy in that country — 150 in total, from Katanas and Khukuris to Macuahuitls, Shotels and Zweihänders), and a Travelling Arms Dealer who turns up some years with foreign steel at import prices.',

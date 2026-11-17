@@ -52,6 +52,13 @@ export const TREE = [
   { id: 'd3', branch: 'destiny', name: 'Divine Notice', desc: 'Gods are twice as likely to cross your path.', cost: 60, max: 1, req: 'd1' },
   { id: 'd4', branch: 'destiny', name: 'Hunter\'s Blood', desc: 'End-game Hunts pay 10% more and are a little less deadly.', cost: 50, max: 1, req: 'd2' },
   { id: 'd5', branch: 'destiny', name: 'Fortune\'s Favourite', desc: '+5 Luck at birth, and loot rolls High grade more often.', cost: 80, max: 1, req: 'd3' },
+  // v0.9.35 capstones (need 15 nodes in their branch) and the Ultimate (needs all five capstones)
+  { id: 'f_cap', branch: 'fortune', cap: true, name: 'Midas Dynasty', desc: 'Capstone. +8% salary, +8% loot, start every life with +20,000 money.', cost: 500, max: 1, reqN: 15, mods: { pay: 0.08, loot: 0.08 }, birth: { money: 20000 } },
+  { id: 'c_cap', branch: 'cultivation', cap: true, name: 'Heaven-Born', desc: 'Capstone. +8% Qi gain, +3% breakthrough chance, +15 Qi affinity at birth.', cost: 500, max: 1, reqN: 15, mods: { qi: 0.08, breakthrough: 0.03 }, birth: { affinity: 15 } },
+  { id: 'b_cap', branch: 'body', cap: true, name: "Titan's Lineage", desc: 'Capstone. +4% combat power, +4 years of life, +6 Strength and Agility at birth.', cost: 500, max: 1, reqN: 15, mods: { power: 0.04, life: 4 }, birth: { strength: 6, agility: 6 } },
+  { id: 'm_cap', branch: 'mind', cap: true, name: 'Sage Lineage', desc: 'Capstone. +8% study gains, +6% closeness gains, +6 Smarts at birth.', cost: 500, max: 1, reqN: 15, mods: { study: 0.08, social: 0.06 }, birth: { smarts: 6 } },
+  { id: 'd_cap', branch: 'destiny', cap: true, name: 'Fate-Weaver', desc: 'Capstone. +8 Luck at birth, +6% loot, 2% chance an action costs nothing.', cost: 500, max: 1, reqN: 15, mods: { loot: 0.06, refund: 0.02 }, birth: { luck: 8 } },
+  { id: 'u_cap', branch: 'ultimate', cap: true, ultimate: true, name: 'The Eternal Bloodline', desc: 'The ultimate goal. +6% to Qi, training, study, salary and loot, +3% combat power, +5 years of life, +1 Social point a year.', cost: 2500, max: 1, reqAll: ['f_cap', 'c_cap', 'b_cap', 'm_cap', 'd_cap'], mods: { qi: 0.06, train: 0.06, study: 0.06, pay: 0.06, loot: 0.06, power: 0.03, life: 5, extraSocial: 1 } },
   // v0.9.25 twenty more nodes per branch (mods: per-level bonus, birth: per-level start bonus)
   { id: 'f9', branch: 'fortune', name: 'Penny Wise', desc: '+3% salary per level.', cost: 25, max: 3, req: 'f1', mods: { pay: 0.03 } },
   { id: 'f10', branch: 'fortune', name: 'Nest Egg', desc: '+1,000 starting money per level.', cost: 20, max: 3, req: 'f9', birth: { money: 1000 } },
@@ -227,7 +234,9 @@ export const omenMods = c => (c?.omens || []).map(id => OMENS[id]?.mods).filter(
 export const NODE = Object.fromEntries(TREE.map(n => [n.id, n]));
 export const perk = id => META.tree?.[id] || 0;
 export const nodeCost = n => n.cost * ((META.tree?.[n.id] || 0) + 1);
-export const canBuy = n => (perk(n.id) < n.max) && (!n.req || perk(n.req) > 0) && META.legacy >= nodeCost(n);
+export const branchOwned = br => TREE.filter(n => n.branch === br && !n.cap && perk(n.id) > 0).length;
+export const reqMet = n => (!n.req || perk(n.req) > 0) && (!n.reqN || branchOwned(n.branch) >= n.reqN) && (!n.reqAll || n.reqAll.every(id => perk(id) > 0));
+export const canBuy = n => (perk(n.id) < n.max) && reqMet(n) && META.legacy >= nodeCost(n);
 
 // Old perk shop (pre-0.5.2) → tree nodes
 export function migratePerks() {
