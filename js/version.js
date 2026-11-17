@@ -1,7 +1,10 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.30';
+export const VERSION = '0.9.31';
 export const CHANGELOG = [
+  { v: '0.9.31', date: '2026-11-16', title: 'Ascension flavour', notes: [
+    'The "You have ascended to…" screen now has 35 different two-line passages instead of one, drawn from a shuffled deck so you see every one before any repeats. Reaching Immortal Ascension has its own four.',
+  ] },
   { v: '0.9.30', date: '2026-11-16', title: 'Situations', notes: [
     'Every couple of years life puts you on the spot: 18 situations with no perfect answer. Run home through the rain for your mum\'s birthday (and risk the flu) or arrive late; study or go to the party the night before an exam; return a found wallet or keep the cash; tell a friend their partner is cheating; stay late for your boss or make your child\'s school play; take in a stray puppy; stand up to bullies; deal with a sibling\'s loan sharks; choose between secluded cultivation and a sick parent; and more.',
     'Options marked 🎲 are a gamble — your stats decide the odds (Health for running in the rain, Charisma for talking your way out, Strength or your realm for facing down thugs). The people involved remember what you chose.',

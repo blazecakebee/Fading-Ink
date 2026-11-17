@@ -42,6 +42,7 @@ import { IDENTITY_ACTS, attractedTo, sexualityOf } from './selfhood.js';
 import { appearanceYear } from './appearance.js';
 import * as F8 from './fate.js';
 import * as PR8 from './property.js';
+import * as ASC_LINES from '../data/ascendLines.js';
 import { SECTS } from '../data/realms.js';
 import { ITEMS } from '../data/items.js';
 import { ambientLine } from '../data/storyPool.js';
@@ -189,7 +190,7 @@ HOOKS.death.push(c => {
 // ---- install UI-side pieces (called by main.js once the UI hooks exist)
 export async function installExpansion() {
   const [{ cinematic }, { TABS, render, runActivity }, P] = await Promise.all([import('../ui/cinematic.js'), import('../ui/render.js'), import('../ui/expansionPanels.js')]);
-  const SP = await import('../data/storyPool.js'); ui.cinematic = o => cinematic(SP.varyCinematic(o)); // v0.9.2 varied scenes
+  const SP = await import('../data/storyPool.js'); ui.cinematic = o => cinematic(o.keepLines ? o : SP.varyCinematic(o)); // v0.9.2 varied scenes
   const AR = await import('../ui/arena.js'); const { S } = await import('../settings.js');
   ui.arena = o => AR.arena(o); ui.arenaOn = () => S().arenaFights !== false;
   ui.bossPhase = (await import('../ui/render.js')).bossPhase;
@@ -214,7 +215,11 @@ export async function installExpansion() {
   ui.fx = (kind, o = {}) => {
     if (kind === 'breakthrough' && o.major) {
       const R = REALMS.find(r => r.name === o.realm) || REALMS[G.char?.qi.realm || 1];
-      return cinematic({ motif: 'glyph', glyph: R.glyph, color: R.color, lines: ['The heavens take note.', R.id === 'immortal' ? 'Even Immortals count their years.' : 'Your limits shatter and re-form.'], title: R.name, sub: 'You have ascended to', sound: 'ascend', hold: 2 });
+      // v0.9.31 a shuffled bag of flavour lines, so every breakthrough reads differently
+      const AL = ASC_LINES, list = R.id === 'immortal' ? AL.IMMORTAL_LINES : AL.ASCEND_LINES, key = R.id === 'immortal' ? 'ascBagI' : 'ascBag';
+      if (!META[key]?.length) META[key] = list.map((_, i) => i).sort(() => Math.random() - 0.5);
+      const pair = list[META[key].pop()] || list[0];
+      return cinematic({ motif: 'glyph', glyph: R.glyph, color: R.color, lines: pair, title: R.name, sub: 'You have ascended to', sound: 'ascend', hold: 2, keepLines: true });
     }
     return fx0(kind, o);
   };
