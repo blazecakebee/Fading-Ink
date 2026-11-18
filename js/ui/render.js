@@ -1,4 +1,5 @@
 // Main screen rendering: top bar, age bar, left nav, center tab content, right stats column.
+import * as FX from '../systems/factions.js';
 import { effRealm, onBodyPath, canSeeSevered } from '../systems/path.js';
 import { G, META, save } from '../core/state.js';
 import { ui } from '../core/bus.js';
@@ -126,7 +127,7 @@ function topbar() {
   const c = G.char, cty = country(c);
   $('#topbar').replaceChildren(
     h('div', { class: 'who' }, realmFrame(c, h('div', { class: 'mini' }, portraitFor(c, 64))),
-      h('div', {}, h('div', { class: 'name display' }, flagEl(c.country, country(c).name), ' ', fullName(c)), h('div', { class: 'sub' }, `${c.qi.realm || onBodyPath(c) ? realmName(c) : 'Human'} · ${c.gender === 'F' ? 'Female' : 'Male'} · Age ${c.age} · ${lifeStage(c.age)}`), c.ownSect ? h('div', { class: 'clan' }, c.ownSect.emblem ? emblemSvg(c.ownSect.emblem, 18) : '👑', ` ${c.gender === 'F' ? 'Matriarch' : 'Patriarch'} of the ${c.ownSect.clan} Clan · ${c.ownSect.name}`) : null)),
+      h('div', {}, h('div', { class: 'name display' }, flagEl(c.country, country(c).name), ' ', fullName(c)), h('div', { class: 'sub' }, `${c.qi.realm || onBodyPath(c) ? realmName(c) : 'Human'} · ${c.gender === 'F' ? 'Female' : 'Male'} · Age ${c.age} · ${lifeStage(c.age)}`), c.ownSect ? h('div', { class: 'clan' }, c.ownSect.emblem ? emblemSvg(c.ownSect.emblem, 18) : '👑', ` ${c.gender === 'F' ? 'Matriarch' : 'Patriarch'} of the ${c.ownSect.clan} Clan · ${c.ownSect.name}`) : c.sect && c.sect !== 'own' ? h('div', { class: 'clan' }, '⛩\uFE0E', ` ${c.sect === 'guest' ? 'Guest' : FX.rankName(c)} of the ${FX.sectLabel(c)}`) : null)),
     h('div', { class: 'center' }, h('div', {}, h('b', {}, `Year ${G.world.year}`), ' · ', h('span', { class: 'era' }, G.world.era)),
       h('div', { class: 'where' }, '📍 ', `${c.city}, ${cty.name}`)),
     h('div', { class: 'right' }, h('div', {}, icon('market', 'sm'), ' ', h('span', { class: 'money' }, fmtMoney(c, c.money)), ' ', h('span', { class: 'muted', title: `Born into a ${WEALTH.find(w => w.id === c.wealth).name.toLowerCase()} family` }, wealthLabel(c))),
@@ -191,7 +192,9 @@ function bar(label, val, color, ic, max = 100, text) {
 }
 function rightCol() {
   const c = G.char, s = c.stats;
+  const yr = c.log[c.log.length - 1], recent = (yr?.lines || []).slice(-5);
   const out = [
+    G.ui.tab !== 'life' && c.alive ? h('div', { class: 'box life-peek', style: { cursor: 'pointer' }, title: 'Open your Life story', onclick: () => { G.ui.tab = 'life'; render(); } }, h('h3', {}, `This year · Age ${c.age}`), recent.length ? recent.map(l => h('div', { class: 'peek-line ' + (l.c || '') }, l.t)) : h('div', { class: 'muted small' }, 'Nothing has happened yet this year.'), h('div', { class: 'peek-foot muted small' }, `${c.actions} action${c.actions === 1 ? '' : 's'} · ${c.social} social left`, workloadChip(c))) : null,
     h('div', {}, bar('Health', s.health, '#ff5a6a', 'heart'), bar(`Happiness ${moodFace(s.happiness)}`, s.happiness, '#ffd84a', 'sun'), bar('Stress', s.stress, '#ff8a3a', 'brokenheart'),
       bar('Smarts', eff(c, 'smarts'), '#6ab0ff', 'mind', 100, eff(c, 'smarts') < s.smarts ? `${eff(c, 'smarts')} (${s.smarts})` : undefined), bar('Looks', s.looks, '#ff8ad0', 'flower'),
       c.qi.known ? bar('Qi', c.qi.qi, 'var(--qi)', 'cultivation', qiCap(c), `${c.qi.qi}/${qiCap(c)}`) : null),
@@ -332,7 +335,8 @@ export const TABS = {
       return acts.length ? { cat, acts } : null; }).filter(Boolean);
     let open = cats.find(x => x.cat.id === G.ui.dock);
     const dock = h('div', { class: 'dock' }, cats.map(({ cat, acts }) => h('button', { class: 'dock-chip' + (open?.cat.id === cat.id ? ' on' : '') + (RISKY.includes(cat.id) ? ' risky' : ''), onclick: () => { fx('click'); G.ui.dock = G.ui.dock === cat.id ? null : cat.id; render(); } }, icon(cat.icon, 'sm'), cat.name, h('span', { class: 'n' }, acts.length))));
-    const panel = open ? h('div', { class: 'dock-panel' + (RISKY.includes(open.cat.id) ? ' risky' : '') }, h('div', { class: 'row', style: { justifyContent: 'space-between' } }, h('b', {}, icon(open.cat.icon, 'sm'), ' ', open.cat.name), h('button', { class: 'btn ghost mini', onclick: () => { G.ui.dock = null; render(); } }, 'Close ✕')),
+    const opening = G.ui._dockShown !== (open?.cat.id || null); G.ui._dockShown = open?.cat.id || null; // v0.9.51 only animate when it opens
+    const panel = open ? h('div', { class: 'dock-panel' + (opening ? ' opening' : '') + (RISKY.includes(open.cat.id) ? ' risky' : '') }, h('div', { class: 'row', style: { justifyContent: 'space-between' } }, h('b', {}, icon(open.cat.icon, 'sm'), ' ', open.cat.name), h('button', { class: 'btn ghost mini', onclick: () => { G.ui.dock = null; render(); } }, 'Close ✕')),
       h('div', { class: 'acts' }, open.acts.map(actBtn))) : null;
     return [stage, h('div', { class: 'year-bar' }, h('span', { class: 'display' }, `This year`), h('span', { class: 'muted small' }, workloadChip(c), `${c.actions} action${c.actions === 1 ? '' : 's'} · ${c.social} social left`)), quickBar(c), dock, panel];
   },
@@ -466,22 +470,24 @@ export const TABS = {
     // degree jobs need the matching major; university students can only work part-time
     return [h('h2', { class: 'display' }, 'Career'),
       cur ? h('div', { class: 'year-card', style: { marginTop: '10px' } }, h('h3', {}, h('span', { class: 'job-emoji' }, jobEmoji(cur.id)), ` ${cur.name}`), h('div', {}, `Years: ${c.job.years} · Performance ${c.job.perf}%${c.job.raise > 1 ? ` · raises: +${Math.round((c.job.raise - 1) * 100)}%` : ''}`), bar('Performance', c.job.perf, 'var(--good)'),
-        h('div', { class: 'row' }, h('button', { class: 'btn ghost', onclick: () => { logLine(`I quit my job as a ${cur.name}.`); c.job = null; render(); } }, 'Quit job')))
+        c.job.contract ? h('div', { class: 'muted small', style: { margin: '4px 0' } }, `Contract: ${c.job.contract.term}-year term from ${c.job.contract.start}, review in ${Math.max(0, c.job.contract.start + c.job.contract.term - G.world.year - 1)} yr${(c.job.contract.clauses || []).length ? ' · ' + c.job.contract.clauses.join(', ') : ''}`) : null,
+        h('div', { class: 'row' }, h('button', { class: 'btn ghost', onclick: () => { logLine(J.quitJob(c)); render(); } }, 'Quit job')))
         : h('p', { class: 'muted' }, c.prison ? 'You are in prison.' : 'Unemployed.'),
       (() => { const A = J.agentOf(c);
         return h('div', { class: 'box', style: { marginTop: '12px' } }, h('h3', {}, icon('career', 'sm'), ' Job agent'),
-          A ? [h('div', {}, h('b', {}, `${A.first} ${A.last}`), h('span', { class: 'muted' }, ` · ${J.AGENTS[A.agent.tier].name} · ${fmtMoney(c, J.agentFee(c, A.agent.tier))} a year`)),
-            h('div', { class: 'muted small' }, `+${Math.round(J.AGENTS[A.agent.tier].hire * 100)}% hiring chance, more openings each year. Ask them for leads in the People tab (1 social, once a year).`)]
-            : [h('div', { class: 'muted small' }, 'Only some jobs are hiring each year. A job agent finds openings you qualify for and talks you up — for a yearly fee.'),
-              h('div', { class: 'row', style: { marginTop: '8px', flexWrap: 'wrap' } }, Object.entries(J.AGENTS).map(([k, a]) => { const fee = J.agentFee(c, k);
-                return h('button', { class: 'btn ghost', title: a.desc, disabled: !c.alive || c.age < 15 || c.money < fee, onclick: () => { const t = J.hireAgent(c, k); if (t) { logLine(t, 'good'); fx('coin'); render(); } } }, `${a.name} · ${fmtMoney(c, fee)}/yr`); }))]); })(),
+          A ? [h('div', {}, h('b', {}, `${A.first} ${A.last}`), h('span', { class: 'muted' }, ` · ${J.AGENTS[A.agent.tier].name} · contract until ${A.agent.until ?? G.world.year}`)),
+            h('div', { class: 'muted small' }, `+${Math.round(J.AGENTS[A.agent.tier].hire * 100)}% hiring chance, more openings each year. Ask them for leads in the People tab (1 social, once a year).`),
+            h('button', { class: 'btn ghost mini', style: { marginTop: '6px' }, onclick: () => { const t = J.fireAgent(c); if (t) { logLine(t); render(); } } }, '✂️ Let them go (no refund)')]
+            : [h('div', { class: 'muted small' }, 'Only some jobs are hiring each year. A job agent finds openings you qualify for and talks you up. They work on a contract paid up front (1 year, or 3 years at 15% off) and leave when it ends.'),
+              h('div', { class: 'row', style: { marginTop: '8px', flexWrap: 'wrap' } }, Object.entries(J.AGENTS).flatMap(([k, a]) => [1, 3].map(y => { const fee = J.contractCost(c, k, y);
+                return h('button', { class: 'btn ghost', title: a.desc, disabled: !c.alive || c.age < 15 || c.money < fee, onclick: () => { const t = J.hireAgent(c, k, y); if (t) { logLine(t, 'good'); fx('coin'); render(); } } }, `${a.name} · ${y} yr · ${fmtMoney(c, fee)}`); })))]); })(),
       h('h3', { class: 'display', style: { margin: '16px 0 8px' } }, `Hiring this year (${J.listed(c).length} of ${CAREERS.length} jobs)`),
       J.listed(c).length ? null : h('p', { class: 'muted' }, 'Nobody is hiring right now. Try again next year, or get a job agent.'),
       h('div', { class: 'grid2' }, J.listed(c).map(j => { const ok = J.eligible(c, j), lead = J.jobBoard(c).leads.includes(j.id);
         return h('div', { class: 'card' + (ok ? '' : ' locked') }, h('h4', {}, h('span', { class: 'job-emoji' }, jobEmoji(j.id)), ' ', j.name, j.part ? h('span', { class: 'muted' }, ' (part-time)') : '', lead ? h('span', { class: 'grade', style: { background: '#7fd1ff' } }, 'Agent lead') : ''),
         h('div', { class: 'muted' }, `${fmtMoney(c, j.pay * wage(c) * (j.part ? 0.5 : 1))}/yr · age ${j.minAge}+ · ${EDUCATION[j.edu]}${j.major ? ' in ' + j.major.join(' or ') : ''}${j.stat ? ' · ' + Object.entries(j.stat).map(([k, v]) => `${k} ${v}+`).join(', ') : ''}${j.realm ? ' · ' + REALMS[j.realm].name : ''}${j.license ? ' · driver\'s license' : ''}${j.trade ? ` · ${j.trade} certificate` : ''}`),
         h('div', { class: 'row', style: { marginTop: '8px' } }, h('button', { class: 'btn', disabled: !c.alive || c.prison || c.actions <= 0 || !ok || c.job?.id === j.id,
-          onclick: () => runActivity({ id: 'apply_' + j.id, cat: 'work', run: async cc => { const b = J.jobBoard(cc); const r = await J.interview(cc, j); if (r.hired) { cc.job = { id: j.id, years: 0, perf: 50 }; b.ids = b.ids.filter(x => x !== j.id); b.leads = b.leads.filter(x => x !== j.id); } return r; } }) }, 'Apply (⚡1)'),
+          onclick: () => runActivity({ id: 'apply_' + j.id, cat: 'work', run: async cc => { const b = J.jobBoard(cc); const r = await J.interview(cc, j); if (r.hired) { const k = await J.signContract(cc, j, r.p); if (cc.job?.id === j.id) { b.ids = b.ids.filter(x => x !== j.id); b.leads = b.leads.filter(x => x !== j.id); } return { ...k, text: `${r.text} ${k.text}`, big: k.cls === 'good' }; } return r; } }) }, 'Apply (⚡1)'),
           ok ? h('span', { class: 'muted small' }, `${Math.round(J.hireChance(c, j) * 100)}% chance`) : h('span', { class: 'muted small' }, 'Not qualified'))); }))];
   },
 

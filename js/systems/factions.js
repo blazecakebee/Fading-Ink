@@ -239,7 +239,8 @@ export async function factionsYear(c) {
 }
 export function oust(c, why, voluntary) {
   const name = sectLabel(c); (c.flags.exiled ||= {})[c.sect] = true;
-  c.sect = null; c.sectRank = 0; c.contrib = 0; c.board = null;
+  // v0.9.51 leaving on your own terms keeps your contribution (a name in the wider sect world); expulsion wipes it
+  c.sect = null; c.sectRank = 0; c.board = null; if (!voluntary) c.contrib = 0; else c.contrib = Math.max(0, c.contrib || 0);
   ui.log(voluntary ? `I left the ${name}: ${why}.` : `I was expelled from the ${name}: ${why}. Its gates are closed to me forever.`, 'bad');
   stat(c, 'happiness', -10);
 }

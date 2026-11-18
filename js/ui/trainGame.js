@@ -21,6 +21,10 @@ export const GAMES = {
   pins: { title: 'Pick the lock', how: 'Drag each pin up to the gold shear line and let go right on it. 4 pins.' },
   crowd:   { title: 'Work the crowd',    how: 'Tap the wallets as they pass. Never tap a cop.' },
   glint:   { title: 'Spot the glint',    how: 'Watch where things sparkle, then tap all of those spots.' },
+  forge:   { title: 'Strike while hot',  how: 'A ring closes on the glowing spot. Tap the moment it meets it. 5 blows.' },
+  stitch:  { title: 'Sew the seam',      how: 'Drag along the zigzag seam from left to right. Stay on the line.' },
+  brew:    { title: 'Stir the cauldron', how: 'Stir in circles to keep the needle in the gold band. Too slow it sets, too fast it boils.' },
+  gem:     { title: 'Set the gem',       how: 'The gem spins. Tap SET when its point lines up with the gold mark. 4 gems.' },
   bite:    { title: 'Wait for the bite', how: 'Tap the moment the float plunges under. Ignore the little twitches.' },
   // v0.9.13 meditation, one game per cultivation method
   m_turtle: { title: 'Turtle Breath', how: 'Feel the slow rhythm, then keep it going on your own once the pulse fades. Tap on each breath.' },
@@ -192,6 +196,48 @@ const GAMEFNS = {
     on(stage, 'pointerdown', e => { e.preventDefault(); if (k < n) { pouring = true; stream.classList.add('on'); } }); on(window, 'pointerup', stop); on(window, 'pointercancel', stop);
     on(window, 'keydown', e => { if (e.code === 'Space' && !e.repeat) { e.preventDefault(); pouring = true; stream.classList.add('on'); } }); on(window, 'keyup', e => { if (e.code === 'Space') stop(); });
     loop(dt => { if (pouring) { fill = Math.min(1, fill + rate * dt * (0.6 + fill)); metal.style.height = fill * 100 + '%'; if (fill >= 1) stop(); } });
+  },
+  // ---- v0.9.54 crafting: each kind of item has its own game
+  // weapons: a ring closes on the hot spot; strike as it meets the target. 5 blows.
+  forge({ stage, diff, done, on, loop, flash, pips, el, local }) {
+    const n = 5, mark = pips(n), blade = el('tg-blade'); let k = 0, sc = 0, t = 0, R = 1, x = 0.5, y = 0.5, spot = null, ring = null, active = false, wait = 0.4;
+    const spawn = () => { x = rnd(0.2, 0.8); y = rnd(0.35, 0.6); spot?.remove(); ring?.remove(); spot = el('tg-hot'); ring = el('tg-fring'); spot.style.left = ring.style.left = x * 100 + '%'; spot.style.top = ring.style.top = y * 100 + '%'; R = 1; active = true; };
+    const strike = () => { if (!active) return; active = false; const s = clamp01(1 - Math.abs(R - 0.32) / 0.32); sc += s; mark(k, s); flash(s >= 0.45); blade.classList.remove('ping'); void blade.offsetWidth; blade.classList.add('ping'); ring.style.opacity = 0; if (++k >= n) return done(sc / n); wait = 0.35; };
+    on(stage, 'pointerdown', e => { e.preventDefault(); strike(); }); on(window, 'keydown', e => { if (e.code === 'Space') { e.preventDefault(); strike(); } });
+    loop(dt => { if (!active) { wait -= dt; if (wait <= 0 && k < n) spawn(); return; } R -= dt * (0.55 + diff * 0.45); ring.style.transform = `translate(-50%, -50%) scale(${Math.max(0, R) * 2.6 + 0.3})`;
+      if (R <= -0.05) { active = false; mark(k, 0); flash(false); ring.style.opacity = 0; if (++k >= n) { done(sc / n); return false; } wait = 0.35; } });
+  },
+  // armour: drag along the zigzag seam. Stay on the stitch line from start to finish.
+  stitch({ stage, diff, done, on, loop, local }) {
+    const NS = 'http://www.w3.org/2000/svg', svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 100 60'); svg.setAttribute('preserveAspectRatio', 'none'); svg.classList.add('tg-seam');
+    const pts = Array.from({ length: 7 }, (_, i) => [8 + i * 14, i % 2 ? 18 + rnd(0, 8) : 42 - rnd(0, 8)]);
+    const path = document.createElementNS(NS, 'polyline'); path.setAttribute('points', pts.map(p => p.join(',')).join(' ')); svg.append(path);
+    const sewn = document.createElementNS(NS, 'polyline'); sewn.classList.add('sewn'); svg.append(sewn); stage.append(svg);
+    const tol = 7 + (1 - diff) * 4; let held = false, prog = 0, off = 0, samples = 0, t = 0; const done_pts = [];
+    const segDist = (px, py) => { let best = 1e9, bi = 0; for (let i = 0; i < pts.length - 1; i++) { const [ax, ay] = pts[i], [bx, by] = pts[i + 1], dx = bx - ax, dy = by - ay, u = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy))), qx = ax + u * dx, qy = ay + u * dy, d = Math.hypot(px - qx, py - qy); if (d < best) { best = d; bi = i + u; } } return [best, bi]; };
+    const move = e => { if (!held) return; const [lx, ly] = local(e), px = lx * 100, py = ly * 60, [d, along] = segDist(px, py); samples++; if (d > tol) off++; else if (along > prog && along - prog < 0.6) { prog = along; done_pts.push(`${px.toFixed(1)},${py.toFixed(1)}`); sewn.setAttribute('points', done_pts.join(' ')); } };
+    on(stage, 'pointerdown', e => { e.preventDefault(); held = true; move(e); }); on(stage, 'pointermove', move); on(window, 'pointerup', () => { held = false; }); on(window, 'pointercancel', () => { held = false; });
+    loop(dt => { t += dt; if (prog >= pts.length - 1.15 || t > 7 - diff) { const cover = prog / (pts.length - 1), clean = samples ? 1 - off / samples : 0; done(clamp01(cover * (0.35 + 0.75 * clean))); return false; } });
+  },
+  // pills: stir the cauldron in steady circles. Too slow and it sets, too fast and it boils over.
+  brew({ stage, diff, done, on, loop, el, local }) {
+    const dur = 5, pot = el('tg-cauldron'), meter = el('tg-stirbar'), needle = el('tg-needle', meter), band = el('tg-band2', meter), bar = el('tg-timer'); bar.append(h('i'));
+    const lo = 0.38 + diff * 0.05, hi = 0.68 - diff * 0.04; band.style.left = lo * 100 + '%'; band.style.width = (hi - lo) * 100 + '%';
+    let held = false, lastA = null, speed = 0, t = 0, good = 0;
+    const move = e => { if (!held) return; const [x, y] = local(e), a = Math.atan2(y - 0.55, (x - 0.5) * 1.6); if (lastA != null) { let d = a - lastA; d = Math.atan2(Math.sin(d), Math.cos(d)); speed += Math.abs(d) * 0.08; } lastA = a; };
+    on(stage, 'pointerdown', e => { e.preventDefault(); held = true; lastA = null; }); on(stage, 'pointermove', move); on(window, 'pointerup', () => { held = false; }); on(window, 'pointercancel', () => { held = false; });
+    loop(dt => { t += dt; speed = Math.max(0, speed * (1 - dt * 1.6)); const v = Math.min(1, speed); needle.style.left = v * 100 + '%'; const ok = v >= lo && v <= hi; if (ok) good += dt; pot.classList.toggle('ok', ok); pot.classList.toggle('boil', v > hi);
+      bar.firstChild.style.width = Math.max(0, 1 - t / dur) * 100 + '%'; if (t >= dur) { done(good / (dur - 0.6) * 1.05); return false; } });
+  },
+  // jewellery and charms: turn each gem until its facet points at the gold mark. 4 gems.
+  gem({ stage, diff, done, on, loop, flash, pips, el }) {
+    const n = 4, mark = pips(n), g = el('tg-gemstone', stage, '▲'), tgt = el('tg-gemmark'), btn = h('button', { class: 'tg-tf yes' }, 'Set ✓'); stage.append(h('div', { class: 'tg-feet one' }, btn));
+    let k = 0, sc = 0, a = 0, goal = 0, spd = 0;
+    const next = () => { goal = rnd(0, 360); tgt.style.transform = `translate(-50%, -50%) rotate(${goal}deg)`; spd = (140 + diff * 140) * (Math.random() < 0.5 ? 1 : -1); };
+    next();
+    const set = () => { let d = Math.abs(((a - goal) % 360 + 540) % 360 - 180); const s = clamp01(1 - d / (28 + (1 - diff) * 14)); sc += s; mark(k, s); flash(s >= 0.45); if (++k >= n) return done(sc / n); next(); };
+    on(btn, 'pointerdown', e => { e.preventDefault(); set(); }); on(window, 'keydown', e => { if (e.code === 'Space') { e.preventDefault(); set(); } });
+    loop(dt => { a = (a + spd * dt + 360) % 360; g.style.transform = `translate(-50%, -50%) rotate(${a}deg)`; });
   },
   // shoplifting: creep forward only while the eye is shut
   sneak({ stage, diff, done, on, loop, flash, el }) {

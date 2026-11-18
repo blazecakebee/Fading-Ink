@@ -19,6 +19,7 @@ export const agentOf = c => c.people.find(p => p.alive && p.agent);
 export const agentFee = (c, tier) => priceFor(c, Math.round(AGENTS[tier].fee * wage(c) / 0.32 * (perk('f8') ? 0.8 : 1)));
 
 export function eligible(c, j) {
+  if (c.flags?.nonCompete?.field === j.id && G.world.year <= c.flags.nonCompete.until) return false; // v0.9.52 non-compete
   return c.age >= j.minAge && c.age <= (j.maxAge || 99) && c.edu.level >= j.edu && (!j.major || j.major.includes(c.edu.major) || j.major.includes(c.edu.gradMajor)) && (!/Univers|Master|Doctoral/.test(c.edu.school || '') || j.part) && (!j.trade || (c.edu.trades || []).includes(j.trade)) && (!j.stat?.looks || c.stats.looks >= j.stat.looks)
     && Object.entries(j.stat || {}).every(([k, v]) => k === 'looks' || eff(c, k) >= v) && (!j.realm || c.qi.realm >= j.realm) && (!j.license || hasLicense(c));
 }
@@ -34,17 +35,20 @@ export function jobBoard(c) {
 export const listed = c => { const b = jobBoard(c); return CAREERS.filter(j => b.ids.includes(j.id) || b.leads.includes(j.id)); };
 export const hireChance = (c, j) => clamp(0.2 + c.stats.charisma / 300 + c.stats.smarts / 500 + (agentOf(c) ? AGENTS[agentOf(c).agent.tier].hire : 0) + (perk('f8') ? 0.06 : 0) - (j.pay >= 150000 ? 0.15 : j.pay >= 90000 ? 0.08 : 0), 0.05, 0.8);
 
-export function hireAgent(c, tier) {
-  const fee = agentFee(c, tier); if (c.money < fee) return null;
+// v0.9.52 agents work on fixed contracts, paid up front: 1 year, or 3 years at 15% off. They leave when it ends.
+export const CONTRACT_TERMS = [[1, 1], [3, 0.85]];
+export const contractCost = (c, tier, years) => Math.round(agentFee(c, tier) * years * (CONTRACT_TERMS.find(t => t[0] === years)?.[1] || 1));
+export function hireAgent(c, tier, years = 1) {
+  const fee = contractCost(c, tier, years); if (c.money < fee) return null;
   const old = agentOf(c); if (old) { old.agent = null; old.role = 'Acquaintance'; }
   money(c, -fee);
-  const p = makePerson(c, { role: AGENTS[tier].name.replace(/^\w/, m => m.toUpperCase()), age: ri(26, 60), close: 30, extra: { agent: { tier, since: G.world.year, paid: G.world.year } } });
+  const p = makePerson(c, { role: AGENTS[tier].name.replace(/^\w/, m => m.toUpperCase()), age: ri(26, 60), close: 30, extra: { agent: { tier, since: G.world.year, until: G.world.year + years - 1, paid: G.world.year } } });
   c.people.push(p);
   // they get to work right away: a lead or two on this year's board
   const got = findLeads(c, AGENTS[tier].leads);
-  return `I hired ${p.first} ${p.last}, ${AGENTS[tier].name.toLowerCase()}, for ${fmtMoney(c, fee)} a year.${got.length ? ` They already found: ${got.join(', ')}.` : ''}`;
+  return `I signed ${p.first} ${p.last}, ${AGENTS[tier].name.toLowerCase()}, on a ${years}-year contract for ${fmtMoney(c, fee)}.${got.length ? ` They already found: ${got.join(', ')}.` : ''}`;
 }
-export function fireAgent(c) { const p = agentOf(c); if (!p) return null; p.agent = null; p.role = 'Acquaintance'; p.close = clamp(p.close - 15); return `I let my job agent ${p.first} go.`; }
+export function fireAgent(c) { const p = agentOf(c); if (!p) return null; const left = (p.agent.until ?? G.world.year) - G.world.year; p.agent = null; p.role = 'Acquaintance'; p.close = clamp(p.close - 15); return `I let my job agent ${p.first} go.${left > 0 ? ` The ${left} year${left > 1 ? 's' : ''} left on the contract stay paid; that money is gone.` : ''}`; }
 // leads: jobs you qualify for that aren't on the board, best-paying first (with some luck)
 export function findLeads(c, n) {
   const b = jobBoard(c); const pool = CAREERS.filter(j => !b.ids.includes(j.id) && !b.leads.includes(j.id) && eligible(c, j)).sort((a, z) => z.pay - a.pay);
@@ -61,11 +65,73 @@ export const AGENT_SOCIAL = [
 ];
 // yearly retainer; if you can't pay, they walk
 export function jobsYear(c) {
+  contractYear(c);
   const p = agentOf(c); if (!p) return;
-  if (p.agent.paid === G.world.year) return; p.agent.paid = G.world.year;
-  const fee = agentFee(c, p.agent.tier);
-  if (c.money < fee) { p.agent = null; p.role = 'Acquaintance'; ui.log(`I couldn't pay ${p.first}'s retainer, so my job agent dropped me.`, 'bad'); return; }
-  money(c, -fee);
+  if (p.agent.until == null) p.agent.until = G.world.year; // older saves: their retainer runs out now
+  if (G.world.year >= p.agent.until) { p.agent = null; p.role = 'Acquaintance'; ui.log(`My contract with job agent ${p.first} ran out. They shook my hand and moved on to their next client.`); }
+}
+
+// ---- v0.9.52 employment contracts: after a successful interview you get a contract to read, then sign, negotiate or walk away
+const CLAUSES = [
+  { id: 'overtime', name: 'Mandatory overtime', text: 'You will work evenings when needed. +12% salary, but it wears on you.', pay: 0.12, stress: 4 },
+  { id: 'remote', name: 'Flexible hours', text: 'You may set your own hours. -5% salary, less stress.', pay: -0.05, stress: -3 },
+  { id: 'bonus', name: 'Performance bonus', text: 'A bonus of up to 20% of salary if your performance is above 70%.', bonus: 0.2 },
+  { id: 'noncompete', name: 'Non-compete', text: 'If you quit early, you repay your signing bonus and wait a year before working in this field.', strict: true },
+  { id: 'probation', name: 'Probation', text: 'The first year is probation: poor performance (under 35%) gets you dismissed at year end.', probation: true },
+  { id: 'equity', name: 'Profit share', text: 'A small cut of the company: +3% salary every year you stay.', equity: 0.03 },
+];
+export function offerContract(c, j, interviewP) {
+  const lean = j.pay >= 90000, term = pick(lean ? [3, 5] : [1, 2, 3]), base = 0.92 + Math.random() * 0.12 + (interviewP - 0.5) * 0.15;
+  const pool = shuffle(CLAUSES).slice(0, ri(1, 3)).map(x => x.id);
+  const bonus = chance(lean ? 0.7 : 0.35) ? Math.round(j.pay * wage(c) * (0.05 + Math.random() * 0.1)) : 0;
+  return { job: j.id, salary: Math.round(base * 100) / 100, term, clauses: pool, signBonus: bonus, negotiated: false };
+}
+export function contractText(c, j, K) {
+  const pay = j.pay * wage(c) * (j.part ? 0.5 : 1) * K.salary * (1 + K.clauses.reduce((s, id) => s + (CLAUSES.find(x => x.id === id)?.pay || 0), 0));
+  return `EMPLOYMENT CONTRACT · ${j.name}\n\n` +
+    `Salary: ${fmtMoney(c, Math.round(pay))} a year (${K.salary >= 1 ? '+' : ''}${Math.round((K.salary - 1) * 100)}% vs the usual offer)\n` +
+    `Term: ${K.term} year${K.term > 1 ? 's' : ''}, then reviewed against your performance\n` +
+    (K.signBonus ? `Signing bonus: ${fmtMoney(c, K.signBonus)}, paid on signing\n` : '') +
+    K.clauses.map(id => { const x = CLAUSES.find(y => y.id === id); return `• ${x.name}: ${x.text}`; }).join('\n');
+}
+export async function signContract(c, j, interviewP) {
+  let K = offerContract(c, j, interviewP);
+  for (;;) {
+    const v = await ui.choice({ title: 'Your contract', icon: 'letter', dismiss: false, text: contractText(c, j, K),
+      options: [{ label: '✍️ Sign it', value: 'sign' }, ...(K.negotiated ? [] : [{ label: `Negotiate (Charisma ${eff(c, 'charisma')})`, value: 'neg' }]), { label: 'Walk away', value: 'no', ghost: true }] });
+    if (v === 'no' || v == null) return { text: `I read the contract for ${j.name} twice, then walked away.`, cls: '' };
+    if (v === 'neg') { K.negotiated = true; const pc = clamp(0.25 + (eff(c, 'charisma') - 40) / 120, 0.1, 0.8);
+      if (chance(pc)) { K.salary = Math.round((K.salary + 0.05 + Math.random() * 0.07) * 100) / 100; if (K.clauses.includes('noncompete') && chance(0.5)) K.clauses = K.clauses.filter(x => x !== 'noncompete'); ui.toast?.('They agreed to better terms.'); }
+      else if (chance(0.25)) return { text: `I pushed too hard negotiating for ${j.name}. They withdrew the offer.`, cls: 'bad' };
+      else ui.toast?.('They would not budge.');
+      continue; }
+    // sign
+    const stress = K.clauses.reduce((s, id) => s + (CLAUSES.find(x => x.id === id)?.stress || 0), 0), payAdj = K.clauses.reduce((s, id) => s + (CLAUSES.find(x => x.id === id)?.pay || 0), 0);
+    c.job = { id: j.id, years: 0, perf: 50, raise: Math.round(K.salary * (1 + payAdj) * 100) / 100, contract: { ...K, start: G.world.year, stress } };
+    if (K.signBonus) money(c, K.signBonus);
+    return { text: `I signed my contract as a ${j.name}: ${K.term} year${K.term > 1 ? 's' : ''}${K.signBonus ? `, with a ${fmtMoney(c, K.signBonus)} signing bonus` : ''}.`, cls: 'good', big: true };
+  }
+}
+// yearly: clauses take effect, and contracts come up for review at the end of their term
+function contractYear(c) {
+  const K = c.job?.contract; if (!K) return; const J = CAREERS.find(x => x.id === c.job.id);
+  if (K.stress) c.stats.stress = clamp(c.stats.stress + K.stress, 0, 100);
+  if (K.clauses.includes('bonus') && c.job.perf > 70 && J) { const b = Math.round(J.pay * wage(c) * 0.2 * (c.job.perf - 70) / 30); if (b > 0) { money(c, b); ui.log(`Performance bonus: ${fmtMoney(c, b)}.`, 'good'); } }
+  if (K.clauses.includes('equity')) c.job.raise = Math.round((c.job.raise || 1) * 1.03 * 100) / 100;
+  const yrs = G.world.year - K.start + 1;
+  if (K.clauses.includes('probation') && yrs === 1 && c.job.perf < 35) { ui.log(`My probation ended badly. ${J?.name || 'The job'} let me go.`, 'bad'); c.job = null; return; }
+  if (yrs >= K.term) {
+    if (c.job.perf < 40) { ui.log(`My ${K.term}-year contract as a ${J?.name || 'worker'} was not renewed.`, 'bad'); c.job = null; return; }
+    const r = c.job.perf >= 75 ? 0.08 : c.job.perf >= 55 ? 0.04 : 0;
+    c.job.raise = Math.round((c.job.raise || 1) * (1 + r) * 100) / 100; K.start = G.world.year + 1; K.term = pick([2, 3, 3, 5]); K.signBonus = 0;
+    ui.log(`My contract was renewed for ${K.term} more years${r ? ` with a ${Math.round(r * 100)}% raise` : ''}.`, r ? 'good' : '');
+  }
+}
+// quitting early under a non-compete costs you
+export function quitJob(c) {
+  const K = c.job?.contract, J = CAREERS.find(x => x.id === c.job?.id); let extra = '';
+  if (K && K.clauses.includes('noncompete') && G.world.year - K.start + 1 < K.term) { const back = K.signBonus || Math.round((J?.pay || 20000) * wage(c) * 0.1); money(c, -back); c.flags.nonCompete = { field: J?.id, until: G.world.year + 1 }; extra = ` Breaking the non-compete cost me ${fmtMoney(c, back)}.`; }
+  c.job = null; return `I quit my job as a ${J?.name || 'worker'}.${extra}`;
 }
 
 // ---- v0.9.7 job interviews: two questions. A wrong answer ends the interview on the spot.
@@ -101,7 +167,7 @@ export async function interview(c, j) {
     fit += A[1] === 'tech' ? (sm - 55) / 120 + (knows && j.edu >= 2 ? 0.08 : -0.04) : A[1] === 'charm' ? (ch - 55) / 120 : 0.04;
   }
   const p = clamp(base + fit / 2 + 0.05, 0.05, 0.9); // two good answers earn a little goodwill
-  if (chance(p)) return { text: `${pick(['They shook my hand on the spot.', 'They called back the same evening.', 'The panel exchanged a look — a good one.'])} I was hired as a ${j.name}! (${Math.round(p * 100)}%)`, cls: 'good', big: true, hired: true };
+  if (chance(p)) return { text: `${pick(['They shook my hand on the spot.', 'They called back the same evening.', 'The panel exchanged a look — a good one.'])} They offered me the job of ${j.name}! (${Math.round(p * 100)}%)`, cls: 'good', big: true, hired: true, p };
   return { text: `${pick(['I answered well, but they went with someone else.', '"We\'ll be in touch." They were not.', 'Good interview — just not good enough this time.'])} (${Math.round(p * 100)}%)`, cls: 'bad' };
 }
 

@@ -110,16 +110,28 @@ export function cloudBonus(c) { c.flags.cloudAff ||= 0; if (c.flags.cloudAff < 6
 
 // ---- the doctor: a check-up, or prosthetics for missing limbs
 import { prostheticOffers, fitProsthetic } from './body.js';
+// v0.9.51 a cheap public clinic or an expensive private specialist; then a check-up, a specific condition, or a prosthetic
 export const DOCTOR = { id: 'doctor', cat: 'mind', name: 'Visit the doctor', icon: 'doctor', minAge: 0, run: async c => {
-  const k = country(c).econ, cost = priceFor(c, Math.round(120 * k));
-  const offers = prostheticOffers(c).map(o => ({ ...o, price: priceFor(c, Math.round(o.price * k)) }));
+  const H = await import('./health.js'), { COND_BY_ID } = await import('../data/conditions.js');
+  const k = country(c).econ, pays = c.age >= 18;
+  const TIERS = { clinic: { name: 'Public clinic', fee: 60, heal: [3, 10], cost: 0.6, chance: 0.75 }, private: { name: 'Private specialist', fee: 450, heal: [12, 25], cost: 2.2, chance: 1.25 } };
+  const fee = t => priceFor(c, Math.round(TIERS[t].fee * k)), money$ = n => pays ? fmtMoney(c, n) : 'parents pay';
+  const tier = await ui.choice({ title: 'Which doctor?', icon: 'doctor', text: `The clinic is cheap, crowded and so-so. A private specialist costs far more, heals more and cures more often.${pays ? `\nYou have ${fmtMoney(c, c.money)}.` : ''}`,
+    options: [...Object.entries(TIERS).map(([id, T]) => ({ label: `${T.name} · check-up ${money$(fee(id))}`, value: id, disabled: pays && c.money < fee(id) })), { label: 'Leave', value: null, ghost: true }] });
+  if (!tier) return null; const T = TIERS[tier];
+  const conds = (c.conditions || []).filter(x => H.treatOptions(c, x).some(o => o.id === 'doctor'));
+  const offers = c.age >= 6 ? prostheticOffers(c).map(o => ({ ...o, price: priceFor(c, Math.round(o.price * k * (tier === 'private' ? 1.3 : 1))), eff: Math.min(0.95, o.eff * (tier === 'private' ? 1.1 : 0.9)) })) : [];
   let v = 'checkup';
-  if (offers.length && c.age >= 6) v = await ui.choice({ title: 'The doctor', icon: 'doctor', text: `"Let's see what we can do."\n\nProsthetics restore part of a lost limb's function — never all of it.${c.age < 18 ? '\n(Your parents would have to pay.)' : ''}`,
-    options: [{ label: `General check-up — ${fmtMoney(c, cost)}`, value: 'checkup', disabled: c.age >= 18 && c.money < cost },
-      ...offers.map((o, i) => ({ label: `${o.name} for my ${o.part.name.toLowerCase()} — ${Math.round(o.eff * 100)}% function · ${fmtMoney(c, o.price)}`, value: i, disabled: c.money < o.price })),
+  if (conds.length || offers.length) v = await ui.choice({ title: T.name, icon: 'doctor', text: '"What seems to be the problem?"',
+    options: [{ label: `General check-up (+Health) · ${money$(fee(tier))}`, value: 'checkup', disabled: pays && c.money < fee(tier) },
+      ...conds.map(x => { const o = H.treatOptions(c, x).find(o => o.id === 'doctor'), cost = Math.round(o.cost * T.cost), pc = Math.round(Math.min(0.97, o.chance * T.chance) * 100);
+        return { label: `Treat my ${COND_BY_ID[x.id].name} · ${money$(cost)} · ${pc}% to cure`, value: 'c:' + x.id, disabled: pays && c.money < cost }; }),
+      ...offers.map((o, i) => ({ label: `${o.name} for my ${o.part.name.toLowerCase()} · ${Math.round(o.eff * 100)}% function · ${fmtMoney(c, o.price)}`, value: i, disabled: c.money < o.price })),
       { label: 'Leave', value: null, ghost: true }] });
   if (v == null) return null;
-  if (v === 'checkup') { if (c.age >= 18) { if (c.money < cost) return null; money(c, -cost); } const g = ri(5, 15); stat(c, 'health', g); return `The doctor patched me up. Health +${g}.`; }
+  if (typeof v === 'string' && v.startsWith('c:')) return H.treat(c, v.slice(2), 'doctor', { cost: pays ? T.cost : 0, chance: T.chance, label: tier === 'private' ? 'The specialist' : 'The clinic doctor' });
+  if (v === 'checkup') { const f = fee(tier); if (pays) { if (c.money < f) return null; money(c, -f); } const g = ri(...T.heal); stat(c, 'health', g);
+    return tier === 'private' ? `A private specialist went over me head to toe. Health +${g}.${pays ? ` (${fmtMoney(c, f)})` : ''}` : `The clinic was packed; the doctor gave me four minutes. Health +${g}.${pays ? ` (${fmtMoney(c, f)})` : ''}`; }
   const o = offers[v]; const r = fitProsthetic(c, o.part.id, o.id, o.price); if (!r) return null;
   stat(c, 'happiness', o.eff >= 0.8 ? 8 : 3); return { ...r, text: `${r.text} It works at about ${Math.round(o.eff * 100)}% of the real thing.` };
 } };

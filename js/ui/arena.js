@@ -46,6 +46,36 @@ const P = {
     return { t0: at, warn: Math.max(0.55, 1 - d * 0.25), live: 0.3, hit: (px, py) => dist(px, py, x, y) < r,
       draw(ctx, t, on, k, col) { ctx.save(); if (!on) { ctx.strokeStyle = col; ctx.globalAlpha = 0.3 + 0.6 * k; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, r * (1.4 - 0.4 * k), 0, 7); ctx.stroke(); ctx.globalAlpha = 0.1; ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); }
         else { ctx.shadowColor = col; ctx.shadowBlur = 30; ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.beginPath(); let bx = x + rnd(-40, 40), by = -10; ctx.moveTo(bx, by); while (by < y) { bx += rnd(-22, 22); by += rnd(20, 40); ctx.lineTo(by > y ? x : bx, Math.min(by, y)); } ctx.stroke(); ctx.globalAlpha = 0.5; ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); } ctx.restore(); } }; },
+  // ---- v0.9.53 tribulation patterns: each realm's Heavenly Tribulation mixes its own
+  rain(d, at) { const n = 3 + Math.round(d * 2), w = 26 + d * 6, xs = Array.from({ length: n }, () => rnd(40, W - 40));
+    return xs.map((x, i) => ({ t0: at + i * 0.12, warn: Math.max(0.55, 0.95 - d * 0.25), live: 0.35, hit: px => Math.abs(px - x) < w / 2 + 5,
+      draw(ctx, t, on, k, col) { ctx.save(); if (!on) { ctx.globalAlpha = 0.2 + 0.5 * k; ctx.setLineDash([6, 8]); ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+        else { ctx.shadowColor = col; ctx.shadowBlur = 26; ctx.fillStyle = col; ctx.globalAlpha = 0.6; ctx.fillRect(x - w / 2, 0, w, H); ctx.globalAlpha = 1; ctx.fillStyle = '#fff'; ctx.fillRect(x - w / 8, 0, w / 4, H); } ctx.restore(); } })); },
+  lanes(d, at) { const rows = 5, hgt = H / rows, safe = Math.floor(rnd(0, rows)), out = [];
+    for (let r = 0; r < rows; r++) if (r !== safe) out.push({ t0: at, warn: 1, live: 0.5, hit: (px, py) => py > r * hgt + 6 && py < (r + 1) * hgt - 6,
+      draw(ctx, t, on, k, col) { ctx.save(); ctx.fillStyle = col; ctx.globalAlpha = on ? 0.55 : 0.08 + 0.18 * k; ctx.fillRect(0, r * hgt + 4, W, hgt - 8); ctx.restore(); } });
+    return out; },
+  meteor(d, at, me) { const n = 2 + Math.round(d * 2), r = 42 + d * 8;
+    return Array.from({ length: n }, (_, i) => { const x = i === 0 ? me.x : rnd(60, W - 60), y = i === 0 ? me.y : rnd(50, H - 50);
+      return { t0: at + i * 0.3, warn: 1.05, live: 0.35, hit: (px, py) => dist(px, py, x, y) < r,
+        draw(ctx, t, on, k, col) { ctx.save(); if (!on) { ctx.strokeStyle = col; ctx.globalAlpha = 0.3 + 0.6 * k; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.stroke(); ctx.globalAlpha = 0.15 * k; ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, r * k, 0, 7); ctx.fill(); }
+          else { ctx.shadowColor = col; ctx.shadowBlur = 30; ctx.fillStyle = col; ctx.globalAlpha = 0.75; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.9; ctx.beginPath(); ctx.arc(x, y, r * 0.35, 0, 7); ctx.fill(); } ctx.restore(); } }; }); },
+  shards(d, at) { const n = 5 + Math.round(d * 3), fromLeft = Math.random() < 0.5, sp = 230 + d * 80;
+    return Array.from({ length: n }, (_, i) => { const y = rnd(25, H - 25), sx = fromLeft ? -20 : W + 20, dir = fromLeft ? 1 : -1, t0 = at + i * 0.16;
+      return { t0, warn: 0.5, live: 3.5, hit: (px, py, t) => Math.abs(py - y) < 9 && Math.abs(px - (sx + dir * sp * t)) < 18,
+        draw(ctx, t, on, k, col) { ctx.save(); if (!on) { ctx.globalAlpha = 0.5 * k; ctx.fillStyle = col; ctx.fillRect(fromLeft ? 0 : W - 10, y - 3, 10, 6); }
+          else { const x = sx + dir * sp * t; ctx.shadowColor = col; ctx.shadowBlur = 12; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(x + dir * 18, y); ctx.lineTo(x - dir * 14, y - 7); ctx.lineTo(x - dir * 14, y + 7); ctx.closePath(); ctx.fill(); ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke(); } ctx.restore(); } }; }); },
+  grid(d, at) { const cx = 4, cy = 3, tw = W / cx, th = H / cy, odd = Math.random() < 0.5, out = [];
+    for (let i = 0; i < cx; i++) for (let j = 0; j < cy; j++) if (((i + j) % 2 === 0) === odd) out.push({ t0: at, warn: 1.1, live: 0.55, hit: (px, py) => px > i * tw + 4 && px < (i + 1) * tw - 4 && py > j * th + 4 && py < (j + 1) * th - 4,
+      draw(ctx, t, on, k, col) { ctx.save(); ctx.fillStyle = col; ctx.globalAlpha = on ? 0.6 : 0.06 + 0.2 * k; ctx.fillRect(i * tw + 3, j * th + 3, tw - 6, th - 6); ctx.restore(); } });
+    return out; },
+  spiral(d, at) { const a0 = rnd(0, 6.28); const A = P.sweep(d, at), B = P.sweep(d, at); return [A, B]; },
+  voids(d, at, me) { const n = 2 + Math.round(d), out = [];
+    for (let i = 0; i < n; i++) { const x = i === 0 ? me.x + rnd(-60, 60) : rnd(80, W - 80), y = i === 0 ? me.y + rnd(-50, 50) : rnd(60, H - 60), R = 55 + d * 12, LIFE = 2.2;
+      out.push({ t0: at + i * 0.25, warn: 0.8, live: LIFE, hit: (px, py, t) => dist(px, py, x, y) < R * Math.min(1, t / 1.2),
+        draw(ctx, t, on, k, col) { ctx.save(); const r = on ? R * Math.min(1, t / 1.2) : 8 + 8 * k; ctx.fillStyle = '#000'; ctx.globalAlpha = on ? 0.85 : 0.4 * k; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.shadowColor = col; ctx.shadowBlur = 18; ctx.stroke(); ctx.restore(); } }); }
+    return out; },
+  chain(d, at, me) { return [0, 1, 2].map(i => { const b = P.bolt(d, at + i * 0.4, me); return b; }); },
 };
 const STYLES = {
   blade: ['beam', 'burst', 'cross', 'beam', 'sweep'],
@@ -87,7 +117,7 @@ function arena0(o) {
       hud.innerHTML = `<span class="lives">${pips}</span><span>Hits ${hp}</span><span>Phase <strong>${phases[phase] || ''}</strong></span><span>${Math.max(0, dur - phaseT).toFixed(1)}s</span><span class="boss"><em style="width:${Math.max(0, 100 - (totalHits + bonus) / totalNeed * 100)}%"></em></span>`;
     }
     function spawn() {
-      const d = d0 + phase * 0.18 + phaseT / dur * 0.15; const style = STYLES[o.style] || STYLES.blade;
+      const d = d0 + phase * 0.18 + phaseT / dur * 0.15; const style = o.patterns || STYLES[o.style] || STYLES.blade;
       const kind = style[Math.floor(Math.random() * style.length)]; const made = P[kind](d, phaseT, me);
       haz.push(...(Array.isArray(made) ? made : [made]));
       nextAt = phaseT + Math.max(0.55, 1.5 - d * 0.6) * rnd(0.8, 1.2);

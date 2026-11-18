@@ -1,6 +1,8 @@
 import { eff } from '../systems/body.js';
 // Turn-based 1v1 combat screen: two portraits, realm/level, HP bars, momentum chevrons,
 // stamina + Qi bars and vertical move buttons with "Move info".
+import { ui as BUS } from '../core/bus.js';
+import { ENEMY_ART, ENEMY_COLS, INTROS } from '../data/enemies2.js';
 import { artMoves } from '../data/artMoves.js';
 import { NEED as BELT_NEED } from '../systems/schooling.js';
 import { onBodyPath, effRealm, bodyTier } from '../systems/path.js';
@@ -15,7 +17,7 @@ import { power } from '../systems/cultivation.js';
 import { traitMult } from '../systems/traits.js';
 import { stat } from '../systems/life.js';
 import { ri, chance, clamp } from '../core/rng.js';
-import { G } from '../core/state.js';
+import { G, META } from '../core/state.js';
 import { playStation, currentStation } from '../audio/music.js';
 import { S } from '../settings.js';
 import { gearStats } from '../systems/crafting.js';
@@ -31,18 +33,27 @@ import { qiBurst, qiBadge } from './qiBadge.js';
 import { playMoveFx, floatNum } from './moveFx.js';
 import { meridianCombat } from '../systems/meridians.js';
 const MOVE_COL = { fire: '#ff6a3d', water: '#4fb3ff', lightning: '#b18cff', eye: '#8fa8ff', star: '#ffe08a', demon: '#ff3a4a', metal: '#d0d6e0', heart: '#ff6fa8', skull: '#e9e6df', cultivation: '#7fe3ff' };
-import { PLAYER_HP, ENEMY_HP, ENEMY_DMG, GEAR_DMG, SEVERED_EDGE, realmScale, enemyScale, enemyPct, playerPct, qiStat, enemyQiStat } from '../systems/combatcore.js';
+import { PLAYER_HP, ENEMY_HP, ENEMY_DMG, GEAR_DMG, SEVERED_EDGE, realmScale, enemyScale, enemyPct, playerPct, qiStat, enemyQiStat, balanceOf } from '../systems/combatcore.js';
 
 const bkLabel = v => v >= 80 ? 'Master' : v >= 60 ? 'Veteran' : v >= 40 ? 'Seasoned' : v >= 20 ? 'Trained' : 'Novice';
 const realmLabel = r => r === 0 ? 'Mortal' : REALMS[r].name;
 
-export function fight(enemyDef, opts = {}) {
+// v0.9.53 creature sprites from the CC0 pixel-art atlas, and a cutscene the first time you meet each creature
+export function enemySprite(id, size = 64) { const i = ENEMY_ART[id], cols = ENEMY_COLS, rows = Math.ceil(Object.keys(ENEMY_ART).length / cols);
+  return h('div', { class: 'enemy-sprite', style: { width: size + 'px', height: size + 'px', backgroundSize: `${cols * size}px ${rows * size}px`, backgroundPosition: `-${(i % cols) * size}px -${Math.floor(i / cols) * size}px` } }); }
+export async function fight(enemyDef, opts = {}) {
+  const I = INTROS[enemyDef.id]; META.seenFoes ||= {};
+  if (I && !META.seenFoes[enemyDef.id] && !opts.tribulation && !enemyDef.sparring) { META.seenFoes[enemyDef.id] = 1;
+    await BUS.cinematic?.({ keepLines: true, motif: I[0], color: I[1], lines: [I[2], I[3]], title: enemyDef.name, sub: 'A new foe', sound: 'heavy', hold: 1.2, spriteEl: ENEMY_ART[enemyDef.id] != null ? enemySprite(enemyDef.id, 160) : null }); }
+  return fight0(enemyDef, opts);
+}
+function fight0(enemyDef, opts = {}) {
   const c = G.char;
   return new Promise(resolve => {
     const pPow = power(c), gs = gearStats(c), cap = statCap(c);
     const pct = k => playerPct(eff(c, k) || 0, cap); // stats count as a % of your realm's cap
     const me = {
-      name: 'You', maxHp: Math.round(((40 + c.stats.health * 0.5 + eff(c, 'strength') * 0.3) * (1 + (pPow - 1) * 0.5) + gs.hp) * PLAYER_HP), gear: { ...gs, dmg: (gs.dmg || 0) * GEAR_DMG },
+      name: 'You', maxHp: Math.round(((40 + c.stats.health * 0.5 + eff(c, 'strength') * 0.3) * (1 + (pPow - 1) * 0.5) * (1 + (gs.hp || 0) / 200)) * PLAYER_HP), gear: { ...gs, dmg: (gs.dmg || 0) * GEAR_DMG },
       mods: combatMods(c), str: pct('strength'), agi: pct('agility') + gs.agi, bk: pct('battle'), pow: pPow, stam: 100, qi: 0, maxQi: 1, mom: 0, guard: false, armor: 0, evade: false, burn: 0,
     };
     const QF = combatFx(c), qCol = qiColors(c), qSnd = qiOf(c) ? QI[c.qiType.primary.type].snd : 'pure'; // your Qi type's riders, colours and sound
@@ -56,7 +67,8 @@ export function fight(enemyDef, opts = {}) {
     const ePow = REALMS[enemyDef.realm || 0].power * (enemyDef.kind === 'spirit' ? traitMult(c, 'spiritBane') ** -1 : 1);
     const sc = enemyDef.sparring || opts.tribulation ? 1 : enemyScale(enemyDef.id, enemyDef.realm);
     const hpK = enemyDef.sparring ? PLAYER_HP : ENEMY_HP;
-    const en = { ...enemyDef, sc, dmgK: enemyDef.sparring ? 1 : opts.tribulation ? ENEMY_DMG * 1.6 : ENEMY_DMG * sc, maxHp: Math.round(enemyDef.hp * (1 + (ePow - 1) * 0.5) * hpK * sc), str: enemyPct(enemyDef, enemyDef.str), agi: enemyPct(enemyDef, enemyDef.agi), pow: ePow, stam: 100, qi: 999, mom: 0, guard: false, armor: 0, evade: false, burn: 0, stun: 0, weak: false };
+    const BAL = enemyDef.sparring || opts.tribulation ? [1, 1] : balanceOf(enemyDef.id); // v0.9.56
+    const en = { ...enemyDef, sc, dmgK: enemyDef.sparring ? 1 : opts.tribulation ? ENEMY_DMG * 1.6 : ENEMY_DMG * sc * BAL[1], maxHp: Math.round(enemyDef.hp * (1 + (ePow - 1) * 0.5) * hpK * sc * BAL[0]), str: enemyPct(enemyDef, enemyDef.str), agi: enemyPct(enemyDef, enemyDef.agi), pow: ePow, stam: 100, qi: 999, mom: 0, guard: false, armor: 0, evade: false, burn: 0, stun: 0, weak: false };
     en.hp = en.maxHp;
     const P = presence(opts.tribulation || enemyDef.kind === 'heaven' || enemyDef.sparring ? 0 : (onBodyPath(c) ? Math.max(0, effRealm(c) - (enemyDef.realm || 0)) : c.qi.realm - (enemyDef.realm || 0))); // the Severed have no Qi to suppress
     if (P.crushed) me.stam = 50;
@@ -68,7 +80,7 @@ export function fight(enemyDef, opts = {}) {
 
     // portraits: humans get a generated face, spirits/heaven get a big CC0 sprite
     const ePortrait = enemyDef.kind === 'human' ? portraitFor({ genes: enemyDef.genes || randomGenes(chance(0.5) ? 'M' : 'F'), age: enemyDef.age || 25, gender: enemyDef.gender || 'M', hair: enemyDef.hair, realm: enemyDef.realm || 0 }, 112)
-      : icon(enemyDef.kind === 'heaven' ? 'lightning' : enemyDef.id === 'hungry_ghost' || enemyDef.id === 'corrupt_soul' ? 'ghost' : 'demon', 'xl');
+      : ENEMY_ART[enemyDef.id] != null ? enemySprite(enemyDef.id, 112) : icon(enemyDef.kind === 'heaven' ? 'lightning' : enemyDef.id === 'hungry_ghost' || enemyDef.id === 'corrupt_soul' ? 'ghost' : 'demon', 'xl');
     const mePortrait = portraitFor(c, 112);
     const ui = {};
     const fighterRow = (who, isMe) => {
@@ -85,12 +97,14 @@ export function fight(enemyDef, opts = {}) {
     const stamBar = h('i', { style: { '--c': '#3fcf5f' } }), qiBar = h('i', { style: { '--c': 'var(--qi)' } }), qiTxt = h('span', { class: 'qi-num small' });
     const log = h('div', { class: 'flog' }, opts.tribulation ? 'The sky splits open. Survive.' : enemyDef.sparring ? 'A friendly bout. Nobody gets badly hurt.' : `${en.name} squares up.${P.line ? ' ' + P.line : onBodyPath(c) && (enemyDef.realm || 0) > effRealm(c) ? ' Their aura washes over you — and finds nothing to grip.' : ''}`);
     const movesBox = h('div', { class: 'moves' }); const targetRow = h('div', { class: 'targets' });
+    // v0.9.55 tactics: you see what the enemy is about to do, repeating yourself gets punished, guarding a heavy blow counters it
+    const intentEl = h('div', { class: 'f-intent' }); let turnN = 0;
     const infoBox = h('div', { class: 'flog', style: { display: 'none' } });
     const box = h('div', {}, h('div', { class: 'ftitle' }, opts.tribulation ? 'Tribulation' : enemyDef.sparring ? 'Sparring' : 'Fight'),
       h('div', { class: 'stage' }, fighterRow(en, false), fighterRow(me, true),
         h('div', { class: 'res' }, 'Stamina', h('div', { class: 'bar' }, stamBar)),
         c.qi.realm ? h('div', { class: 'res' }, 'Qi', h('div', { class: 'bar' }, qiBar), qiTxt) : null),
-      log, targetRow, movesBox, infoBox,
+      intentEl, log, targetRow, movesBox, infoBox,
       h('div', { class: 'finfo' }, h('a', { onclick: () => { infoBox.style.display = infoBox.style.display === 'none' ? 'block' : 'none'; } }, 'Move info')));
     const m = openModal(box, { cls: 'fight', dismiss: false });
 
@@ -104,7 +118,15 @@ export function fight(enemyDef, opts = {}) {
     if (qiUser) infoBox.append(h('div', {}, icon('meditate', 'sm'), ' ', h('b', {}, 'Charge Qi: '), `Your meridians hold ${me.maxQi} Qi in battle; the rest waits in your dantian. Charging spends your turn to draw up to half a bar back (the enemy gets a free hit). Each charge risks your meridians seizing for the rest of the fight, and running your Qi dry can lock charging for 2 turns.`));
     if (mini) infoBox.append(h('div', {}, icon(MINIS[mini].icon, 'sm'), ' ', h('b', {}, MINIS[mini].name + ' (special, once per fight): '), `${MINIS[mini].how} ${MINIS[mini].win}`));
 
+    function intentOf(k) { const m = MOVES[k] || {}; if (!k) return null;
+      if (m.guard || m.armor || m.reflect) return ['guard', `${en.name} is bracing. Your hits do half — use a heavy or piercing move, or prepare.`];
+      if (m.heal) return ['heal', `${en.name} is about to recover. Hit hard now.`];
+      const pw = x => (MOVES[x]?.dmg?.[1] || 0) * (MOVES[x]?.hits || 1), top = Math.max(...en.moves.map(pw)), low = Math.min(...en.moves.filter(x => pw(x) > 0).map(pw));
+      if (pw(k) > 0 && pw(k) >= top * 0.9 && top > low * 1.2) return ['heavy', `${en.name} is winding up ${m.name}. GUARD to block it and counter-attack.`];
+      if (m.stat === 'qi') return ['qi', `${en.name} is gathering Qi for ${m.name}.`];
+      return ['quick', `${en.name} readies a quick ${m.name}.`]; }
     function draw() {
+      if (en.hp > 0 && me.hp > 0) { en.next ||= enemyMove(); const it = intentOf(en.next); intentEl.className = 'f-intent ' + (it?.[0] || ''); intentEl.textContent = it ? `Turn ${turnN + 1} · Next: ${it[1]}` : ''; } else intentEl.textContent = '';
       ui.meHp.style.width = (me.hp / me.maxHp * 100) + '%'; ui.enHp.style.width = (en.hp / en.maxHp * 100) + '%';
       ui.meHpTxt.textContent = `${Math.max(0, Math.round(me.hp))}/${me.maxHp}`; ui.enHpTxt.textContent = `${Math.max(0, Math.round(en.hp))}/${en.maxHp}`;
       ui.meMom.textContent = '«'.repeat(1 + me.mom * 2); ui.enMom.textContent = '»'.repeat(1 + en.mom * 2);
@@ -123,7 +145,7 @@ export function fight(enemyDef, opts = {}) {
       }));
     }
     function attack(att, def, mvKey, attIsMe) {
-      const mv = MOVES[mvKey];
+      const mv = MOVES[mvKey]; const wasGuard = def.guard; // v0.9.56 a guarded blow can't stun you
       att.stam = clamp(att.stam - mv.cost); if (mv.qi && attIsMe) att.qi -= Math.round(mv.qi * MC.cost);
       const defPf0 = attIsMe ? ui.enPf : ui.mePf, attPf0 = attIsMe ? ui.mePf : ui.enPf, fxCol = attIsMe && mv.stat === 'qi' ? qCol[0] : MOVE_COL[mv.icon] || (attIsMe ? '#ffd36f' : '#ff7a6a');
       if (mv.guard || mv.armor || mv.heal || mv.reflect) playMoveFx(mvKey, attPf0, attPf0, fxCol);
@@ -139,6 +161,7 @@ export function fight(enemyDef, opts = {}) {
       const hits = mv.hits || 1; let roll = 0; for (let i = 0; i < hits; i++) roll += ri(...mv.dmg);
       let dmg = roll * (0.6 + statV / 100) * (mv.stat === 'qi' || mv.body ? att.pow : Math.sqrt(att.pow)) * (1 + att.mom * 0.1) * (1 + (att.gear?.dmg || 0)) * (1 + (att.bk || 0) / 250) * (!attIsMe || !en.weak ? 1 : 1.5) * (attIsMe ? (mv.stat === 'qi' ? me.mods.qi : me.mods.dmg) : (en.crippled.arms ? 0.65 : 1));
       dmg *= attIsMe ? P.me : P.them * en.dmgK;
+      if (attIsMe && me.rep) { dmg *= 1 - 0.2 * me.rep; if (me.rep >= 2) def.evade = def.evade || chance(0.25); } // predictable
       if (attIsMe && onBodyPath(c) && ((enemyDef.realm || 0) > 0 || enemyDef.kind === 'spirit')) dmg *= SEVERED_EDGE; // Qi users can't sense the Severed coming
       const qiMove = attIsMe && mv.stat === 'qi';
       if (qiMove) { dmg *= (1 + (QF.dmg || 0)) * MC.tech; if (QF.holy && (enemyDef.kind === 'spirit' || /demon|ghost|blood|corrupt/.test(enemyDef.id || ''))) dmg *= 1 + QF.holy; }
@@ -150,7 +173,7 @@ export function fight(enemyDef, opts = {}) {
       if (enemyDef.sparring && attIsMe === false) dmg *= 0.7;
       dmg = Math.max(1, Math.round(dmg)); def.hp -= dmg; att.mom = Math.min(3, att.mom + (mv.mom || 1)); def.mom = 0;
       if (mv.drain) att.hp = Math.min(att.maxHp, att.hp + dmg * mv.drain);
-      if (mv.burn) def.burn = 2; if (mv.evade) att.evade = true; if (mv.stun && chance(mv.stun)) def.stun = 1;
+      if (mv.burn) def.burn = 2; if (mv.evade) att.evade = true; if (mv.stun && !wasGuard && chance(mv.stun)) def.stun = 1;
       if (mv.sap) def.stam = Math.max(0, def.stam - mv.sap); if (mv.weaken) def.weakT = mv.weaken;
       let refl = ''; if (def.reflect && !attIsMe) { const back = Math.round(dmg * def.reflect); att.hp -= back; def.reflect = 0; floatNum(attPf, '-' + back, '#bfe6ff'); playMoveFx('heaven_mirror', defPf, attPf, '#bfe6ff'); refl = ` The Heavenly Mirror threw ${back} back at ${en.name}!`; }
       if (qiMove) { // Qi-type riders + colour and sound
@@ -204,7 +227,9 @@ export function fight(enemyDef, opts = {}) {
       busy = false;
     }
     async function turn(k) {
-      if (busy) return; busy = true; fx('click');
+      if (busy) return; busy = true; fx('click'); turnN++;
+      // repeating the same attack makes you predictable: less damage, easier to dodge (resets when you change it up)
+      if (MOVES[k] && !MOVES[k].guard) { me.rep = me.lastMv === k ? Math.min(3, (me.rep || 0) + 1) : 0; me.lastMv = k; } else { me.rep = 0; me.lastMv = k; }
       if (k === 'presence') { c.flags.presenceWin = true; fx('heavy'); return end('win', `You release your aura. ${en.name} collapses, unable to lift a finger.`); }
       if (k === 'flee') {
         if (chance(0.35 + (me.agi - en.agi) / 200)) return end('flee', 'You slipped away.');
@@ -224,6 +249,7 @@ export function fight(enemyDef, opts = {}) {
       const lines = [];
       if (meFirst) { lines.push(attack(me, en, k, true)); draw(); if (en.hp > 0) { await wait(380); lines.push(await enemyTurn(true)); } }
       else { lines.push(await enemyTurn(true)); draw(); if (me.hp > 0) { await wait(380); lines.push(attack(me, en, k, true)); } }
+      if (me.rep && MOVES[k]) lines.push(`You keep using ${MOVES[k].name}. They see it coming (-${me.rep * 20}% damage). Mix it up.`);
       return afterTurn(lines);
     }
     function afterTurn(lines) {
@@ -238,8 +264,12 @@ export function fight(enemyDef, opts = {}) {
       busy = false;
     }
     async function enemyTurn(silent) {
-      if (en.stun > 0) { en.stun--; return `${en.name} is stunned.`; }
-      const line = attack(en, me, enemyMove(), false); if (!silent) log.textContent = line; return line;
+      const k = en.next || enemyMove(); en.next = null;
+      if (en.stun > 0) { en.stun--; return `${en.name} is stunned and loses their ${MOVES[k]?.name || 'move'}.`; }
+      const heavy = intentOf(k)?.[0] === 'heavy', guarded = me.guard;
+      let line = attack(en, me, k, false);
+      if (heavy && guarded && en.hp > 0 && me.hp > 0) { const before = en.hp; const saveStam = me.stam; attack(me, en, 'punch', true); me.stam = saveStam; me.mom = Math.min(3, me.mom + 1); const dealt = Math.max(0, Math.round(before - en.hp)); line += dealt ? ` You read it and COUNTER for ${dealt}!` : ' You read it, but your counter misses.'; }
+      if (!silent) log.textContent = line; return line;
     }
     function end(result, text) {
       draw(); log.textContent = text; fx(result === 'win' ? 'win' : result === 'lose' ? 'lose' : 'click');
@@ -252,7 +282,7 @@ export function fight(enemyDef, opts = {}) {
       movesBox.replaceChildren(h('button', { class: 'btn', onclick: () => { m.close(); if (S().musicOn) playStation(prevStation || S().station); resolve(result); } },
         result === 'win' ? 'Victory — continue' : result === 'flee' ? 'Escaped — continue' : 'Defeat — continue'));
     }
-    const wait = ms => new Promise(r => setTimeout(r, ms * (S().reduceMotion ? 0.1 : 1)));
+    const wait = ms => new Promise(r => setTimeout(r, window.__simFast ? 0 : ms * (S().reduceMotion ? 0.1 : 1)));
     draw();
   });
 }

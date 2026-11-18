@@ -1,0 +1,197 @@
+{
+"cols": 8,
+"tile": 16,
+"source": "Angais/pixel-art-atlas-1.4m (CC0)",
+"art": {
+"hungry_ghost": {
+"i": 0,
+"row_id": 29620,
+"caption": "ghost with big eyes"
+},
+"jiangshi": {
+"i": 1,
+"row_id": 25559,
+"caption": "teal ghost with a tiny crown"
+},
+"fox_spirit": {
+"i": 2,
+"row_id": 41265,
+"caption": "scared fox with big eyes"
+},
+"corrupt_soul": {
+"i": 3,
+"row_id": 10950,
+"caption": "purple spirit flame with glowing eyes"
+},
+"yaoguai": {
+"i": 4,
+"row_id": 75175,
+"caption": "giant gorilla with a red scarf"
+},
+"ghost_king": {
+"i": 5,
+"row_id": 39531,
+"caption": "royal skull crown with engraved swirls"
+},
+"spirit_wolf": {
+"i": 6,
+"row_id": 9576,
+"caption": "magical storm wolf with sparkles"
+},
+"tiger_beast": {
+"i": 7,
+"row_id": 19495,
+"caption": "majestic tiger with a tiny crown"
+},
+"stone_golem": {
+"i": 8,
+"row_id": 130020,
+"caption": "giant stone golem"
+},
+"drowned_ghost": {
+"i": 9,
+"row_id": 61730,
+"caption": "ancient water spirit with a glowing core"
+},
+"young_dragon": {
+"i": 10,
+"row_id": 47935,
+"caption": "fire dragon"
+},
+"void_wraith": {
+"i": 11,
+"row_id": 28277,
+"caption": "translucent teal floating skull with a spooky glow"
+},
+"ancient_qilin": {
+"i": 12,
+"row_id": 46431,
+"caption": "fierce qilin with a starry glow"
+},
+"fallen_immortal": {
+"i": 13,
+"row_id": 56290,
+"caption": "glowing wind spirit with a tiny crown"
+},
+"vampire_bat": {
+"i": 14,
+"row_id": 2527,
+"caption": "vampire bat"
+},
+"cave_spider": {
+"i": 15,
+"row_id": 74746,
+"caption": "spider on a small twig"
+},
+"sand_scorpion": {
+"i": 16,
+"row_id": 111612,
+"caption": "cute scorpion"
+},
+"crystal_slime": {
+"i": 17,
+"row_id": 639,
+"caption": "crystal slime"
+},
+"mushroom_fiend": {
+"i": 18,
+"row_id": 43819,
+"caption": "mushroom monster"
+},
+"man_eater": {
+"i": 19,
+"row_id": 28618,
+"caption": "angry carnivorous plant monster with big eyes"
+},
+"gargoyle": {
+"i": 20,
+"row_id": 35214,
+"caption": "glowing gargoyle with a tiny crown"
+},
+"imp": {
+"i": 21,
+"row_id": 65661,
+"caption": "mischievous imp with a wide toothy grin"
+},
+"wisp": {
+"i": 22,
+"row_id": 23105,
+"caption": "sleepy will-o-wisp with a red bow"
+},
+"bone_serpent": {
+"i": 23,
+"row_id": 14874,
+"caption": "translucent bone serpent with sparkles"
+},
+"kraken": {
+"i": 24,
+"row_id": 70094,
+"caption": "majestic kraken with a red scarf"
+},
+"hydra": {
+"i": 25,
+"row_id": 66855,
+"caption": "chubby hydra sitting on gold coins"
+},
+"basilisk": {
+"i": 26,
+"row_id": 72007,
+"caption": "fierce basilisk with a glowing aura"
+},
+"storm_wyvern": {
+"i": 27,
+"row_id": 7447,
+"caption": "majestic wyvern"
+},
+"phoenix": {
+"i": 28,
+"row_id": 58775,
+"caption": "phoenix with a tiny crown"
+},
+"griffin": {
+"i": 29,
+"row_id": 27074,
+"caption": "majestic griffin with a starry glow"
+},
+"centipede": {
+"i": 30,
+"row_id": 78432,
+"caption": "centipede"
+},
+"eye_horror": {
+"i": 31,
+"row_id": 40465,
+"caption": "angry eyeball monster with sharp teeth"
+},
+"abyss_tentacle": {
+"i": 32,
+"row_id": 37141,
+"caption": "tentacle monster"
+},
+"magma_golem": {
+"i": 33,
+"row_id": 114828,
+"caption": "magma golem"
+},
+"frost_golem": {
+"i": 34,
+"row_id": 47441,
+"caption": "ice golem"
+},
+"brown_bear": {
+"i": 35,
+"row_id": 36126,
+"caption": "snowy brown bear with a flower on its head"
+},
+"river_croc": {
+"i": 36,
+"row_id": 46204,
+"caption": "giant crocodile with bubbles"
+},
+"spirit_deer": {
+"i": 37,
+"row_id": 21377,
+"caption": "majestic spirit deer"
+}
+}
+}

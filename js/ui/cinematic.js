@@ -128,7 +128,7 @@ function play(o) {
     if (o.sub) { const s = document.createElement('small'); s.textContent = o.sub; title.append(s); }
     const tt = document.createElement('span'); tt.textContent = o.title || ''; title.append(tt, document.createElement('i'));
     const skip = document.createElement('button'); skip.className = 'cine-skip'; skip.textContent = 'Skip';
-    root.append(svg, text, title, skip); document.body.append(root);
+    root.append(svg, text, title, skip); if (o.spriteEl) { o.spriteEl.classList.add('cine-sprite'); o.spriteEl.style.animationDelay = (1.2 * fast) + 's'; root.append(o.spriteEl); } document.body.append(root);
     requestAnimationFrame(() => root.classList.add('on'));
     sfx(o.introSound || 'action');
     const timers = []; const at = (s, f) => timers.push(setTimeout(f, s * 1000 * fast));

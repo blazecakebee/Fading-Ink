@@ -1,5 +1,7 @@
 // v0.6.0 "Bloodlines" expansion: wires heirlooms, genetics, sects & guild, world news, family life,
 // new traits, activities, events and cinematics into the existing game through hooks.
+import '../data/moreItems.js';
+import * as ACTX from '../data/activities.js';
 import { noteBad } from './luck.js';
 import { G } from '../core/state.js';
 import { ui } from '../core/bus.js';
@@ -146,7 +148,7 @@ HOOKS.inherit.push((old, c, ch) => {
 });
 HOOKS.yearStart.push(c => { if (c.alive && Math.random() < 0.7) ui.log(ambientLine(c), 'ambient'); }); // a quiet line of atmosphere for the new year
 HOOKS.yearStart.push(c => { newsYear(c); portfolioYear(c); birthYear(c, haveChild); });
-HOOKS.yearEnd.push(async c => { if (c.alive) { trainersYear(c); jobsYear(c); gigYear(c); appearanceYear(c); addictionYear(c); if (!c.alive) return; temperYear(c, ui, stat); legacyYear(c); renownYear(c); await lawYear(c); if (!c.alive) return; if (inOtherworld(c)) await otherworldYear(c); if (!c.alive) return; if (!isFinite(c.qi.qi) || isNaN(c.qi.qi)) c.qi.qi = (await import('./cultivation.js')).qiCap(c); if (c.qi.realm >= 1 && !c.qiType && !onBodyPathQ(c)) awakenQi(c); } });
+HOOKS.yearEnd.push(async c => { if (c.alive) { trainersYear(c); jobsYear(c); ACTX.jointYear(c); gigYear(c); appearanceYear(c); addictionYear(c); if (!c.alive) return; temperYear(c, ui, stat); legacyYear(c); renownYear(c); await lawYear(c); if (!c.alive) return; if (inOtherworld(c)) await otherworldYear(c); if (!c.alive) return; if (!isFinite(c.qi.qi) || isNaN(c.qi.qi)) c.qi.qi = (await import('./cultivation.js')).qiCap(c); if (c.qi.realm >= 1 && !c.qiType && !onBodyPathQ(c)) awakenQi(c); } });
 HOOKS.birth.push(c => { rollTemper(c); legacyBirth(c); c.birthSex = c.gender; sexualityOf(c); ui.log(`Personality: ${c.temper.map(id => TEMPER[id].name).join(', ')}.`); });
 // v0.9.21 decisions at work
 HOOKS.yearEnd.push(async c => { if (c.alive) await (await import('./workEvents.js')).workEvent(c); });
@@ -191,6 +193,8 @@ HOOKS.death.push(c => {
 
 // ---- install UI-side pieces (called by main.js once the UI hooks exist)
 export async function installExpansion() {
+  // v0.9.51 armour HP is a percentage of your max HP now: rewrite every gear description to match
+  for (const it of Object.values(ITEMS)) if (it.type === 'gear' && it.stats?.hp && it.desc) it.desc = it.desc.replace(/([+-])\s?(\d+)\s*(max\s)?HP/g, (m, sg, n) => `${sg}${Math.round(n / 2)}% max HP`);
   { const l0 = ui.log; ui.log = (t, cls, ...r) => { if (cls === 'bad' && G.char?.alive) noteBad(G.char); return l0(t, cls, ...r); }; } // v0.9.45 luck.js lull
   const [{ cinematic }, { TABS, render, runActivity }, P] = await Promise.all([import('../ui/cinematic.js'), import('../ui/render.js'), import('../ui/expansionPanels.js')]);
   const SP = await import('../data/storyPool.js'); ui.cinematic = o => cinematic(o.keepLines ? o : SP.varyCinematic(o)); // v0.9.2 varied scenes

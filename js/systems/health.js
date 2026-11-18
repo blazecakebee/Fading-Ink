@@ -110,9 +110,10 @@ export function treatOptions(c, x) {
 export const qiHealCost = c => Math.round(qiCap(c) * 0.5);
 export const qiHealChance = (c, C) => clamp(C.cure.qi + c.qi.realm * 0.06 + c.qi.affinity / 400 - (C.kind === 'qi' ? 0 : 0.05), 0.05, 0.95);
 
-export function treat(c, id, how) {
+export function treat(c, id, how, mod) {
   const x = (c.conditions || []).find(y => y.id === id); if (!x) return null; const C = COND_BY_ID[id];
-  const opt = treatOptions(c, x).find(o => o.id === how); if (!opt) return null;
+  const opt0 = treatOptions(c, x).find(o => o.id === how); if (!opt0) return null;
+  const opt = mod ? { ...opt0, cost: Math.round(opt0.cost * mod.cost), chance: clamp(opt0.chance * mod.chance, 0.03, 0.97), label: mod.label || opt0.label } : opt0; // v0.9.51 clinic vs specialist
   if (opt.cost && c.age >= 18) { if (c.money < opt.cost) return null; money(c, -opt.cost); }
   if (opt.qi) { if (c.qi.qi < opt.qi) return null; c.qi.qi -= opt.qi; }
   if (how.startsWith('med:')) addItem(c, how.slice(4), -1);

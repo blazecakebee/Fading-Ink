@@ -1247,3 +1247,40 @@ body.reduce-motion .tt-node.buyable .tt-n-bg { animation: none; }
 .tg-yyorb { position: absolute; left: 50%; top: 36%; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%; opacity: 0; transform: scale(.4); transition: opacity .12s, transform .12s; pointer-events: none; }
 .tg-yyorb.show { opacity: 1; transform: scale(1); } .tg-yyorb.yin { background: #0a0a0a; box-shadow: 0 0 0 3px #888, 0 0 22px #000; } .tg-yyorb.yang { background: #fafafa; box-shadow: 0 0 0 3px #ffd36f, 0 0 26px #fff; }
 .tg-m_dual .tg-yy, .tg-focus .tg-tf { height: 54px; }
+/* v0.9.51 meridian bar: taller, with the number centred and readable on every theme */
+.mer-prog { height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+.mer-prog span { position: relative; z-index: 1; display: block; padding: 0; font-size: .72rem; line-height: 1; font-weight: 800; color: #fff; text-shadow: 0 1px 2px #000, 0 0 3px #000; }
+/* v0.9.51 meridian bar: label never clipped, in any theme */
+.mer-panel .mer-prog { height: 20px; min-height: 20px; border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.mer-panel .mer-prog > span { position: relative; z-index: 1; display: block; margin: 0; padding: 0; font-size: .74rem; line-height: 20px; height: 20px; font-weight: 800; color: #fff; text-shadow: 0 1px 2px #000, 0 0 3px #000; white-space: nowrap; }
+.mer-panel .mer-prog > i { top: 0; bottom: 0; height: auto; }
+
+/* v0.9.51 dock no longer re-animates on every action; right-column peek at this year */
+.dock-panel { animation: none; } .dock-panel.opening { animation: stIn .25s ease both; }
+.life-peek h3 { margin-bottom: 6px; } .life-peek .peek-line { font-size: .82rem; line-height: 1.35; padding: 3px 0; border-bottom: 1px dashed var(--border-soft); color: var(--text2); }
+.life-peek .peek-line.good { color: var(--good, #5fd38a); } .life-peek .peek-line.bad, .life-peek .peek-line.death { color: var(--bad, #ff6a6a); } .life-peek .peek-line.qi { color: var(--qi); } .life-peek .peek-line.big { font-weight: 700; }
+.life-peek .peek-foot { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-top: 6px; } .life-peek:hover { border-color: var(--accent); }
+
+/* v0.9.53 creature sprites (CC0 pixel-art atlas) */
+.enemy-sprite { background-image: url('../assets/enemies.png?v=0953'); background-repeat: no-repeat; image-rendering: pixelated; display: inline-block; filter: drop-shadow(0 4px 10px #000a); }
+.cine-sprite { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%) scale(.6); opacity: 0; animation: cineSprite 1s ease forwards; z-index: 2; pointer-events: none; }
+@keyframes cineSprite { to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+
+/* v0.9.54 crafting minigames */
+.tg-blade { position: absolute; left: 10%; right: 10%; top: 44%; height: 26px; border-radius: 4px 40px 40px 4px; background: linear-gradient(#cfd6e0, #7a8590); box-shadow: 0 0 0 2px #0006; }
+.tg-blade.ping { animation: tgPing .18s ease; } @keyframes tgPing { 50% { filter: brightness(1.8); transform: translateY(2px); } }
+.tg-hot { position: absolute; width: 28px; height: 28px; margin: -14px 0 0 -14px; border-radius: 50%; background: radial-gradient(#fff, #ffcf3a 40%, #ff5a1a 70%, #ff5a1a00); box-shadow: 0 0 18px #ff7a1a; z-index: 1; }
+.tg-fring { position: absolute; width: 28px; height: 28px; border-radius: 50%; border: 3px solid #ffd36f; transform: translate(-50%, -50%); box-shadow: 0 0 10px #ffd36f88; z-index: 2; pointer-events: none; }
+.tg-seam { position: absolute; inset: 8px; width: calc(100% - 16px); height: calc(100% - 16px); background: repeating-linear-gradient(45deg, #5a3a1a, #5a3a1a 6px, #6a4a2a 6px, #6a4a2a 12px); border-radius: 10px; }
+.tg-seam polyline { fill: none; stroke: #ffffff66; stroke-width: 2; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; } .tg-seam polyline.sewn { stroke: #ffd36f; stroke-dasharray: none; stroke-width: 4; }
+.tg-cauldron { position: absolute; left: 50%; top: 55%; width: 120px; height: 90px; transform: translate(-50%, -50%); border-radius: 10px 10px 60px 60px; background: radial-gradient(ellipse at 50% 20%, #5fd38a, #1f7a4a 60%, #222 62%); border: 3px solid #333; transition: filter .2s; }
+.tg-cauldron.ok { filter: drop-shadow(0 0 12px #5fd38a); } .tg-cauldron.boil { background: radial-gradient(ellipse at 50% 20%, #ff9a4a, #a8323e 60%, #222 62%); filter: drop-shadow(0 0 12px #ff5a1a); }
+.tg-stirbar { position: absolute; left: 10%; right: 10%; top: 14px; height: 12px; border-radius: 6px; background: #ffffff14; } .tg-band2 { position: absolute; top: 0; bottom: 0; background: #ffd36f55; border: 1px solid #ffd36f; border-radius: 6px; }
+.tg-needle { position: absolute; top: -4px; width: 4px; height: 20px; margin-left: -2px; background: #fff; border-radius: 2px; box-shadow: 0 0 6px #fff; }
+.tg-gemstone { position: absolute; left: 50%; top: 42%; font-size: 64px; line-height: 1; color: #7fe8ff; text-shadow: 0 0 14px #7fe8ff; transform: translate(-50%, -50%); }
+.tg-gemmark { position: absolute; left: 50%; top: 42%; width: 120px; height: 120px; transform: translate(-50%, -50%); pointer-events: none; } .tg-gemmark::before { content: ''; position: absolute; left: 50%; top: -6px; width: 0; height: 0; margin-left: -8px; border: 8px solid transparent; border-top: 12px solid #ffd36f; }
+.tg-feet.one { grid-template-columns: 1fr; }
+
+/* v0.9.55 enemy intent */
+.f-intent { margin: 6px 0 2px; padding: 6px 10px; border-radius: 8px; font-size: .84rem; font-weight: 700; background: #ffffff0d; border-left: 3px solid #9aa4b8; color: var(--text2); }
+.f-intent:empty { display: none; } .f-intent.heavy { border-color: #ff5a4a; color: #ffb0a8; background: #ff5a4a14; } .f-intent.guard { border-color: #7fd1ff; color: #bfe8ff; } .f-intent.qi { border-color: #b18cff; color: #d8c8ff; } .f-intent.heal { border-color: #5fd38a; color: #b8f0cc; }

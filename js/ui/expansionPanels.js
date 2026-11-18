@@ -188,6 +188,9 @@ export function factionsTab() {
       h('div', { class: 'fac-tiles' }, tile('star', 'Merit', g.merit), tile('gates', 'Gates cleared', c.gatesCleared), tile('trophy', 'Bounties', c.bountiesDone || 0), tile('combat', 'Contracts left', B.guild.filter(m => !m.done).length)),
       nx ? h('div', { class: 'fac-next' }, progress(g.merit, F.MERIT?.[g.rank + 1], `Next: ${nx.name}-rank`), nx.ok ? h('button', { class: 'btn', onclick: () => R.run({ id: 'gpromote', cost: 'free', run: cc => F.guildPromote(cc) }) }, 'Take the promotion exam') : h('div', { class: 'muted small' }, 'Needs ', nx.why.join(' · '))) : h('div', { class: 'small good' }, 'Highest rank.')); };
   if (sub === 'overview') {
+    if (c.sect && c.sect !== 'own') out.push(h('div', { class: 'row', style: { justifyContent: 'flex-end', margin: '-4px 0 8px' } }, h('button', { class: 'btn ghost mini', onclick: async () => {
+      const v = await choice({ title: `Leave the ${F.sectLabel(c)}?`, icon: 'crown', text: `You keep your ${c.contrib || 0} contribution: your record follows you to any sect that will have you. But this gate closes behind you for good, and your rank resets to Outer Disciple elsewhere.`, options: [{ label: 'Leave the sect', value: 'yes' }, { label: 'Stay', value: null }] });
+      if (v === 'yes') { F.oust(c, 'I walked away to find my own path', true); R.render(); } } }, '🚪 Leave sect')));
     out.push(c.sect ? sectHero() : facHero('無', 'No sect', c.qi.known ? 'Seek a hidden sect (Cultivation actions), or found your own from the Cultivation tab.' : 'You know nothing of sects… yet.', null, 'var(--muted)'));
     out.push(c.guild ? guildHero() : facHero('?', 'Hunter Guild', 'Not a member yet — see the Hunter Guild tab.', null, 'var(--muted)'));
   }

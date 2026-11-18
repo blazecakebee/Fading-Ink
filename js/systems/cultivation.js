@@ -1,4 +1,5 @@
 import { qiFlowMult } from './body.js';
+import { TRIBS } from '../data/tribulations.js';
 import { HARD } from '../core/hard.js';
 // Qi cultivation: gathering Qi, opening meridians, breakthroughs and Heavenly Tribulations.
 import { onBodyPath, bodyTier } from './path.js';
@@ -27,13 +28,15 @@ export const powerBonus = c => { const m = traitMult(c, 'power'); return m <= 1 
 // v0.9.49 pace: 3 stages need ~40% less Qi per realm than the old 5, so each session gives a bit less;
 // net result, cultivation is about 1.3x faster overall, and each stage takes longer to fill.
 const QI_PACE = c => c.qi.realm >= IMMORTAL_I ? 1.3 : 0.78;
+// v0.9.51 Qi gains grow with your realm (each realm needs far more Qi). Higher realms still take a little longer.
+const rankScale = c => c.qi.realm <= 1 ? 1 : Math.pow(REALMS[c.qi.realm].maxQi / 100, 0.85);
 export function qiGain(c, base) {
   const manual = Math.max(1, ...c.qi.manuals.map(m => MANUALS.find(x => x.id === m)?.qi || 1));
   const aff = 0.5 + c.qi.affinity / 100; const merid = MR.flowMult(c); // v0.9.32 +5% per open meridian (each one also has its own bonus)
   const stress = c.stats.stress > 60 ? 0.6 : 1;
   const sect = c.ownSect ? 1.1 : 1;
   const M = method(c); const meth = M.qi * (M.dual && bondBonus(c, 'qi') > 1 ? 1 + M.dual : 1);
-  return Math.max(1, Math.round(base * qiFlowMult(c) * aff * merid * manual * traitMult(c, 'qi') * stress * bondBonus(c, 'qi') * condQiMult(c) * (1 + gearStats(c).qi) * sect * meth * (perkC('c3') ? 1.15 : 1) * QI_PACE(c)));
+  return Math.max(1, Math.round(base * qiFlowMult(c) * aff * merid * manual * traitMult(c, 'qi') * stress * bondBonus(c, 'qi') * condQiMult(c) * (1 + gearStats(c).qi) * sect * meth * (perkC('c3') ? 1.15 : 1) * QI_PACE(c) * rankScale(c)));
 }
 
 // Meditate: main Qi source. Returns text for the chronicle.
@@ -109,9 +112,9 @@ export async function breakthrough(c) {
     const soft = ward ? 0.7 : 1;
     let res;
     if (ui.arenaOn?.()) { // dodge the lightning yourself
-      await ui.cinematic?.({ motif: 'bolt', color: '#b18cff', threads: 3, lines: ['Clouds pile up like ink poured into water.', `The Heavens judge your ascent to ${next.name}.`], title: 'Heavenly Tribulation', sub: `${lvl} bolt${lvl > 1 ? 's' : ''}`, sound: 'heavy', hold: 1.4 });
-      const names = ['First Bolt', 'Rolling Thunder', "Heaven's Wrath", 'Nine Skies Judgement'];
-      const ar = await ui.arena({ title: `Heavenly Tribulation — ${next.name}`, style: 'heaven', color: '#b18cff', phases: names.slice(0, Math.min(4, 1 + Math.ceil(lvl / 2))), difficulty: Math.min(1.2, 0.15 + lvl * 0.12) - (ward ? 0.15 : 0),
+      const TB = TRIBS[next.id] || TRIBS.foundation; // v0.9.53 every realm has its own tribulation
+      await ui.cinematic?.({ keepLines: true, motif: TB.motif, color: TB.color, threads: 3, lines: [...TB.lines, `The Heavens judge your ascent to ${next.name}.`], title: TB.name, sub: 'Heavenly Tribulation', sound: 'heavy', hold: 1.4 });
+      const ar = await ui.arena({ title: `${TB.name} — ${next.name}`, style: 'heaven', patterns: TB.patterns, color: TB.color, phases: TB.phases, difficulty: Math.min(1.2, 0.15 + lvl * 0.12) - (ward ? 0.15 : 0),
         lives: 3 + Math.floor(c.stats.health / 35) + (ward ? 1 : 0), hitsPerPhase: 3, autoChance: clamp(0.35 + c.stats.health / 400 + power(c) / (40 + lvl * 25) + (ward ? 0.15 : 0), 0.1, 0.9),
         lines: { intro: 'The sky splits open. Survive — and strike back at the heart of the storm.', stagger: 'The clouds recoil.', opening: 'A gap in the storm.', openingTitle: 'The clouds thin', win: 'The last bolt fades. You are still standing.', lose: 'The lightning finds you.' } });
       res = ar.result; c.lastFightHpPct = ar.lives / ar.livesMax;

@@ -42,7 +42,7 @@ export function statusTab() {
   const cv = document.createElement('canvas'); cv.className = 'portrait fullbody';
   drawFullBody(cv, c.genes, { age: c.age, gender: c.gender, realm: c.qi.realm, hair: c.face ? { ...(c.hair || {}), ...c.face } : c.hair, outfit: outfitFor(c), gear: c.gear || {}, body: c.body, heightCm: heightNow(c), elemColor: c.qi.realm >= 3 ? ELEMENTS.find(e => e.id === c.qi.elem)?.color : null });
   const pPow = power(c);
-  const maxHp = Math.round(((40 + c.stats.health * 0.5 + eff(c, 'strength') * 0.3) * (1 + (pPow - 1) * 0.5) + gs.hp) * PLAYER_HP);
+  const maxHp = Math.round(((40 + c.stats.health * 0.5 + eff(c, 'strength') * 0.3) * (1 + (pPow - 1) * 0.5) * (1 + (gs.hp || 0) / 200)) * PLAYER_HP);
   const bk = Math.min(110, eff(c, 'battle') / statCap(c) * 100), agiP = Math.min(110, eff(c, 'agility') / statCap(c) * 100); // combat reads stats as % of your cap
   const qiTotal = traitMult(c, 'qi') * bondBonus(c, 'qi') * condQiMult(c) * (1 + gs.qi) * (c.ownSect ? 1.1 : 1) * M.qi;
   const bonuses = [

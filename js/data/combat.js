@@ -33,13 +33,13 @@ Object.assign(MOVES, BODY_MOVES); // Severed Path techniques
 export const DIFFICULTY = 1.5;
 // Realm presence: a cultivator 2+ realms above their foe presses down on them with sheer aura; 3+ realms above,
 // the weaker side can barely act (and the stronger can end it without lifting a finger). Works both ways.
-export function presence(gap) {
-  if (gap >= 3) return { me: 1.5, them: 0.3, crush: true, line: 'Your presence alone drives them to their knees.' };
-  if (gap === 2) return { me: 1.25, them: 0.65, line: 'Your aura presses down on them. Their hands shake.' };
-  if (gap === 1) return { me: 1.12, them: 0.88, line: '' }; // v0.8.7: even one realm above is a clear edge
-  if (gap === -1) return { me: 0.9, them: 1.1, line: '' };
-  if (gap === -2) return { me: 0.7, them: 1.3, line: 'Their aura presses down on you. Your hands shake.' };
-  if (gap <= -3) return { me: 0.35, them: 1.7, crushed: true, line: 'Their presence crushes the breath from your lungs. You can barely stand.' };
+export function presence(gap) { // v0.9.53 one realm above: you deal 1.5x and take 25% less (and the reverse when they are above you)
+  if (gap >= 3) return { me: 2, them: 0.3, crush: true, line: 'Your presence alone drives them to their knees.' };
+  if (gap === 2) return { me: 1.75, them: 0.55, line: 'Your aura presses down on them. Their hands shake.' };
+  if (gap === 1) return { me: 1.5, them: 0.75, line: 'You are a realm above them, and both of you know it.' };
+  if (gap === -1) return { me: 0.75, them: 1.5, line: 'They are a realm above you. Every blow of theirs lands heavier.' };
+  if (gap === -2) return { me: 0.55, them: 1.75, line: 'Their aura presses down on you. Your hands shake.' };
+  if (gap <= -3) return { me: 0.35, them: 2, crushed: true, line: 'Their presence crushes the breath from your lungs. You can barely stand.' };
   return { me: 1, them: 1, line: '' };
 }
 

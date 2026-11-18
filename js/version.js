@@ -1,7 +1,53 @@
 // Game version + update log. When releasing an update: bump VERSION here AND in /version.json,
 // and add a new entry at the TOP of CHANGELOG. Open games notice version.json changed and refresh.
-export const VERSION = '0.9.50';
+export const VERSION = '0.9.56';
 export const CHANGELOG = [
+  { v: '0.9.56', date: '2026-11-18', title: 'Balance pass', notes: [
+    'Every enemy was re-tuned with a 1,200-fight simulation of an average fighter (stats at 70% of the realm cap, a technique or two, starter gear, reading enemy intents). Same-realm fights now end in about 5–8 turns. Weaklings are easy (~85% wins), ordinary foes are fair (~65–75%), and bosses are true coin-flips (~50%).',
+    'Biggest fixes: high-realm enemies (Ghost King, Sword Saint, Void Wraith, Heavenly Demon, Qilin and the new beasts) were near-unwinnable and are now fair. Stone Golems, Gargoyles, Tiger Beasts and Crystal Slimes no longer take 15–20 turns to grind down. The Vampire Bat, Storm Wyvern, Watching Eye and River Crocodile no longer one-shot you.',
+    'Enemy intents are smarter: only an enemy\'s strongest move counts as a heavy blow, so you are not told to guard every turn. A blow you guard can no longer stun you.',
+    'Marriage: your spouse puts 40% of their income into the household (was 60%), so marriage helps without replacing a job.',
+    'Reviewed and kept as they are: cultivation pace (about 1.3x faster than before 0.9.49), the realm-gap 1.5x, armour %, the Treasury prices and rank perks, GPA pay, job contracts and the new gear.',
+  ] },
+  { v: '0.9.55', date: '2026-11-18', title: 'Read your enemy', notes: [
+    'Fights are much shorter: both sides have about half the HP they had, so an even fight ends in roughly 6–10 turns instead of 20+. Every hit matters more.',
+    'You can see what your enemy is about to do: a quick strike, a heavy blow, gathering Qi, bracing or healing. It shows above the combat log.',
+    'Guard against a heavy blow and you block it AND counter-attack for free. Guarding against a quick jab only halves it.',
+    'Spamming one attack no longer works: each repeat in a row does 20% less damage (up to -60%), and after two repeats they start dodging. Mix your moves.',
+    'The 30 new enemies borrow the tuning of the closest existing enemy, so they are not wildly over- or under-powered.',
+  ] },
+  { v: '0.9.54', date: '2026-11-18', title: 'Workshop', notes: [
+    'Crafting has a minigame for each kind of item. Weapons: Strike while hot (tap as a ring closes on the glowing spot). Armour: Sew the seam (trace a zigzag seam). Pills: Stir the cauldron (keep the needle in the gold band). Jewellery and charms: Set the gem (stop the spinning gem on its mark). Materials still pour.',
+    '20 new pieces of gear. Merchants sell Twin Hook Swords, a Nine-Ring Broadsword, a Rope Dart, an Iron War Fan, a Crescent Moon Halberd, a Quilted Coat, a Brigandine, a Scholar\'s Silk Robe, a Copper Bangle and a Tiger Tooth Pendant. A Thunderclap Mace, Star-Iron Jian, Golem-Core Plate, Wyvern Leather, Moon Pearl Ring, Phoenix-Ash Beads and more can only be crafted.',
+    '14 new recipes, including cheaper ways to brew Healing, Qi and Heart-Calming pills and a Lightning Ward Talisman.',
+  ] },
+  { v: '0.9.53', date: '2026-11-18', title: 'Bestiary', notes: [
+    '30 new foes: 6 new people (Back-Alley Boxer, Knife Mugger, Corrupt Cop, Poison Alchemist, Shadow Pavilion Assassin, Fallen Iron Monk) and 24 new creatures, from Blood-Drinker Bats and Crystal Slimes to a Nine-Headed Hydra, a Vermilion Phoenix and the Thing From the Abyss. They appear in Gates of their rank.',
+    'Every creature now has its own pixel sprite in fights (CC0, from the Pixel Art Atlas), including the old ghosts, wolves, tigers, golems and dragons, instead of a generic icon.',
+    'The first time you meet each creature, a short cutscene introduces it.',
+    'Realm gaps hit harder: fighting someone one realm below you, you deal 1.5x damage and take 25% less. One realm above you, the reverse. Two or more realms apart is worse still.',
+    'Every realm now has its own Heavenly Tribulation, 14 in all. Each has its own cutscene, colours and attack mix: Golden Rain, the Nine Lanes, Falling Stars, Red Hail, the Chessboard, the Hungry Void, Twin Blades, the Chained Sky, and more up to the Last Tribulation.',
+  ] },
+  { v: '0.9.52', date: '2026-11-18', title: 'Paperwork', notes: [
+    'Job contracts: pass an interview and you are handed a contract to read: salary, term (1–5 years), maybe a signing bonus, and clauses like mandatory overtime, flexible hours, performance bonus, probation, profit share or a non-compete. Sign it, try to negotiate (Charisma; push too hard and they may withdraw), or walk away.',
+    'At the end of the term your contract is reviewed: good performance renews it with a raise, poor performance (under 40%) does not. Quitting early under a non-compete costs you the signing bonus and locks you out of that job for a year.',
+    'Job agents now work on contract: hire for 1 year, or 3 years at 15% off, paid up front. They leave when the contract ends, and you can let them go any time from the Career tab (no refund).',
+    'Marriage merges your finances (unless you signed a prenup): your spouse\'s savings join yours, and each year 60% of their income goes into the household. A divorce without a prenup splits the money in half, and they take every other property, starting with the most valuable.',
+  ] },
+  { v: '0.9.51', date: '2026-11-18', title: 'Quality of life', notes: [
+    'Fixed: the meridian progress bar no longer clips its label.',
+    'Fixed: the action panel at the bottom of the Life tab no longer flashes every time you do something.',
+    'The right column shows a quick look at this year (latest lines, actions and workload) whenever you are on another tab. Tap it to jump back to your story.',
+    'Meditation gains now grow with your realm, so high realms no longer crawl along at +90 a session. Higher realms still take a bit longer than lower ones.',
+    'Workload: you can carry 3 more points before stress builds (10, was 7). Running your own sect and teaching disciples weighs much less, so a Sect Master can still have a life.',
+    'Armour HP is now a percentage of your max HP (half the old number, e.g. +40 HP became +20% max HP), so armour stays useful at every realm.',
+    'Leave sect button (Sect & Guild → Overview). Leaving on your own keeps your contribution, and it carries over to the next sect you join. Being expelled still wipes it.',
+    'Your sect rank and sect now show under your name at the top left, like a Sect Master\'s title.',
+    'Visit the doctor: choose a cheap public clinic or an expensive private specialist, then a check-up or treatment for one specific condition, with its cost and cure chance shown.',
+  ] },
+  { v: '0.9.51', date: '2026-11-17', title: 'Fix', notes: [
+    'Fixed: the meridian progress number was cut off inside its bar. The bar is a little taller and the number is centred and readable on every theme.',
+  ] },
   { v: '0.9.50', date: '2026-11-17', title: 'Superficial', notes: [
     'Looks matter much more when asking someone out. With average closeness, a plain face (30 Looks) gets about 1 yes in 20, an average one about 2 in 5, a good-looking one (70) about 2 in 3, and a stunning one (90) almost 9 in 10.',
     'Asking out someone far better-looking than you rarely works. Charm, closeness and the minigame still help, just less than a face.',

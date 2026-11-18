@@ -20,7 +20,7 @@ import { META } from '../core/state.js';
 import { ensureBody, partEff, maxHp, isMissing, allCaps, qiHealInfo, qiHeal, prostheticOptions, fitProsthetic } from '../systems/body.js';
 
 const pct = p => Math.round(p * 100) + '%';
-const statLine = st => Object.entries(st || {}).map(([k, v]) => k === 'dmg' || k === 'qi' ? `${v > 0 ? '+' : ''}${Math.round(v * 100)}% ${k === 'dmg' ? 'damage' : 'Qi'}` : `${v > 0 ? '+' : ''}${v} ${k === 'hp' ? 'HP' : k[0].toUpperCase() + k.slice(1)}`).join(', ');
+const statLine = st => Object.entries(st || {}).map(([k, v]) => k === 'dmg' || k === 'qi' ? `${v > 0 ? '+' : ''}${Math.round(v * 100)}% ${k === 'dmg' ? 'damage' : 'Qi'}` : k === 'hp' ? `${v > 0 ? '+' : ''}${Math.round(v / 2)}% max HP` : `${v > 0 ? '+' : ''}${v} ${k[0].toUpperCase() + k.slice(1)}`).join(', ');
 const TYPE_ORDER = [['relic', 'Rare Relics'], ['gear', 'Gear'], ['consumable', 'Consumables & medicine'], ['material', 'Materials']];
 
 // ---------- INVENTORY: everything you own in one place
@@ -69,7 +69,7 @@ export function craftingTab() {
     return h('div', { class: 'card' }, h('div', { class: 'row' }, icon(out.icon, 'lg'), h('div', { style: { flex: 1 } }, h('b', {}, out.name, r.n > 1 ? ` ×${r.n}` : ''), h('div', { class: 'muted small' }, out.desc))),
       h('div', { class: 'small', style: { margin: '6px 0' } }, Object.entries(r.inputs).map(([id, n]) => h('span', { class: 'ing ' + ((c.inv[id] || 0) >= n ? 'have' : 'need') }, `${n}× ${itemName(id)} (${c.inv[id] || 0})`))),
       h('div', { class: 'row' }, h('span', { class: 'muted small' }, `Success ${pct(craftChance(c, r))}`),
-        h('button', { class: 'btn', style: { marginLeft: 'auto' }, disabled: !ok || c.actions <= 0 || !c.alive, onclick: () => runActivity({ id: 'craft', cat: 'craft', name: `Forging: ${ITEMS[r.out]?.name || 'craft'}`, run: cc => craft(cc, r, cc._mg ?? null) }) }, 'Craft (⚡1)'))); };
+        h('button', { class: 'btn', style: { marginLeft: 'auto' }, disabled: !ok || c.actions <= 0 || !c.alive, onclick: () => { c._craftOut = r.out; runActivity({ id: 'craft', cat: 'craft', name: `Crafting: ${ITEMS[r.out]?.name || 'craft'}`, run: cc => craft(cc, r, cc._mg ?? null) }); } }, 'Craft (⚡1)'))); };
   const owned = Object.entries(c.inv).filter(([, n]) => n > 0);
   const counts = {}; pickedMats.forEach(id => counts[id] = (counts[id] || 0) + 1);
   pickedMats = pickedMats.filter(id => (c.inv[id] || 0) >= counts[id]);

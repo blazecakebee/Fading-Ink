@@ -5,7 +5,7 @@ import { ui } from '../core/bus.js';
 import { ri, pick, chance, clamp } from '../core/rng.js';
 import { CAREERS } from '../data/careers.js';
 
-export const CAPACITY = 7; // what an ordinary person carries without strain
+export const CAPACITY = 10; // v0.9.51 was 7 // what an ordinary person carries without strain
 // what each action costs you in load (rest is negative)
 const ACT_LOAD = { work: 1.3, school: 1.2, training: 1, crime: 1.1, adventure: 0.8, cultivation: 0.6, craft: 0.8, mind: 0.4, leisure: 0.2, love: 0.2, childhood: 0, prison: 0.5 };
 const REST = { walk: -1.2, journal: -0.8, vacation: -3, fishing: -1, hike: -0.6, cloud_watch: -0.8, party: -0.4, doctor: -0.3, meditate: -0.3 };
@@ -19,20 +19,20 @@ export function commitments(c) {
   if (c.recurGig && !c.prison) out.push([`Side gig: ${c.recurGig.t}`, 1.5]);
   if (c.edu?.school && c.age >= 6) out.push([c.edu.school, /Univers/i.test(c.edu.school) ? 2.5 : 2]);
   if (c.edu?.school && (c.edu.clubs || []).length) out.push([`School club${c.edu.clubs.length > 1 ? 's' : ''}`, c.edu.clubs.length * 0.8]);
-  if (c.ownSect) out.push([`Running ${c.ownSect.name}`, (c.ownSect.disciples || 0) >= 60 ? 3.5 : 2.5]);
+  if (c.ownSect) out.push([`Running ${c.ownSect.name}`, (c.ownSect.disciples || 0) >= 60 ? 2 : 1.2]); // v0.9.51 elders and disciples share the work
   else if (c.sect && c.sect !== 'guest' && (c.sectRank || 0) >= 2) out.push(['Senior sect duties', 1.5]);
   else if (c.sect && c.sect !== 'guest') out.push(['Sect duties', 0.8]);
   if (c.guild) out.push([`Hunter Guild${(c.guild.rank || 0) >= 4 ? ' (high rank)' : ''}`, (c.guild.rank || 0) >= 4 ? 1.5 : 0.8]);
   const kids = (c.people || []).filter(p => (p.role === 'Son' || p.role === 'Daughter') && p.alive && p.age < 12 && (p.livesWith !== false));
   if (kids.length && c.age >= 16) out.push([`Raising ${kids.length} young child${kids.length > 1 ? 'ren' : ''}`, Math.min(3, kids.length * 1)]);
-  if ((c.disciples || []).length) out.push([`Teaching ${c.disciples.length} disciple${c.disciples.length > 1 ? 's' : ''}`, Math.min(2, c.disciples.length * 0.5)]);
+  if ((c.disciples || []).length) out.push([`Teaching ${c.disciples.length} disciple${c.disciples.length > 1 ? 's' : ''}`, Math.min(2, c.disciples.length * (c.ownSect ? 0.2 : 0.5))]);
   if (c.hunt) out.push(['An ongoing Hunt', 1]);
   if (c.addiction) out.push(['Feeding a habit', 1]);
   return out;
 }
 export const totalLoad = c => commitments(c).reduce((s, [, v]) => s + v, 0) + (c.yearLoad || 0);
 export function loadLevel(L) {
-  if (L < 4) return { id: 'light', name: 'Light', color: '#5fd38a' };
+  if (L < 6) return { id: 'light', name: 'Light', color: '#5fd38a' };
   if (L < CAPACITY) return { id: 'steady', name: 'Steady', color: '#9ad0ff' };
   if (L < CAPACITY + 4) return { id: 'busy', name: 'Busy', color: '#ffb02e' };
   if (L < CAPACITY + 8) return { id: 'over', name: 'Overloaded', color: '#ff7a3a' };

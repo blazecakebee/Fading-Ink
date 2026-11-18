@@ -1,6 +1,7 @@
 // v0.9.8 Practice engine: every training-type action rolls on a 4-tier outcome
 // (Peak flow · Solid · Sloppy · Mishap), shaped by an optional micro-minigame, your mastery of that
 // activity, fatigue from repeating it this year, and your condition. Mishaps cause real injuries.
+import { ITEMS as ITEMS_P } from '../data/items.js';
 import { G } from '../core/state.js';
 import { ui } from '../core/bus.js';
 import { ri, pick, chance, clamp } from '../core/rng.js';
@@ -31,7 +32,7 @@ export const PRACTICE = {
   burglary:      { kind: 'pins',    scoreOnly: true },
   gather:        { kind: 'glint',   scoreOnly: true },
   fishing:       { kind: 'bite',    scoreOnly: true },
-  craft:         { kind: 'pour',    scoreOnly: true },
+  craft:         { kind: 'pour',    scoreOnly: true, kindFor: c => craftGame(c._craftOut) }, // v0.9.54 one game per item kind
 };
 export const practiceFor = id => PRACTICE[id] || null;
 const TRACK = ['strength', 'agility', 'battle', 'smarts', 'charisma'];
@@ -134,3 +135,5 @@ function mishap(c, P) {
   }
   stat(c, 'stress', 8); stat(c, 'happiness', -4); return ' +8 Stress.';
 }
+// v0.9.54 which crafting game an item uses
+export function craftGame(id) { const it = ITEMS_P[id]; if (!it) return 'pour'; if (it.type === 'gear') return it.slot === 'weapon' ? 'forge' : it.slot === 'armor' ? 'stitch' : 'gem'; if (it.type === 'consumable') return 'brew'; return 'pour'; }

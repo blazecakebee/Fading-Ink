@@ -5,8 +5,8 @@ import { ENEMIES } from '../data/combat.js';
 import { REALMS } from '../data/realms.js';
 import { HARD } from '../core/hard.js';
 
-export const PLAYER_HP = 2.5;          // player HP multiplier (longer, more tactical fights)
-export const ENEMY_HP = 2 * HARD;      // enemy HP multiplier
+export const PLAYER_HP = 1.2;          // v0.9.55 was 2.5: fights end in about 6-10 turns
+export const ENEMY_HP = 0.95 * HARD;   // v0.9.55 was 2x: shorter, sharper fights
 export const ENEMY_DMG = 0.85 * HARD;  // enemy damage multiplier
 export const GEAR_DMG = 0.6;           // weapons give 60% of their listed bonus in a fight
 export const SEVERED_EDGE = 1.08;      // Qi users can't sense the Severed coming
@@ -38,7 +38,15 @@ export const ENEMY_SCALE = {
   ancient_qilin: [0.1, 0.14, 0.17, 0.3, 0.31, 0.49, 0.53, 0.54, 0.54, 0.59, 0.64, 0.65, 0.55, 0.64, 0.72, 0.76, 0.68],
   fallen_immortal: [0.06, 0.08, 0.11, 0.22, 0.23, 0.35, 0.39, 0.4, 0.4, 0.4, 0.43, 0.44, 0.37, 0.43, 0.47, 0.5, 0.45],
 };
-export const enemyScale = (id, r) => ENEMY_SCALE[id]?.[Math.max(0, Math.min(16, r || 0))] ?? realmScale(r);
+// v0.9.55 newer enemies borrow the calibration of the closest tuned enemy (same home realm, similar toughness)
+function derived(id) {
+  const e = ENEMIES.find(x => x.id === id); if (!e) return null;
+  const refs = ENEMIES.filter(x => ENEMY_SCALE[x.id] && x.id !== 'tribulation');
+  const ref = refs.slice().sort((a, b) => (Math.abs(a.realm - e.realm) * 3 + (a.kind === e.kind ? 0 : 1)) - (Math.abs(b.realm - e.realm) * 3 + (b.kind === e.kind ? 0 : 1)))[0];
+  if (!ref) return null; const k = Math.sqrt((ref.hp * ref.str) / (e.hp * e.str));
+  return (ENEMY_SCALE[id] = ENEMY_SCALE[ref.id].map(v => Math.round(v * k * 100) / 100));
+}
+export const enemyScale = (id, r) => (ENEMY_SCALE[id] || derived(id))?.[Math.max(0, Math.min(16, r || 0))] ?? realmScale(r);
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 // enemy stats are written for the realm they normally live in; read them as a % of that realm's cap
@@ -47,3 +55,8 @@ export const enemyPct = (def, raw) => clamp(raw / (REALMS[nativeRealm(def)]?.cap
 export const playerPct = (v, cap) => clamp(v / (cap || 100) * 100, 0, 110);
 export const qiStat = aff => 30 + (aff || 0) * 0.7;              // player Qi techniques
 export const enemyQiStat = realm => 50 + Math.min(40, (realm || 0) * 3);
+
+// v0.9.56 balance pass: per-enemy [HP, damage] multipliers from a 600-fight simulation (an average fighter: stats at 70% of the realm cap,
+// a fitting technique or two, starter gear, reading intents). Targets: weaklings ~85% wins, regular foes ~70%, bosses ~50%, all in about 6-8 turns.
+export const BALANCE = {"bully": [0.83, 1.43], "thug": [0.85, 1.25], "gangster": [1.42, 0.89], "hungry_ghost": [1.45, 0.96], "jiangshi": [0.85, 1.25], "fox_spirit": [1.11, 0.71], "demonic": [1.04, 0.66], "corrupt_soul": [1.33, 0.49], "yaoguai": [1.21, 1.65], "ghost_king": [0.92, 0.75], "spirit_wolf": [0.91, 0.95], "tiger_beast": [0.46, 1.68], "stone_golem": [0.33, 1.9], "drowned_ghost": [1.22, 0.89], "blood_cultist": [0.89, 0.78], "young_dragon": [0.9, 0.97], "sword_saint": [0.86, 0.67], "void_wraith": [0.64, 0.88], "heavenly_demon": [0.76, 0.96], "ancient_qilin": [0.47, 1.3], "fallen_immortal": [0.56, 1.15], "street_boxer": [0.7, 2.52], "knife_mugger": [0.71, 1.04], "corrupt_cop": [0.65, 1.54], "poison_alchemist": [0.82, 0.7], "shadow_assassin": [1.3, 2.02], "iron_monk": [0.62, 0.98], "vampire_bat": [0.49, 0.47], "cave_spider": [0.94, 1.24], "sand_scorpion": [1.09, 1.41], "crystal_slime": [0.44, 2.8], "mushroom_fiend": [0.74, 2.45], "man_eater": [1.36, 2.12], "gargoyle": [0.31, 1.68], "imp": [1.51, 0.64], "wisp": [1.17, 0.58], "bone_serpent": [1.3, 1.8], "kraken": [0.71, 0.94], "hydra": [0.57, 0.91], "basilisk": [0.81, 0.82], "storm_wyvern": [0.62, 0.35], "phoenix": [0.6, 0.83], "griffin": [0.66, 1.62], "centipede": [0.43, 1.23], "eye_horror": [0.71, 0.46], "abyss_tentacle": [0.72, 0.9], "magma_golem": [0.69, 1.44], "frost_golem": [1.01, 2.8], "brown_bear": [0.89, 1.68], "river_croc": [0.37, 0.74], "spirit_deer": [1.06, 2.08]};
+export const balanceOf = id => BALANCE[id] || [1, 1];

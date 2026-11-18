@@ -84,7 +84,7 @@ export const ACTIVITIES = [
       if (!ok) return `I found the ${s.name}... they turned me away. (${Object.entries(s.req).map(([k, v]) => `${k} ${v}+`).join(', ')})`;
       const yes = await ui.choice({ title: s.name, text: `${s.desc}\n\nThey offer you a place. Join?`, icon: s.kind === 'gang' ? 'crime' : 'manual', options: [{ label: 'Join', value: true }, { label: 'Walk away', value: false }] });
       if (!yes) return `I declined the ${s.name}.`;
-      c.sect = s.id; c.sectRank = 0; c.contrib = 0; c.flags.sectJoined = G.world.year; learnManual(c, 'breathing');
+      c.sect = s.id; c.sectRank = 0; c.contrib = Math.max(0, c.contrib || 0); // v0.9.51 your contribution follows you c.flags.sectJoined = G.world.year; learnManual(c, 'breathing');
       if (s.manual) learnManual(c, s.manual); else if (s.align === 'demonic') learnManual(c, 'blood_art'); else if (s.id === 'iron') learnManual(c, 'iron_skin'); else learnManual(c, pick(['flame_palm', 'river_step']));
       if (chance(0.5)) addItem(c, 'qi_pill', 2);
       learnMethod(c, s.method || (s.align === 'demonic' ? 'blood_sea' : pick(['turtle', 'five_elements', 'lotus', 'sword_intent', 'heart_fire'])));
@@ -92,7 +92,7 @@ export const ACTIVITIES = [
       return { text: `I joined the ${s.name}.`, cls: 'qi', big: true }; } },
 
   // ---- MIND & BODY
-  { id: 'doctor', cat: 'mind', name: 'Visit the doctor', icon: 'doctor', minAge: 0, run: c => { const cost = Math.round(120 * country(c).econ); if (c.age >= 18) { if (c.money < cost) return null; money(c, -cost); } const g = ri(5, 15); stat(c, 'health', g); return `The doctor patched me up. Health +${g}.`; } },
+  { id: 'doctor', cat: 'mind', name: 'Visit the doctor', icon: 'doctor', minAge: 0, run: () => null }, // replaced by schooling.js DOCTOR (v0.9.51: clinic vs specialist, treat a condition)
   { id: 'library', cat: 'mind', name: 'Go to the library', icon: 'study', minAge: 5, run: c => { const gs = Math.max(1, Math.round(ri(2, 5) * study(c))); stat(c, 'smarts', gs); return `I read about ${pick(['ancient dynasties', 'black holes', 'poisonous mushrooms', 'forgotten sects', 'economics'])}. Smarts +${gs}.`; } },
   { id: 'alchemy_texts', cat: 'mind', name: 'Study alchemy texts', icon: 'cauldron', minAge: 10, run: c => { stat(c, 'smarts', 1); const unk = RECIPES.filter(r => !knownRecipes(c).includes(r.id) && r.id !== 'r_ink'); if (unk.length && chance(0.3 * study(c))) { const r = pick(unk); knownRecipes(c).push(r.id); return { text: `In a crumbling text I found the recipe for ${ITEMS[r.out].name}.`, cls: 'qi', big: true }; } return 'I pored over alchemy texts. Half of them were nonsense.'; } },
   { id: 'walk', cat: 'mind', name: 'Take a long walk', icon: 'flower', minAge: 4, run: c => { stat(c, 'stress', -10); stat(c, 'happiness', 4); stat(c, 'happiness', 8); return 'I walked until the city noise faded.'; } },
@@ -209,7 +209,7 @@ export const SOCIAL = [
   { id: 'propose', emoji: '💍', name: 'Propose', icon: 'ring', age: 18, need: (c, p) => p.role === 'Partner', run: async (c, p) => {
       const ok = chance(0.35 + p.close / 150 + ((c._soc ?? 0.5) - 0.5) * 0.25); if (!ok) { p.close = clamp(p.close - 15); return { text: `${p.first} said no...`, cls: 'bad' }; }
       const pre = c.money > 50000 ? await ui.choice({ title: 'Prenup?', text: 'You have significant assets. Ask for a prenup?', icon: 'paper', options: [{ label: 'Yes, prenup', value: true }, { label: 'No', value: false }] }) : false;
-      p.role = 'Spouse'; p.livesWith = true; c.flags.prenup = !!pre; stat(c, 'happiness', 20); ui.cinematic?.({ motif: 'lotus', color: '#ff6a8a', lines: ['Red lanterns, two families, one table.', `${c.first} and ${p.first} bow to heaven, to earth, and to each other.`], title: 'Married', sub: `${c.first} ♥ ${p.first}`, sound: 'milestone' }); return { text: `${p.first} said YES! We got married.${pre ? ' (with a prenup)' : ''}`, cls: 'good', big: true }; } },
+      p.role = 'Spouse'; p.livesWith = true; c.flags.prenup = !!pre; stat(c, 'happiness', 20); const joint = mergeFinances(c, p, !!pre); ui.cinematic?.({ motif: 'lotus', color: '#ff6a8a', lines: ['Red lanterns, two families, one table.', `${c.first} and ${p.first} bow to heaven, to earth, and to each other.`], title: 'Married', sub: `${c.first} ♥ ${p.first}`, sound: 'milestone' }); return { text: `${p.first} said YES! We got married.${pre ? ' (with a prenup)' : ''}${joint}`, cls: 'good', big: true }; } },
   { id: 'baby', emoji: '👶', name: 'Try for a baby', icon: 'baby', age: 18, need: (c, p) => canTryForBaby(c, p), run: (c, p) => {
       const t = (c.flags.babyTries ||= {}); t[G.world.year] = (t[G.world.year] || 0) + 1;
       const older = Math.max(...[c, p].map(x => x.age / fertileUntil(x)));
@@ -217,7 +217,12 @@ export const SOCIAL = [
       return { text: conceive(c, p), cls: 'good', big: true }; } },
   { id: 'divorce', emoji: '💔', name: 'Divorce / Break up', icon: 'brokenheart', need: (c, p) => ['Spouse', 'Partner'].includes(p.role), run: (c, p) => {
       const married = p.role === 'Spouse'; p.role = 'Ex'; c.partnerId = null; if (married) c.flags.divorces = (c.flags.divorces || 0) + 1; p.close = clamp(p.close - 40);
-      if (married && !c.flags.prenup && c.money > 0) { const loss = Math.round(c.money / 2); money(c, -loss); return { text: `We divorced. ${p.first} took half: ${fmtMoney(c, loss)}.`, cls: 'bad' }; }
+      if (married && !c.flags.prenup) { // v0.9.52 joint assets are split: half the money, and they pick property in turn
+        const loss = Math.max(0, Math.round(c.money / 2)); money(c, -loss); const took = [];
+        const sorted = [...(c.assets || [])].filter(a => a.type !== 'business' || !a.locked).sort((a, z) => (z.value || 0) - (a.value || 0));
+        sorted.forEach((a, i) => { if (i % 2 === 0) { c.assets.splice(c.assets.indexOf(a), 1); took.push(a.name || a.type); } });
+        delete c.flags.joint; return { text: `We divorced. ${p.first} took half our savings (${fmtMoney(c, loss)})${took.length ? ` and ${took.join(', ')}` : ''}.`, cls: 'bad' }; }
+      delete c.flags.joint;
       return { text: `${p.first} and I split up.`, cls: 'bad' }; } },
   { id: 'ask_money', emoji: '💰', name: 'Ask for money', icon: 'market', need: (c, p) => ['Father', 'Mother'].includes(p.role), run: (c, p) => { if (chance(p.close / 130)) { const g = Math.round(ri(10, 120) * country(c).econ * (['rich', 'royal', 'wealthy'].includes(c.wealth) ? 10 : 1)); money(c, g); return `${p.first} gave me ${fmtMoney(c, g)}.`; } return `${p.first} refused to give me money.`; } },
 ];
@@ -230,4 +235,19 @@ export function haveChild(c, p) {
   kid.stats = Object.fromEntries(Object.keys(kid.stats).map(k => [k, clamp(Math.round(((c.stats[k] ?? 50) + (p.stats?.[k] ?? 50)) / 2 + ri(-15, 15)))]));
   c.people.push(kid); stat(c, 'happiness', 15); ui.fx('birth');
   return `${kid.first} was born! ${gender === 'F' ? 'A baby girl' : 'A baby boy'}.`;
+}
+
+// v0.9.52 marriage merges your finances: their savings join yours, and each year their income goes into the household
+export function mergeFinances(c, p, prenup) {
+  const w = wage(c); p.job ||= chance(0.7) ? pick(['teacher', 'nurse', 'shopkeeper', 'accountant', 'chef', 'mechanic', 'engineer', 'office worker', 'designer']) : null;
+  p.income ??= p.job ? Math.round(ri(15000, 42000) * w) : 0;
+  const savings = Math.round(ri(500, 12000) * w * (1 + Math.max(0, p.age - 22) / 15));
+  if (prenup) { c.flags.joint = { with: p.id, prenup: true }; return ` We kept our finances separate.`; }
+  money(c, savings); c.flags.joint = { with: p.id };
+  return ` We merged our finances: ${p.first} brought ${fmtMoney(c, savings)} into our joint account${p.income ? `, and their ${p.job} income now goes into the household` : ''}.`;
+}
+export function jointYear(c) {
+  const J = c.flags?.joint; if (!J || J.prenup) return; const p = c.people.find(x => x.id === J.with && x.alive && x.role === 'Spouse'); if (!p) { delete c.flags.joint; return; }
+  if (!p.income || p.age >= 65) return; const share = Math.round(p.income * 0.4); money(c, share); // v0.9.56 40%: the rest goes on their own life and the household
+  ui.log(`Household: ${p.first}'s ${p.job} income added ${fmtMoney(c, share)} to our joint account.`);
 }
